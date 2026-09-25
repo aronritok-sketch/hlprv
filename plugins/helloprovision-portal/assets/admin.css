@@ -1,0 +1,105 @@
+/* HelloProVision CRM (WordPress admin) */
+
+.hpv-crm .hpv-muted { color: #6b6b66; }
+
+.hpv-kpis {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+	gap: 12px;
+	margin: 16px 0 20px;
+}
+
+.hpv-kpi {
+	display: grid;
+	gap: 4px;
+	padding: 16px 18px;
+	border: 1px solid #dcdcde;
+	border-radius: 12px;
+	background: #fff;
+}
+
+.hpv-kpi span { color: #646970; font-size: 12px; }
+.hpv-kpi strong { font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+.hpv-kpi.is-alert { border-color: #d63638; background: #fcf0f1; }
+
+.hpv-filter { display: flex; gap: 8px; margin: 0 0 12px; }
+
+.hpv-table td, .hpv-table th { vertical-align: middle; }
+.hpv-row-actions { text-align: right; white-space: nowrap; }
+
+.hpv-badge {
+	display: inline-block;
+	padding: 2px 9px;
+	border-radius: 999px;
+	background: #f0f0f1;
+	color: #50575e;
+	font-size: 11px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+.hpv-badge--active, .hpv-badge--sent, .hpv-badge--in_progress { background: #e5f0ff; color: #1f4fbf; }
+.hpv-badge--lead, .hpv-badge--review, .hpv-badge--client { background: #fff3cf; color: #7a5500; }
+.hpv-badge--paid, .hpv-badge--signed, .hpv-badge--completed, .hpv-badge--done { background: #e7f7d4; color: #2d6a00; }
+.hpv-badge--overdue { background: #fce4e4; color: #b3261e; }
+.hpv-badge--void, .hpv-badge--cancelled, .hpv-badge--former, .hpv-badge--paused, .hpv-badge--on_hold { background: #f0f0f1; color: #8c8f94; }
+
+.hpv-client-head {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 16px;
+}
+.hpv-client-head h1 { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; }
+.hpv-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.hpv-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr); gap: 16px; align-items: start; }
+.hpv-col { display: grid; gap: 16px; }
+
+.hpv-card {
+	padding: 16px 18px;
+	border: 1px solid #dcdcde;
+	border-radius: 12px;
+	background: #fff;
+}
+.hpv-card > header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.hpv-card h2 { margin: 0; font-size: 15px; }
+.hpv-note { margin-bottom: 16px; background: #fffbea; border-color: #f0d67a; }
+
+.hpv-users { margin: 0 0 12px; }
+.hpv-users li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f0f0f1; }
+
+.hpv-inline-form { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.hpv-inline-form input[type=text], .hpv-inline-form input[type=email] { flex: 1 1 140px; }
+
+.hpv-activity-form textarea { width: 100%; }
+.hpv-activity-form__row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-top: 6px; }
+
+.hpv-timeline { margin: 14px 0 0; padding: 0; list-style: none; }
+.hpv-timeline li { padding: 10px 0 10px 14px; border-left: 2px solid #dcdcde; margin-left: 4px; }
+.hpv-timeline li.is-system { border-left-color: #72aee6; }
+.hpv-timeline li.is-note { border-left-color: #dba617; }
+.hpv-timeline__meta { color: #646970; font-size: 12px; margin-bottom: 2px; }
+
+.hpv-progress { display: inline-block; width: 70px; height: 6px; border-radius: 999px; background: #f0f0f1; vertical-align: middle; overflow: hidden; }
+.hpv-progress span { display: block; height: 100%; background: #1d2327; }
+
+.hpv-readonly { display: inline-block; padding: 4px 0; color: #50575e; }
+
+.hpv-items { max-width: 900px; margin-bottom: 16px; }
+.hpv-items td { vertical-align: middle; }
+.hpv-items .hpv-right { text-align: right; font-weight: 600; }
+.hpv-items .hpv-total td { font-size: 15px; }
+.hpv-remove { color: #b32d2e; }
+
+.hpv-submit { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.hpv-delete { margin-left: auto; color: #b32d2e; }
+
+.hpv-audit th { width: 200px; }
+.hpv-contract-body { max-width: 860px; margin-top: 16px; line-height: 1.6; }
+
+.hpv-crm-chat .hpv-chat { max-width: 1400px; }
+
+@media (max-width: 1100px) {
+	.hpv-grid { grid-template-columns: 1fr; }
+}

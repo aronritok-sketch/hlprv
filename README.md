@@ -129,15 +129,84 @@ Az érdeklődők a **Website Grader → Érdeklődők** menüben vannak: teljes 
 - A Google sebességmérése futásonként néhány pontot ingadozhat. Ez normális, az eszköz GYIK része is elmondja.
 - Ha a szerver Cloudflare vagy más proxy mögött van, a látogatónkénti korlát a proxy IP-címét látja. Ilyenkor a `hpv_grader_client_ip` filterrel állítható be a valódi IP.
 
+## `plugins/helloprovision-portal/` – Ügyfélportál & CRM (0.1, 1. ütem)
+
+Egy WordPress bővítmény, két bejárattal:
+
+| Cím | Kinek | Mit lát |
+|---|---|---|
+| `crm.helloprovision.com` | a csapat (Adminisztrátor és „Munkatárs (CRM)” szerepkör) | minden ügyfelet, a belső jegyzeteket és az összes adatot |
+| `clients.helloprovision.com` | az ügyfél portál-felhasználói („Ügyfél (portál)” szerepkör) | csak a saját cégét, és abból is csak azt, amit láthatóvá tettetek |
+
+Mindkét cím csak bejelentkezés után működik.
+
+**A CRM-ben (magyar felület):**
+- **Ügyfelek:** kulcsszámok (aktív ügyfelek, havi ismétlődő bevétel, kintlévőség, lejárt számlák, aláírásra váró szerződések), ügyfél-adatlap.
+- **Portál-meghívó:** a kapott e-mailben jelszó-beállító link van. A hozzáférés visszavonható.
+- **Szolgáltatás-katalógus és előfizetések:** havi, negyedéves, éves és egyszeri díjak.
+- **Projektek és feladatok:** feladatonként állítható, hogy látja-e az ügyfél; külön státusz az „Ügyfélre vár” feladatoknak.
+- **Számlák:**
+  - tételek, adó, automatikus számlaszám;
+  - fizetési link (pl. Stripe Payment Link), ez a portálon „Pay now” gombként jelenik meg;
+  - „kiküldés” e-mailt küld, „fizetve” jelöléssel lezárható.
+- **Szerződések:**
+  - szövegszerkesztő, „kiküldés aláírásra”;
+  - aláíráskor a rendszer rögzíti az aláíró nevét, e-mail címét, IP címét, böngészőjét, az időpontot (UTC) és a dokumentum SHA-256 lenyomatát;
+  - aláírt szerződés nem szerkeszthető, kiküldött számla és aláírt szerződés nem törölhető, csak érvényteleníthető.
+- **Chat:**
+  - belső csoportok (#General, #Design team…) és ügyfél-csatornák;
+  - az ügyfél-csatornába a portál-felhasználók automatikusan bekerülnek;
+  - olvasatlan-számláló a menüben;
+  - e-mail értesítés, ha a címzett 2 perce nem nézte a csatornát, csatornánként legfeljebb 15 percenként egy.
+- **Tevékenység:** belső jegyzetek és rendszeresemények idővonala.
+
+**A portálon (angol felület):**
+- **Overview:** egyenleg, teendők (fizetendő számla, aláírandó szerződés, „Waiting on you” feladat, olvasatlan üzenet), friss hírek.
+- **Projects:** haladás és feladattábla.
+- **Messages:** chat a csapattal.
+- **Invoices:** nyomtatható számlakép, „Pay now” gomb, „Download PDF” (böngészős nyomtatás).
+- **Contracts:** elolvasás és aláírás.
+- **Services, Account.**
+
+A portál saját keretben fut, a WordPress témától függetlenül, mobilon is.
+
+### Telepítés
+
+1. **Külön WordPress-telepítés** a CRM-nek, ne a marketing-weboldalon fusson. Így a weboldal bővítményei és szerkesztői nem férnek hozzá az ügyféladatokhoz.
+2. **DNS:** a `crm` és a `clients` aldomain A rekordja mutasson erre a szerverre, mindkettőre SSL tanúsítvánnyal (pl. Let's Encrypt).
+3. **`wp-config.php`**, a `require_once ABSPATH . 'wp-settings.php';` sor elé:
+   ```php
+   $hpv_host = strtolower( $_SERVER['HTTP_HOST'] ?? '' );
+   if ( in_array( $hpv_host, array( 'crm.helloprovision.com', 'clients.helloprovision.com' ), true ) ) {
+       define( 'WP_HOME', 'https://' . $hpv_host );
+       define( 'WP_SITEURL', 'https://' . $hpv_host );
+   }
+   ```
+   Más címek esetén: `define( 'HPV_CRM_HOST', '…' ); define( 'HPV_PORTAL_HOST', '…' );`
+4. **Bővítmény:** töltsd fel és kapcsold be. Ekkor jönnek létre a táblák és a szerepkörök.
+5. **CRM → Beállítások:** cégadatok, számlaszám előtag, fizetési határidő, értesítési cím.
+6. **Levélküldés:** WP Mail SMTP, az e-mail útmutató szerint.
+7. **Munkatársak:** felhasználóként, „Munkatárs (CRM)” szerepkörrel. Ők csak a CRM-et és a profiljukat látják.
+
+### Következő ütemek
+
+2. **Projektkezelő:**
+   - Kanban húzással, lista, idővonal (Gantt);
+   - felelősök, alfeladatok, ellenőrzőlisták, hozzászólások, időmérés, függőségek, sablonok;
+   - a CRM saját, gyors webes felületre költözik a WordPress admin helyett.
+3. **Videóhívás a chatből** (pl. Daily.co), automatikus leirattal és AI-összefoglalóval, ami az ügyfélhez és a projekthez mentődik.
+4. **Pénzügy és egyebek:** Stripe fizetés automatikus „fizetve” jelöléssel, ismétlődő számlák automatikus kiállítása, fájlmegosztás, Bitrix24 átköltöztetés.
+
 ## Tesztek
 
 ```
 php tests/seo.php
 php tests/reviews.php
 php tests/grader.php
+wp eval-file tests/portal-integration.php   # valódi WordPressen, a portál bővítménnyel
 ```
 
-WordPress nélkül futnak. Az SEO teszt az élő főoldal valódi schemáját, a grader teszt a főoldal megtisztított HTML-jét használja (`tests/fixtures/`).
+Az első három WordPress nélkül fut, a portál teszt valódi WordPressen és adatbázison. Az SEO teszt az élő főoldal valódi schemáját, a grader teszt a főoldal megtisztított HTML-jét használja (`tests/fixtures/`).
 
 ## Amit a plugin nem tud javítani (admin felületen kell)
 

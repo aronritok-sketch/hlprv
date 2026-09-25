@@ -1,0 +1,1062 @@
+/* HelloProVision ügyfélportál — sötét oldalsáv, világos munkaterület, lime kiemelés. */
+
+.hpv-portal-body {
+	margin: 0;
+	background: #f6f6f3;
+	font-family: "Satoshi", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+	-webkit-font-smoothing: antialiased;
+}
+
+.hpv-portal,
+.hpv-login {
+	--p-accent: #b8ff34;
+	--p-accent-ink: #3f7d00;
+	--p-ink: #121212;
+	--p-muted: #6b6b66;
+	--p-line: #e6e6e0;
+	--p-bg: #f6f6f3;
+	--p-card: #fff;
+	--p-side: #0d0d0d;
+
+	color: var(--p-ink);
+	font-size: 15px;
+	line-height: 1.5;
+}
+
+.hpv-portal *,
+.hpv-login * {
+	box-sizing: border-box;
+}
+
+.hpv-portal {
+	display: grid;
+	grid-template-columns: 250px minmax(0, 1fr);
+	min-height: 100vh;
+	background: var(--p-bg);
+}
+
+.hpv-portal h1,
+.hpv-portal h2,
+.hpv-portal h3 {
+	margin: 0;
+	color: inherit;
+	font-weight: 600;
+	letter-spacing: -.02em;
+	line-height: 1.15;
+}
+
+.hpv-portal a {
+	color: inherit;
+}
+
+.hpv-muted {
+	color: var(--p-muted);
+}
+
+.hpv-preview-bar {
+	position: fixed;
+	right: 16px;
+	bottom: 16px;
+	z-index: 50;
+	padding: 10px 16px;
+	border-radius: 12px;
+	background: #fff3cf;
+	color: #5c4000;
+	box-shadow: 0 6px 24px rgba(0, 0, 0, .12);
+	font-size: 13px;
+}
+
+/* ── Oldalsáv ───────────────────────────────────── */
+
+.hpv-side {
+	position: sticky;
+	top: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+	height: 100vh;
+	padding: 22px 14px;
+	background: var(--p-side);
+	color: #fff;
+}
+
+.hpv-brand {
+	display: grid;
+	padding: 4px 10px;
+	color: #fff !important;
+	font-size: 19px;
+	font-weight: 700;
+	letter-spacing: -.02em;
+	text-decoration: none;
+}
+
+.hpv-brand span {
+	color: var(--p-accent);
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: .1em;
+	text-transform: uppercase;
+}
+
+.hpv-brand--center {
+	justify-items: center;
+	margin-bottom: 18px;
+	color: var(--p-ink) !important;
+}
+
+.hpv-brand--center span {
+	color: var(--p-accent-ink);
+}
+
+.hpv-nav {
+	display: grid;
+	gap: 2px;
+}
+
+.hpv-nav a {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 12px;
+	border-radius: 10px;
+	color: rgba(255, 255, 255, .72) !important;
+	font-weight: 500;
+	text-decoration: none;
+	transition: background .15s, color .15s;
+}
+
+.hpv-nav a:hover {
+	background: rgba(255, 255, 255, .06);
+	color: #fff !important;
+}
+
+.hpv-nav a.is-active {
+	background: rgba(184, 255, 52, .12);
+	color: var(--p-accent) !important;
+}
+
+.hpv-nav a span {
+	flex: 1;
+}
+
+.hpv-count {
+	display: grid;
+	place-items: center;
+	min-width: 20px;
+	height: 20px;
+	padding: 0 6px;
+	border-radius: 999px;
+	background: var(--p-accent);
+	color: #0d0d0d;
+	font-size: 11px;
+	font-style: normal;
+	font-weight: 700;
+}
+
+.hpv-side__user {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 4px 10px;
+	align-items: center;
+	margin-top: auto;
+	padding: 12px;
+	border-radius: 12px;
+	background: rgba(255, 255, 255, .05);
+}
+
+.hpv-side__user span:nth-child(2) {
+	display: grid;
+	min-width: 0;
+	font-size: 13px;
+}
+
+.hpv-side__user small {
+	overflow: hidden;
+	color: rgba(255, 255, 255, .55);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.hpv-logout {
+	grid-column: 1 / -1;
+	color: rgba(255, 255, 255, .55) !important;
+	font-size: 12px;
+}
+
+.hpv-avatar {
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: 34px;
+	height: 34px;
+	border-radius: 50%;
+	background: var(--p-accent);
+	color: #0d0d0d;
+	font-size: 12px;
+	font-weight: 700;
+}
+
+/* ── Munkaterület ───────────────────────────────── */
+
+.hpv-main {
+	width: 100%;
+	max-width: 1180px;
+	padding: 36px clamp(16px, 4vw, 48px) 64px;
+}
+
+.hpv-head {
+	display: grid;
+	gap: 6px;
+	margin-bottom: 24px;
+}
+
+.hpv-head h1 {
+	font-size: clamp(26px, 3.2vw, 34px);
+}
+
+.hpv-back {
+	color: var(--p-muted) !important;
+	font-size: 14px;
+	text-decoration: none;
+}
+
+.hpv-panel {
+	margin-bottom: 16px;
+	padding: 22px;
+	border: 1px solid var(--p-line);
+	border-radius: 18px;
+	background: var(--p-card);
+}
+
+.hpv-panel h2 {
+	margin-bottom: 14px;
+	font-size: 17px;
+}
+
+.hpv-empty {
+	color: var(--p-muted);
+}
+
+.hpv-stats {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.hpv-stat {
+	display: grid;
+	gap: 6px;
+	padding: 18px 20px;
+	border: 1px solid var(--p-line);
+	border-radius: 18px;
+	background: var(--p-card);
+	text-decoration: none;
+	transition: border-color .15s, transform .15s;
+}
+
+.hpv-stat:hover {
+	border-color: #c9c9c1;
+	transform: translateY(-1px);
+}
+
+.hpv-stat span {
+	color: var(--p-muted);
+	font-size: 13px;
+}
+
+.hpv-stat strong {
+	font-size: 26px;
+	font-weight: 600;
+	letter-spacing: -.03em;
+}
+
+.hpv-columns {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 16px;
+	align-items: start;
+}
+
+.hpv-columns .hpv-panel {
+	margin-bottom: 0;
+}
+
+.hpv-columns + .hpv-panel {
+	margin-top: 16px;
+}
+
+.hpv-todo {
+	display: grid;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hpv-todo a {
+	display: grid;
+	gap: 2px;
+	padding: 12px 14px 12px 16px;
+	border-left: 3px solid var(--p-accent);
+	border-radius: 4px 12px 12px 4px;
+	background: var(--p-bg);
+	text-decoration: none;
+}
+
+.hpv-todo li.is-alert a {
+	border-left-color: #e5484d;
+	background: #fff4f3;
+}
+
+.hpv-todo span {
+	color: var(--p-muted);
+	font-size: 13px;
+}
+
+.hpv-feed {
+	display: grid;
+	gap: 0;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hpv-feed li {
+	display: flex;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 10px 0;
+	border-top: 1px solid var(--p-line);
+}
+
+.hpv-feed li:first-child {
+	border-top: 0;
+}
+
+.hpv-feed time {
+	flex: none;
+	color: var(--p-muted);
+	font-size: 13px;
+}
+
+.hpv-mini-project,
+.hpv-card-link {
+	display: grid;
+	gap: 8px;
+	padding: 14px 0;
+	border-top: 1px solid var(--p-line);
+	text-decoration: none;
+}
+
+.hpv-mini-project:first-of-type {
+	border-top: 0;
+	padding-top: 0;
+}
+
+.hpv-mini-project__top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.hpv-mini-project small,
+.hpv-card-link small {
+	color: var(--p-muted);
+}
+
+.hpv-bar {
+	display: block;
+	height: 6px;
+	overflow: hidden;
+	border-radius: 999px;
+	background: #ecebe6;
+}
+
+.hpv-bar span {
+	display: block;
+	height: 100%;
+	border-radius: inherit;
+	background: var(--p-ink);
+}
+
+.hpv-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	gap: 14px;
+}
+
+.hpv-cards .hpv-card-link {
+	padding: 20px;
+	border: 1px solid var(--p-line);
+	border-radius: 18px;
+	background: var(--p-card);
+	transition: border-color .15s, transform .15s;
+}
+
+.hpv-cards a.hpv-card-link:hover {
+	border-color: #c9c9c1;
+	transform: translateY(-1px);
+}
+
+.hpv-service__price {
+	font-size: 22px;
+	font-weight: 600;
+	letter-spacing: -.02em;
+}
+
+.hpv-service__price small {
+	color: var(--p-muted);
+	font-size: 14px;
+	font-weight: 400;
+}
+
+/* ── Státusz címkék ─────────────────────────────── */
+
+.hpv-pill {
+	display: inline-block;
+	flex: none;
+	padding: 3px 10px;
+	border-radius: 999px;
+	background: #efefea;
+	color: #444;
+	font-size: 12px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.hpv-pill--in_progress,
+.hpv-pill--sent,
+.hpv-pill--active {
+	background: #e5f0ff;
+	color: #1f4fbf;
+}
+
+.hpv-pill--review,
+.hpv-pill--client {
+	background: #fff3cf;
+	color: #7a5500;
+}
+
+.hpv-pill--completed,
+.hpv-pill--paid,
+.hpv-pill--signed,
+.hpv-pill--done {
+	background: #ecffd0;
+	color: var(--p-accent-ink);
+}
+
+.hpv-pill--overdue {
+	background: #ffe5e3;
+	color: #b3261e;
+}
+
+.hpv-pill--void,
+.hpv-pill--cancelled,
+.hpv-pill--on_hold,
+.hpv-pill--paused {
+	background: #efefea;
+	color: #777;
+}
+
+/* ── Projekt tábla ──────────────────────────────── */
+
+.hpv-project-meta {
+	display: grid;
+	grid-template-columns: repeat(3, auto) 1fr;
+	gap: 24px;
+	align-items: center;
+}
+
+.hpv-project-meta > div {
+	display: grid;
+	gap: 4px;
+}
+
+.hpv-project-meta span:first-child {
+	color: var(--p-muted);
+	font-size: 12px;
+}
+
+.hpv-project-meta__progress {
+	grid-template-columns: auto 1fr auto;
+	align-items: center;
+	column-gap: 10px;
+}
+
+.hpv-project-meta__progress > span:first-child {
+	grid-column: 1 / -1;
+}
+
+.hpv-board {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(220px, 1fr));
+	gap: 12px;
+	overflow-x: auto;
+	padding-bottom: 8px;
+}
+
+.hpv-board__col {
+	display: grid;
+	align-content: start;
+	gap: 8px;
+	min-height: 180px;
+	padding: 14px;
+	border-radius: 16px;
+	background: #ecebe6;
+}
+
+.hpv-board__col h2 {
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 4px;
+	font-size: 13px;
+	letter-spacing: 0;
+}
+
+.hpv-board__col h2 span {
+	color: var(--p-muted);
+}
+
+.hpv-board__col--client {
+	background: #fff3cf;
+}
+
+.hpv-board__col--done {
+	background: #eef8df;
+}
+
+.hpv-task {
+	display: grid;
+	gap: 4px;
+	padding: 12px;
+	border-radius: 12px;
+	background: #fff;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+}
+
+.hpv-task small {
+	color: var(--p-muted);
+}
+
+.hpv-board__empty {
+	margin: 0;
+	color: var(--p-muted);
+}
+
+/* ── Listák, dokumentumok ───────────────────────── */
+
+.hpv-table-wrap {
+	padding: 6px 0;
+	overflow-x: auto;
+}
+
+.hpv-list {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.hpv-list th,
+.hpv-list td {
+	padding: 12px 22px;
+	border-bottom: 1px solid var(--p-line);
+	text-align: left;
+	white-space: nowrap;
+}
+
+.hpv-list th {
+	color: var(--p-muted);
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.hpv-list tr:last-child td {
+	border-bottom: 0;
+}
+
+.hpv-num {
+	text-align: right !important;
+	font-variant-numeric: tabular-nums;
+}
+
+.hpv-doc-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.hpv-doc-actions > span {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.hpv-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 44px;
+	padding: 0 22px;
+	border: 1px solid var(--p-ink);
+	border-radius: 999px;
+	background: var(--p-ink);
+	color: #fff !important;
+	font: inherit;
+	font-weight: 600;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.hpv-btn:hover {
+	background: #262626;
+}
+
+.hpv-btn--ghost {
+	background: #fff;
+	color: var(--p-ink) !important;
+	border-color: var(--p-line);
+}
+
+.hpv-btn--ghost:hover {
+	background: #fafaf7;
+}
+
+.hpv-paper {
+	padding: clamp(24px, 5vw, 56px);
+	border: 1px solid var(--p-line);
+	border-radius: 18px;
+	background: #fff;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, .04);
+}
+
+.hpv-invoice__head {
+	display: flex;
+	justify-content: space-between;
+	gap: 24px;
+	padding-bottom: 28px;
+	border-bottom: 1px solid var(--p-line);
+	font-size: 13px;
+}
+
+.hpv-invoice__brand {
+	margin-bottom: 6px;
+	font-size: 22px;
+	font-weight: 700;
+	letter-spacing: -.02em;
+}
+
+.hpv-invoice__title {
+	display: grid;
+	gap: 6px;
+	justify-items: end;
+	text-align: right;
+}
+
+.hpv-invoice__title h1 {
+	font-size: 30px;
+}
+
+.hpv-invoice__meta {
+	display: grid;
+	grid-template-columns: 2fr 1fr 1fr 1fr;
+	gap: 20px;
+	padding: 24px 0;
+	font-size: 14px;
+}
+
+.hpv-invoice__meta > div {
+	display: grid;
+	align-content: start;
+	gap: 4px;
+}
+
+.hpv-invoice__meta span {
+	color: var(--p-muted);
+	font-size: 12px;
+}
+
+.hpv-invoice__items {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 14px;
+}
+
+.hpv-invoice__items th,
+.hpv-invoice__items td {
+	padding: 12px 8px;
+	border-bottom: 1px solid var(--p-line);
+	text-align: left;
+}
+
+.hpv-invoice__items th {
+	color: var(--p-muted);
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.hpv-invoice__items tfoot td {
+	border-bottom: 0;
+	padding-top: 10px;
+	padding-bottom: 4px;
+	text-align: right;
+}
+
+.hpv-invoice__total td {
+	padding-top: 14px !important;
+	font-size: 20px;
+	font-weight: 700;
+}
+
+.hpv-invoice__notes {
+	margin-top: 28px;
+	color: var(--p-muted);
+	font-size: 14px;
+}
+
+.hpv-contract h1 {
+	margin-bottom: 24px;
+	font-size: 28px;
+}
+
+.hpv-contract__body {
+	font-size: 15px;
+	line-height: 1.7;
+}
+
+.hpv-contract__body h2,
+.hpv-contract__body h3 {
+	margin: 24px 0 8px;
+}
+
+.hpv-signature {
+	margin-top: 40px;
+	padding-top: 24px;
+	border-top: 1px dashed #c9c9c1;
+}
+
+.hpv-signature__name {
+	font-family: "Brush Script MT", "Segoe Script", cursive;
+	font-size: 34px;
+	line-height: 1.2;
+}
+
+.hpv-signature__meta {
+	margin-top: 8px;
+	color: var(--p-muted);
+	font-size: 12px;
+	overflow-wrap: anywhere;
+}
+
+.hpv-sign {
+	display: grid;
+	gap: 14px;
+	margin-top: 16px;
+}
+
+.hpv-field {
+	display: grid;
+	gap: 6px;
+	color: var(--p-muted);
+	font-size: 13px;
+}
+
+.hpv-field input,
+.hpv-login input[type=text],
+.hpv-login input[type=password] {
+	width: 100%;
+	min-height: 46px;
+	padding: 0 14px;
+	border: 1px solid var(--p-line);
+	border-radius: 12px;
+	background: #fff;
+	color: var(--p-ink);
+	font: inherit;
+	font-size: 16px;
+}
+
+.hpv-field input:focus,
+.hpv-login input:focus {
+	border-color: #999;
+	outline: 3px solid rgba(184, 255, 52, .5);
+}
+
+.hpv-check {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+	font-size: 14px;
+}
+
+.hpv-check input {
+	width: 18px;
+	height: 18px;
+	margin-top: 2px;
+	accent-color: var(--p-ink);
+}
+
+.hpv-sign .hpv-btn {
+	justify-self: start;
+}
+
+.hpv-alert {
+	margin-bottom: 16px;
+	padding: 12px 16px;
+	border-radius: 12px;
+	background: #efefea;
+}
+
+.hpv-alert--ok {
+	background: #ecffd0;
+	color: #2d5c00;
+}
+
+.hpv-alert--error {
+	background: #ffe5e3;
+	color: #8c1d18;
+}
+
+.hpv-dl {
+	display: grid;
+	grid-template-columns: 140px 1fr;
+	gap: 10px 16px;
+	margin: 0 0 16px;
+}
+
+.hpv-dl dt {
+	color: var(--p-muted);
+}
+
+.hpv-dl dd {
+	margin: 0;
+}
+
+.hpv-panel h3 {
+	margin: 20px 0 10px;
+	font-size: 15px;
+}
+
+.hpv-people {
+	display: grid;
+	gap: 10px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hpv-people li {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.hpv-people small {
+	color: var(--p-muted);
+}
+
+/* ── Bejelentkezés ──────────────────────────────── */
+
+.hpv-login {
+	display: grid;
+	place-items: center;
+	min-height: 100vh;
+	padding: 24px 16px;
+	background: radial-gradient(circle at 20% 10%, rgba(184, 255, 52, .18), transparent 40%), var(--p-bg, #f6f6f3);
+}
+
+.hpv-login__card {
+	width: min(420px, 100%);
+	padding: 36px 32px;
+	border: 1px solid var(--p-line);
+	border-radius: 22px;
+	background: #fff;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, .06);
+}
+
+.hpv-login h1 {
+	margin: 0 0 6px;
+	font-size: 26px;
+	letter-spacing: -.02em;
+	text-align: center;
+}
+
+.hpv-login__card > .hpv-muted {
+	margin: 0 0 22px;
+	text-align: center;
+}
+
+.hpv-login form p {
+	display: grid;
+	gap: 6px;
+	margin: 0 0 14px;
+	color: var(--p-muted);
+	font-size: 13px;
+}
+
+.hpv-login .login-remember label {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.hpv-login input[type=submit] {
+	width: 100%;
+	min-height: 48px;
+	border: 0;
+	border-radius: 999px;
+	background: var(--p-ink);
+	color: #fff;
+	font: inherit;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.hpv-login input[type=submit]:hover {
+	background: #262626;
+}
+
+.hpv-login__links,
+.hpv-login__help {
+	margin: 8px 0 0;
+	color: var(--p-muted);
+	font-size: 13px;
+	text-align: center;
+}
+
+.hpv-client-picker {
+	display: grid;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hpv-client-picker a {
+	display: block;
+	padding: 10px 14px;
+	border: 1px solid var(--p-line);
+	border-radius: 12px;
+	text-decoration: none;
+}
+
+/* ── Mobil ──────────────────────────────────────── */
+
+@media (max-width: 900px) {
+	.hpv-portal {
+		grid-template-columns: 1fr;
+	}
+
+	.hpv-side {
+		position: sticky;
+		z-index: 20;
+		flex-direction: row;
+		align-items: center;
+		gap: 12px;
+		height: auto;
+		padding: 10px 12px;
+		overflow-x: auto;
+	}
+
+	.hpv-brand span,
+	.hpv-side__user span:nth-child(2),
+	.hpv-logout {
+		display: none;
+	}
+
+	.hpv-nav {
+		display: flex;
+		gap: 4px;
+	}
+
+	.hpv-nav a {
+		gap: 6px;
+		padding: 8px 10px;
+		white-space: nowrap;
+	}
+
+	.hpv-nav a span {
+		font-size: 13px;
+	}
+
+	.hpv-side__user {
+		display: none;
+	}
+
+	.hpv-main {
+		padding-top: 24px;
+	}
+
+	.hpv-stats {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.hpv-columns {
+		grid-template-columns: 1fr;
+	}
+
+	.hpv-project-meta {
+		grid-template-columns: repeat(3, auto);
+	}
+
+	.hpv-project-meta__progress {
+		grid-column: 1 / -1;
+	}
+
+	.hpv-invoice__head {
+		flex-direction: column;
+	}
+
+	.hpv-invoice__title {
+		justify-items: start;
+		text-align: left;
+	}
+
+	.hpv-invoice__meta {
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.hpv-invoice__meta > div:first-child {
+		grid-column: 1 / -1;
+	}
+
+	.hpv-dl {
+		grid-template-columns: 1fr;
+		gap: 2px;
+	}
+
+	.hpv-dl dd {
+		margin-bottom: 10px;
+	}
+}
+
+/* ── Nyomtatás / PDF: csak a dokumentum ─────────── */
+
+@media print {
+	.hpv-side,
+	.hpv-doc-actions,
+	.hpv-sign,
+	.hpv-alert,
+	.hpv-preview-bar {
+		display: none !important;
+	}
+
+	.hpv-portal,
+	.hpv-portal-body {
+		display: block;
+		background: #fff;
+	}
+
+	.hpv-main {
+		max-width: none;
+		padding: 0;
+	}
+
+	.hpv-paper {
+		border: 0;
+		box-shadow: none;
+		padding: 0;
+	}
+}
