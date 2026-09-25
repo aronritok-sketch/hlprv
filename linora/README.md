@@ -80,3 +80,5 @@ Az Ameliában szolgáltatásonként átírhatók, az újraimportálás nem írja
 - `assets/booking.js`, `assets/booking.css`: a konfigurátor (külső könyvtár nélkül).
 
 Teszt: `php tests/linora.php`
+
+Fejlesztői dokumentáció (működés, API, Amelia-integráció, bővítés): [DEVELOPER.md](DEVELOPER.md)
