@@ -6,6 +6,7 @@
 define( 'ABSPATH', __DIR__ );
 define( 'HOUR_IN_SECONDS', 3600 );
 define( 'DAY_IN_SECONDS', 86400 );
+define( 'MINUTE_IN_SECONDS', 60 );
 
 $GLOBALS['hpv_test_filters'] = array();
 $GLOBALS['hpv_test_options'] = array();
@@ -139,6 +140,44 @@ function get_permalink( $id ) {
 
 function get_the_title( $id = 0 ) {
 	return 'Page ' . $id;
+}
+
+function sanitize_email( $email ) {
+	return preg_replace( '/[^a-z0-9@._+-]/i', '', (string) $email );
+}
+
+function is_email( $email ) {
+	return (bool) filter_var( $email, FILTER_VALIDATE_EMAIL );
+}
+
+function is_admin() {
+	return false;
+}
+
+function wp_parse_url( $url, $component = -1 ) {
+	return parse_url( $url, $component );
+}
+
+function plugins_url( $path = '', $plugin = '' ) {
+	return 'https://helloprovision.com/wp-content/plugins/helloprovision-grader/' . $path;
+}
+
+function rest_url( $path = '' ) {
+	return 'https://helloprovision.com/wp-json/' . $path;
+}
+
+$GLOBALS['hpv_test_assets'] = array();
+
+function wp_enqueue_style( $handle, $src = '' ) {
+	$GLOBALS['hpv_test_assets'][] = $src;
+}
+
+function wp_enqueue_script( $handle, $src = '' ) {
+	$GLOBALS['hpv_test_assets'][] = $src;
+}
+
+function wp_add_inline_script( $handle, $data, $position = 'after' ) {
+	$GLOBALS['hpv_test_inline'] = $data;
 }
 
 class WP_Post {

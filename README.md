@@ -74,14 +74,70 @@ A Google-profil helyezésére az általatok befolyásolható tényezők közül 
 - **Az értékelésért ne adjatok semmit:** se kedvezményt, se ajándékot.
 - **A szöveget ne diktáljátok.** Azt kérhetitek, hogy írják le, mit csináltatok együtt.
 
+## `plugins/helloprovision-grader/` – SWFL Website & Local SEO Grader
+
+Ingyenes weboldal-elemző eszköz érdeklődőgyűjtéshez. A látogató beírja a weboldala címét, és kb. 30 másodperc alatt pontszámot kap öt területen:
+
+| Terület | Mit néz |
+|---|---|
+| **Speed** | Google PageSpeed Insights mobil mérés: pontszám, LCP, CLS, blokkolási idő, oldalméret, plusz a szerver válaszideje |
+| **Mobile experience** | viewport, tap-to-call link, reszponzív képek, oldal ikon |
+| **SEO basics** | title, meta description, H1 (a csonka, animált H1-et is kiszűri), indexelhetőség, HTTPS, canonical, alt szövegek, nyelv, megosztási előnézet, robots.txt, XML sitemap |
+| **Schema markup** | JSON-LD, üzlettípus, név/cím/telefon, nyitvatartás, sameAs, kiszolgált terület (a Yoast-féle `@id` hivatkozásokat is feloldja) |
+| **Local business info** | telefon és cím az oldalon, délnyugat-floridai város a címben/H1-ben, térkép, Google-értékelés link, egyezik-e a telefonszám a schemában és az oldalon, kapcsolat oldal |
+
+**Hogyan gyűjti az érdeklődőket:**
+- A pontszámok és a hibák listája azonnal, regisztráció nélkül látszik.
+- A javítási javaslatokból csak a legfontosabb látszik mintaként, a többi el van mosva. Ezeket név és e-mail cím megadása után kapja meg a látogató az oldalon, és e-mailben is (HTML riport, „Book a Consultation” gombbal).
+- Minden új érdeklődőről értesítő e-mail jön a súlyos hibák listájával, hogy a hívás előtt lássátok, mivel lehet megkeresni.
+- A javaslatok feloldás előtt a szerverről sem jönnek le, tehát a böngésző forráskódjából sem lehet kiolvasni őket.
+
+### Telepítés
+
+1. Bővítmények → Új hozzáadása → Bővítmény feltöltése: `helloprovision-grader.zip`, majd Bekapcsolás.
+2. **Google PageSpeed API kulcs** (ingyenes, kb. 5 perc; kulcs nélkül a Google gyakran elutasítja a mérést):
+   1. [console.cloud.google.com](https://console.cloud.google.com/) → új projekt (pl. „HelloProVision Grader”).
+   2. „APIs & Services” → „Library” → **PageSpeed Insights API** → Enable.
+   3. „APIs & Services” → „Credentials” → „Create credentials” → „API key”.
+   4. Biztonsághoz: a kulcsnál „API restrictions” → csak a PageSpeed Insights API.
+   5. Másold be: **Website Grader → Beállítások → Google PageSpeed API kulcs**.
+3. **Új oldal:** cím „Free Website & Local SEO Audit”, slug `website-grader`, a tartalma csak ennyi: `[hpv_grader]`.
+   - Ha a téma az oldal címét H1-ként kiírja, használd ezt: `[hpv_grader heading="h2"]`, hogy ne legyen két H1.
+   - A címsor és az alcím átírható: `[hpv_grader title="…" subtitle="…"]`.
+4. **Levélküldés:** a **WP Mail SMTP** bővítmény legyen beállítva (ugyanaz, mint az értékelés-kérőnél).
+5. **Adatvédelmi tájékoztató:** egészítsétek ki egy bekezdéssel. Az eszköz a megadott nevet, e-mail címet, cégnevet, weboldal-címet és az elemzés eredményét tárolja, hogy elküldje a riportot, és kapcsolatba lépjen az érdeklődővel.
+6. Próbáljátok ki néhány ismert oldallal, a sajátotokkal is.
+
+### Beállítások (Website Grader → Beállítások)
+
+- **Értesítési e-mail:** ide jönnek az új érdeklődők.
+- **Konzultáció gomb:** a riport és az e-mail alján lévő gomb szövege és linkje.
+- **Korlát:** ennyi elemzés futhat óránként egy látogatótól (alapból 10). Ugyanazt az oldalt egy órán belül nem méri újra, hanem a már kész eredményt adja vissza.
+- **Megjelenés:** sötét vagy világos háttér. Alapból a téma `btn-pill` gombjait használja. Ha azok nem jól néznek ki az oldalon, kapcsold ki, és saját lime gombot kapnak.
+
+Az érdeklődők a **Website Grader → Érdeklődők** menüben vannak: teljes riport, CSV export, törlés.
+
+### Terjesztés (erre jönnek majd a linkek)
+
+- **Partner link:** `helloprovision.com/website-grader/?site=cegneve.com` előre kitölti a mezőt. Jól használható kamarai hírlevélben, partnereknek küldött e-mailben, vagy LinkedIn-üzenetben egy konkrét cégnek.
+- Ajánljátok fel a Greater Fort Myers és a Cape Coral kamaráknak, üzleti blogoknak és BNI-csoportoknak „ingyenes eszköz a tagoknak” formában.
+- Az oldal `WebApplication` schemát kap, ingyenes eszközként.
+
+### Tudnivalók
+
+- Egyes oldalak (Cloudflare és egyéb biztonsági szolgáltatások) blokkolják az elemzőt. Ilyenkor a látogató üzenetet kap, hogy vegye fel veletek a kapcsolatot.
+- A Google sebességmérése futásonként néhány pontot ingadozhat. Ez normális, az eszköz GYIK része is elmondja.
+- Ha a szerver Cloudflare vagy más proxy mögött van, a látogatónkénti korlát a proxy IP-címét látja. Ilyenkor a `hpv_grader_client_ip` filterrel állítható be a valódi IP.
+
 ## Tesztek
 
 ```
 php tests/seo.php
 php tests/reviews.php
+php tests/grader.php
 ```
 
-WordPress nélkül futnak. Az SEO teszt az élő főoldal valódi schemáját használja (`tests/fixtures/home-schema.json`).
+WordPress nélkül futnak. Az SEO teszt az élő főoldal valódi schemáját, a grader teszt a főoldal megtisztított HTML-jét használja (`tests/fixtures/`).
 
 ## Amit a plugin nem tud javítani (admin felületen kell)
 

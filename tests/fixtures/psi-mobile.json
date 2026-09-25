@@ -1,0 +1,25 @@
+{
+  "id": "https://helloprovision.com/",
+  "loadingExperience": {
+    "metrics": {
+      "LARGEST_CONTENTFUL_PAINT_MS": { "percentile": 3100, "category": "AVERAGE" },
+      "INTERACTION_TO_NEXT_PAINT": { "percentile": 240, "category": "AVERAGE" },
+      "CUMULATIVE_LAYOUT_SHIFT_SCORE": { "percentile": 4, "category": "FAST" }
+    },
+    "overall_category": "AVERAGE"
+  },
+  "lighthouseResult": {
+    "requestedUrl": "https://helloprovision.com/",
+    "finalUrl": "https://helloprovision.com/",
+    "lighthouseVersion": "12.8.0",
+    "categories": {
+      "performance": { "id": "performance", "title": "Performance", "score": 0.47 }
+    },
+    "audits": {
+      "largest-contentful-paint": { "id": "largest-contentful-paint", "score": 0.21, "numericValue": 4630.5, "displayValue": "4.6 s" },
+      "cumulative-layout-shift": { "id": "cumulative-layout-shift", "score": 1, "numericValue": 0.018, "displayValue": "0.018" },
+      "total-blocking-time": { "id": "total-blocking-time", "score": 0.38, "numericValue": 742, "displayValue": "740 ms" },
+      "total-byte-weight": { "id": "total-byte-weight", "score": 0.5, "numericValue": 3462000, "displayValue": "Total size was 3,381 KiB" }
+    }
+  }
+}
