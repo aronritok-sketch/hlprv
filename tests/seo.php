@@ -1,59 +1,12 @@
 <?php
 /**
- * WordPress nélkül futtatható teszt: php tests/run.php
+ * WordPress nélkül futtatható teszt: php tests/seo.php
  *
  * A fixtures/home-schema.json az élő főoldal Yoast schemája (2026-09), ezen ellenőrizzük a javításokat.
  */
 
-define( 'ABSPATH', __DIR__ );
-
-// Minimális WordPress filter-rendszer a teszthez.
-$GLOBALS['hpv_test_filters'] = array();
-
-function add_filter( $hook, $callback, $priority = 10, $args = 1 ) {
-	$GLOBALS['hpv_test_filters'][ $hook ][] = $callback;
-}
-
-function remove_all_filters( $hook ) {
-	unset( $GLOBALS['hpv_test_filters'][ $hook ] );
-}
-
-function apply_filters( $hook, $value, ...$args ) {
-	foreach ( $GLOBALS['hpv_test_filters'][ $hook ] ?? array() as $callback ) {
-		$value = $callback( $value, ...$args );
-	}
-	return $value;
-}
-
-function home_url( $path = '' ) {
-	return 'https://helloprovision.com' . $path;
-}
-
-function untrailingslashit( $value ) {
-	return rtrim( $value, '/\\' );
-}
-
-class WP_Post {
-	public $post_title = '';
-}
-
-$GLOBALS['hpv_test_queried'] = null;
-
-function get_queried_object() {
-	return $GLOBALS['hpv_test_queried'];
-}
-
+require __DIR__ . '/bootstrap.php';
 require dirname( __DIR__ ) . '/mu-plugins/helloprovision-seo.php';
-
-$failures = 0;
-
-function check( $label, $condition ) {
-	global $failures;
-	echo ( $condition ? '  ok   ' : '  FAIL ' ) . $label . "\n";
-	if ( ! $condition ) {
-		$failures++;
-	}
-}
 
 function find_node( array $graph, string $type ) {
 	foreach ( $graph as $node ) {
@@ -151,5 +104,4 @@ $links = array(
 check( 'első elem Home', 'Home' === hpv_seo_fix_breadcrumb_links( $links )[0]['text'] );
 check( 'ha nincs főoldal morzsa, nem nyúl hozzá', 'SEO' === hpv_seo_fix_breadcrumb_links( array( $links[1] ) )[0]['text'] );
 
-echo $failures ? "\n$failures hiba\n" : "\nMinden teszt sikeres\n";
-exit( $failures ? 1 : 0 );
+finish();

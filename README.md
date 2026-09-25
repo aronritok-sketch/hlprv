@@ -33,13 +33,47 @@ Must-use plugin, ami a Yoast SEO és a Yoast Local SEO által generált schema a
 
 A beállításokat a fájl módosítása nélkül is felül lehet írni, egy másik fájlból a `hpv_seo_config` filterrel.
 
-### Teszt
+
+## `plugins/helloprovision-reviews/` – Google értékelés-kérő rendszer
+
+A Google-profil helyezésére az általatok befolyásolható tényezők közül az értékelések rendszeres érkezése hat a legjobban. Ez a bővítmény ezt automatizálja.
+
+- **Rövid link:** a `helloprovision.com/review/` cím egyenesen a Google értékelő ablakára visz. Névjegyre, számlára, e-mail aláírásba is jó.
+- **QR-kód:** az admin felületen PNG-ként letölthető, pl. irodai matricára vagy prezentáció utolsó diájára.
+- **E-mailes kérés:** az admin felületen megadod az ügyfél nevét és e-mail címét, és az ügyfél egy személyre szabott, angol nyelvű levelet kap.
+- **Egy emlékeztető:** ha az ügyfél 6 nap alatt nem nyitja meg a linket, egyszer automatikusan emlékeztetőt kap. Többször nem.
+- **Követés:** látod, ki nyitotta meg a linket, és hányan kattintottak a rövid linkre vagy a QR-kódra. A levelezőrendszerek biztonsági szkennereit nem számolja.
+- **Duplikáció-védelem:** ugyanarra a címre 90 napon belül nem megy ki két kérés.
+- **Shortcode-ok:**
+  - `[hpv_map]`: beágyazott Google-térkép a Kapcsolat oldalra;
+  - `[hpv_google_profile]`: „Find us on Google” link;
+  - `[hpv_review_link]`: értékelés gomb, pl. a köszönőoldalra.
+- **Kapcsolat az SEO bővítménnyel:** a profil linkje automatikusan bekerül a schema `sameAs` listájába.
+
+### Telepítés
+
+1. Bővítmények → Új hozzáadása → Bővítmény feltöltése: `helloprovision-reviews.zip`, majd Bekapcsolás.
+2. **Google értékelések → Beállítások**:
+   - **Google értékelő link:** Google Business Profile → „Értékelések kérése” → link másolása.
+   - **Profil linkje:** Google Maps → a profil → Megosztás.
+   - **Térkép beágyazás:** Google Maps → Megosztás → Térkép beágyazása. A teljes `<iframe>` kód bemásolható.
+3. **Levélküldés:** a WordPress alap levélküldése gyakran a spam mappában köt ki. Telepítsétek a **WP Mail SMTP** bővítményt, és kössétek be a céges levelezést (Google Workspace vagy Microsoft 365).
+4. **Próba:** küldjetek egy kérést a saját címetekre, és nézzétek meg a levelet meg a linket.
+
+### Szabályok, amiket a bővítmény betart, és nektek is be kell tartanotok
+
+- **Mindenkitől kérjetek értékelést,** ne csak az elégedett ügyfelektől. A Google tiltja, hogy csak a pozitívnak ígérkező ügyfeleknek küldjétek ki a kérést (review gating). Ezért nincs a bővítményben „elégedett volt?” szűrő.
+- **Az értékelésért ne adjatok semmit:** se kedvezményt, se ajándékot.
+- **A szöveget ne diktáljátok.** Azt kérhetitek, hogy írják le, mit csináltatok együtt.
+
+## Tesztek
 
 ```
-php tests/run.php
+php tests/seo.php
+php tests/reviews.php
 ```
 
-WordPress nélkül fut, az élő főoldal valódi schemáján (`tests/fixtures/home-schema.json`).
+WordPress nélkül futnak. Az SEO teszt az élő főoldal valódi schemáját használja (`tests/fixtures/home-schema.json`).
 
 ## Amit a plugin nem tud javítani (admin felületen kell)
 
