@@ -1,17 +1,19 @@
 ---
 name: iu-theme
-description: Az Infinite Unity (iu_theme) egyedi WordPress blokk-keretrendszer szabályai és teljes blokk-referenciája. Használd MINDEN WordPress weboldal építésénél és módosításánál — oldal, szekció vagy sablon összerakása, blokk-markup (<!-- wp:iu/... -->) írása, child téma testreszabása (variables.css, templates/*.html), űrlap, csúszka, menü, lista (query) készítése, új iu/ blokk fejlesztése —, és mindig, ha iu_theme, iu/section, iu/row, iu_template vagy iu_pattern szóba kerül. Triggers: WordPress site, WP theme, Gutenberg block markup, page template, child theme.
+description: Az Infinite Unity (iu_theme) egyedi WordPress blokk-keretrendszer és a hozzá tartozó iu_* mu-pluginek (iu_woocommerce, iu_custom_blocks, iu_settings) szabályai, blokk-referenciája és bevált munkafolyamata. Használd MINDEN WordPress weboldal vagy WooCommerce webshop építésénél és módosításánál — oldal, szekció vagy sablon összerakása, blokk-markup (<!-- wp:iu/... -->) írása, child téma testreszabása, termékoldal, kategória, kosár, pénztár, űrlap, csúszka, menü, lista készítése, új blokk fejlesztése (iucb_add_block) —, és mindig, ha iu_theme, iu/section, iu/row, iu_template, iu_pattern vagy iu-woocommerce szóba kerül. Triggers: WordPress site, WooCommerce shop, WP theme, Gutenberg block markup, page template, child theme.
 ---
 
 # Infinite Unity (iu_theme): WordPress fejlesztési szabályok
 
-A csapat minden WordPress weboldalt az `iu_theme` keretrendszerre épít. Ez nem Full Site Editing téma: saját sablonmotorja (`iu_template` CPT és HTML fájlok), saját `iu/` blokkjai és saját minta-rendszere (`iu_pattern`) van, a gyári blokkok nagy része le van tiltva.
+A csapat minden WordPress weboldalt az `iu_theme` keretrendszerre épít. Ez nem Full Site Editing téma: saját sablonmotorja (`iu_template` CPT és HTML fájlok), saját `iu/` blokkjai, saját minta-rendszere (`iu_pattern`) és a `mu-plugins/iu_*` kiegészítői vannak. A gyári blokkok nagy része le van tiltva.
 
-**Teljes referencia:** `references/iu_theme_documentation.md`. Mielőtt egy blokkot használsz, attribútumot írsz vagy a téma PHP-jához nyúlsz, olvasd el a releváns fejezetet (a fejezetek listája a fájl végén). Az attribútumneveket és -értékeket ne találgasd.
+**Teljes referencia:** `references/iu_theme_documentation.md`. Mielőtt egy blokkot használsz, attribútumot írsz vagy a téma PHP-jához nyúlsz, olvasd el a releváns fejezetet (lista a fájl végén). A doksi nem minden verzióval egyezik: kétség esetén a projektben lévő `block.json` / `block.js` / `render.php` a mérvadó.
+
+**Mintaprojekt:** a `vasskisgep` repó (WooCommerce webshop) a lent leírt munkafolyamat teljes, működő példája: child téma blokkokkal, sablonfájlokkal, telepítő lépésekkel és a `dev/` ellenőrző eszközökkel.
 
 ## Alapszabályok
 
-1. **Csak `iu/` blokkok és a hat engedélyezett core blokk** (`core/paragraph`, `core/heading`, `core/list`, `core/list-item`, `core/html`, `core/shortcode`). Minden más core blokk tiltva van, tehát a markupban se szerepeljen:
+1. **Csak `iu/` (és `iu-woocommerce/`) blokkok, plusz a hat engedélyezett core blokk** (`core/paragraph`, `core/heading`, `core/list`, `core/list-item`, `core/html`, `core/shortcode`). Minden más core blokk tiltva van:
 
    | Helyett (tiltott) | Használd |
    |---|---|
@@ -26,105 +28,120 @@ A csapat minden WordPress weboldalt az `iu_theme` keretrendszerre épít. Ez nem
    | `core/query`, `core/latest-posts` | `iu/query` |
    | `core/post-title` | `iu/title` |
    | `core/post-featured-image` | `iu/featured-image` |
-   | `core/search` | `iu/search` |
+   | `core/search` | `iu/search` (bejegyzések), `iu-woocommerce/search` (termékek) |
    | `core/details` | `iu/accordion` > `iu/accordion-item` |
-   | `core/spacer`, `core/separator` | a blokk spacing attribútumai (`marginTop`, `paddingBottom` …) |
-   | `core/block` (reusable), `core/pattern` | `iu/pattern` (`iu_pattern` CPT) |
+   | `core/spacer`, `core/separator` | a blokk spacing attribútumai |
+   | `core/block`, `core/pattern` | `iu/pattern` (`iu_pattern` CPT) |
    | `core/template-part` | `iu_template` / `templates/*.html` |
+   | WooCommerce blokkok (`woocommerce/*`) | `iu-woocommerce/*` blokkok (a WC blokkjait az iu_woocommerce kikapcsolja) |
 
-2. **Nincs page builder és nincs űrlap- vagy slider-plugin.** Elementor, Divi, CF7, Gravity Forms, WPForms, Revolution Slider és társaik helyett `iu/form` és az `iu/*slider*` blokkok kellenek.
-3. **A szülő `iu_theme`-hez nem nyúlunk, ha csak egy projektről van szó.** Minden projekt-specifikus eltérés a child témába (`child/`) kerül: sablonok, stílus, változók, blokk-felülírás. A szülő módosítása keretrendszer-fejlesztés, ami minden weboldalra hat, ezért csak akkor, ha kifejezetten ez a feladat.
-4. **A design CSS változókkal és a `theme.json` palettával állítható.** A `variables.css` értékeit a child téma stíluslapjában, `:root { … }` alatt írd felül. A Gutenberg vizuális beállításai (színválasztó, tipográfia, szegély) szándékosan ki vannak kapcsolva, ne kapcsold vissza őket. Térköz, háttér és link a `supports.iu` paneleken át állítható.
+2. **Nincs page builder, űrlap-, slider- vagy wishlist-plugin.** Hiányzó funkciót saját blokkal (`iucb_add_block`) és a child téma PHP-jával kell megoldani.
+3. **A keretrendszerhez (`themes/iu_theme`, `mu-plugins/iu_*`) nem nyúlunk egy projekt kedvéért.** Minden projekt-specifikus kód a child témába kerül. A child téma külön WordPress téma (`style.css`: `Template: iu_theme`), pl. `themes/vasskisgep`. Keretrendszer-hibát a child témában kerülünk meg (hook, szűrő), és a projekt README-jében dokumentáljuk.
+4. **A design CSS változókkal és a `theme.json` palettával állítható.** A változókat a child téma `vars.css`/`style.css` fájljában, `:root { … }` alatt írd felül. A Gutenberg vizuális beállításai szándékosan ki vannak kapcsolva.
 5. **Ne kapcsold vissza, amit a `clean.php` letilt:** hozzászólások, emoji, RSS, oEmbed, fájlszerkesztő.
-6. **Nincs beégetett évszám és site URL.** Helyettük `[iu_year]` és `[iu_site_url]`.
-7. **Az alapértelmezett felületi szövegek magyarok** (`Keresés...`, `Összes`, `Előző`, `Következő`). Más nyelvű weboldalnál ezeket az attribútumokban mindig állítsd át.
+6. **Nincs beégetett évszám és site URL a sablonfájlokban:** `[iu_year]`, `[iu_site_url]` (a `[iu_site_url]` záró perjellel tér vissza, és HTML attribútumban is működik, pl. `href="[iu_site_url]kapcsolat/"`).
+7. **Az alapértelmezett felületi szövegek magyarok.** Más nyelvű weboldalnál az attribútumokban mindig állítsd át őket.
 
 ## Oldalszerkezet: kötelező hierarchia
 
 ```
 iu/section          legfelső szint; csak iu/row lehet benne
 └─ iu/row           columns="1-2|1-2" stb.; csak iu/column lehet benne
-   └─ iu/column     width = a row columns-ából, automatikusan
-      └─ tartalom   core/heading, core/paragraph, core/list, iu/image, iu/group,
-                    iu/button-group, iu/card, iu/accordion, iu/form, iu/query …
+   └─ iu/column     width = a row columns-ából
+      └─ tartalom   core/heading, core/paragraph, iu/image, iu/group, iu/button-group, iu/card, iu/form, iu/query …
 ```
 
-- Tartalmi blokk soha nem kerülhet közvetlenül `iu/section`-be vagy `iu/row`-ba. Egyoszlopos tartalomhoz is kell egy `row` (`"1-1"`) és egy `column`.
-- Oszlopszerkezetek: `1-1`, `1-2|1-2`, `1-3|1-3|1-3`, `2-3|1-3`, `1-3|2-3`, `3-4|1-4`, `1-4|3-4`, `1-4|1-4|1-4|1-4`. Más arány nincs, ne találj ki újat.
-- Oszlopon belül egymás mellé rendezéshez `iu/group` kell (`direction`, `horizontal`, `vertical`, `equal`).
-- Sötét hátterű szekcióban: `bgColor` vagy `bgImage`, és mellé `"lightText": true`.
-- Teljes szélesség: `"fullWidth": true`. A tartalom szélessége a `--iu-row-width` változó.
-- Térközt a spacing attribútumokkal adj meg, ne üres bekezdéssel. Egy oldalon egy `h1` legyen.
+- Tartalmi blokk soha nem kerülhet közvetlenül `iu/section`-be vagy `iu/row`-ba. Egyoszlopos tartalomhoz is kell egy `row` és egy `column`.
+- Oszlopszerkezetek: `1-1`, `1-2|1-2`, `1-3|1-3|1-3`, `2-3|1-3`, `1-3|2-3`, `3-4|1-4`, `1-4|3-4`, `1-4|1-4|1-4|1-4`.
+- Oszlopon belüli elrendezés: `iu/group` (`direction`, `horizontal`, `vertical`, `equal`).
+- Sötét hátterű szekció: `bgColor` + `"lightText": true`. **A `bgColor` a paletta slugja** (pl. `"dark"`, `"light"`, `"primary"`), nem hex kód.
+- Egy oldalon egy `h1` legyen.
 
 ## Sablonrendszer
 
-- Három zóna van: `header`, `content`, `footer`. A téma ebben a sorrendben keres sablont:
+- Három zóna: `header`, `content`, `footer`. Feloldási sorrend típusonként (`single_product`, `tax_product_cat`, …, végül `global`):
   1. admin `iu_template` bejegyzés (Megjelenés → Template-ek) a pontos type/position párra
-  2. `child/templates/{type}_{position}.html`
+  2. **child téma:** `{child}/templates/{type}_{position}.html` (`get_stylesheet_directory()`)
   3. `iu_theme/templates/{type}_{position}.html`
-  4. ugyanez a lánc `global` típussal
-- Típusok: `front_page` (utána `single_page`), `blog_page`, `404`, `search`, `single_{post_type}`, `archive_{post_type}`, `tax_category`, `tax_post_tag`, `tax_{taxonomy}`. Fájlnév-példák: `single_post_content.html`, `front_page_header.html`, `archive_product_content.html`.
-- **Dupla H1:** a `global_content.html` egy `iu/title` (h1) blokkot tesz a tartalom elé. Ha az oldalak saját hero szekcióval és saját H1-gyel készülnek, hozd létre a `child/templates/single_page_content.html` fájlt, benne csak ezzel a sorral: `<!-- wp:iu/content /-->`.
-- Sablont inkább fájlként írj a `child/templates/`-be, mert így verziókövetés alatt van. Az admin sablon a fájlt felülírja: ha egy fájl-módosítás nem látszik, először azt nézd meg, van-e admin sablon ugyanarra a type/position párra.
-- Az `iu/content` a bejegyzés tartalmának helyőrzője. Az `iu/template` rendszerblokk: kézzel ne tedd be és ne töröld.
+- Típusok: `front_page` (utána `single_page`), `blog_page`, `404`, `search`, `single_{post_type}`, `archive_{post_type}`, `tax_category`, `tax_post_tag`, `tax_{taxonomy}`.
+- Új sablon lehetőleg **fájl a child téma `templates/` mappájában**, mert verziókövetett, és nem kell hozzá adatbázis-módosítás. Az admin sablon felülírja a fájlt: ha egy fájl-módosítás nem látszik, először az admin sablonokat nézd meg.
+- A sablon nem futtatja a WP loopot. Ami a `global $post`/`$product`-ra támaszkodik, annak neked kell beállítanod (pl. `wp` hookon: `$GLOBALS['product'] = wc_get_product(get_queried_object_id())` a termékoldalon).
+- **Dupla H1:** a `global_content.html` egy `iu/title` (h1) blokkot tesz a tartalom elé. Saját hero/H1 esetén `{child}/templates/single_page_content.html`, benne `<!-- wp:iu/content /-->`.
 
 ## Blokk-markup írása
 
-- Gutenberg komment-szintaxis, az attribútumok JSON-ben. Csak az alapértéktől eltérő attribútumokat írd ki.
-- **Dinamikus (render.php-s) blokkok önzáróak:** `iu/title`, `iu/content`, `iu/featured-image`, `iu/video`, `iu/menu`, `iu/breadcrumbs`, `iu/post-navigation`, `iu/search`, `iu/query`, `iu/terms`, `iu/term-cloud`, `iu/pattern`. Példa:
-  `<!-- wp:iu/title {"heading":"h1","align":"center"} /-->`
-- **Statikus blokkoknál** (section, row, column, group, button, card, image stb.) a komment közötti HTML-nek pontosan meg kell egyeznie a blokk `block.js`-ében lévő `save()` kimenetével. Ha nem egyezik, a szerkesztő „váratlan tartalom” hibát jelez. Mielőtt ilyen markupot generálsz, nézd meg a `save()` függvényt vagy egy meglévő példát. A `iu_theme/templates/global_header.html` pont Section > Row > Column > Group szerkezetű, ebből érdemes kiindulni. Ha egyik sem érhető el, szólj, hogy a markupot érdemes a szerkesztő kódnézetéből kimásolni.
-- A core blokkoknál a WordPress szabványos mentett HTML-jét használd (pl. `<h2 class="wp-block-heading">…</h2>`). A `wp-block-heading` és `wp-block-list` osztályokat a téma renderkor eltávolítja.
-- A `params` attribútumok (sliderek, `iu/query`, `iu/post-navigation`) **kapcsos zárójel nélküli JSON-t** tartalmaznak stringként, tehát a komment-JSON-ben escapelni kell:
-  `<!-- wp:iu/image-carousel {"params":"\"slidesToShow\": 4, \"slidesToScroll\": 1, \"infinite\": true"} /-->`
-- A komment-JSON-ben a `<`, `>` és `&` karaktert `<`, `>`, `&` alakban írd (így szerializál a WordPress is), `--` pedig ne legyen benne. Ez főleg az `iu/query` `template` HTML-jénél számít.
-- A reszponzív láthatóság a `className` attribútumban adható meg: `d-none m-block` (csak mobilon látszik), `m-none` (mobilon rejtett). A töréspont 992px, ezért a child CSS-ben is ugyanezt használd: `@media (max-width: 991px)`.
+- Gutenberg komment-szintaxis, az attribútumok JSON-ben.
+- **Statikus blokkoknál** (section, row, column, group, button, card, image, icon-text, form mezők …) a komment közti HTML-nek pontosan egyeznie kell a `block.js` `save()` kimenetével, különben a szerkesztő „váratlan tartalom” hibát ad. A link (`linkUrl`) is a mentett HTML-ben van (`href`), nem elég az attribútumot átírni.
+- **`iu_style`:** a spacing/background támogatású blokkok számított CSS-e (pl. `"iu_style":"padding-top:3rem"`). A frontend ebből dolgozik; ha csak a `paddingTop` attribútumot írod, nem lesz térköz.
+- **Ne írj kézzel végleges markupot.** Bevált munkafolyamat (a `vasskisgep/dev/` eszközei):
+  1. Generátor (Python) írja a vázlatot: pontos attribútumok, egyszerűsített HTML.
+  2. A vázlat egy piszkozat `iu_template` bejegyzésbe kerül, a Playwright megnyitja a valódi blokkszerkesztőben, a hibás blokkokat `wp.blocks.createBlock(név, attribútumok, belső blokkok)`-kal újraépíti, kivárja az `iu_style` számítását, elmenti.
+  3. A mentett, kanonikus markup visszaíródik a fájlba. Második futásra minden blokknak hibátlannak kell lennie.
+- A tartalom mentésekor WP-CLI alól (nincs bejelentkezett felhasználó) a kses és a WP 7 `wp_strip_custom_css_from_blocks` szűrő elrontja a blokk-JSON-t. Mentés előtt: `wp_set_current_user(<admin>)`, `kses_remove_filters()`.
+- Komment-JSON-ben: `<` → `<`, `>` → `>`, `&` → `&`, `"` (stringben) → `"`, `--` → `--`.
+- Dinamikus (render.php-s) blokkok önzáróak: `iu/title`, `iu/content`, `iu/featured-image`, `iu/menu`, `iu/breadcrumbs`, `iu/query`, `iu/terms`, `iu/pattern`, minden `iu-woocommerce/*` és `iucb_add_block`-kal regisztrált blokk.
+- A `params` attribútumok kapcsos zárójel nélküli JSON-t tartalmaznak stringként.
+- Reszponzív láthatóság: `className`-ben `d-none m-block` / `m-none`; töréspont 992px (`@media (max-width: 991.8px)`).
+
+## Saját blokk a child témában: `iucb_add_block`
+
+Az `iu_custom_blocks` mu-plugin szerveroldali blokkot regisztrál JS build nélkül. A child téma `inc/blocks/{név}/block.php` fájljaiban (az `init` hookon betöltve):
+
+```php
+iucb_add_block('projekt/blokk-nev', [
+    'title' => 'Blokk neve',
+    'category' => 'widgets',            // vagy 'iu-woocommerce'
+    'attributes' => [ 'limit' => [ 'type' => 'string', 'default' => '8' ] ],
+    'fields' => [ [ 'panel' => 'Beállítások', 'fields' => [
+        'limit' => [ 'type' => 'text', 'label' => 'Darabszám' ],   // text, textarea, toggle, select (options), image
+    ] ] ],
+    'editJS' => 'return "Blokk neve";',  // szerkesztőbeli előnézet (különben ServerSideRender)
+    'template' => function($attributes, $children){ return '<div>…</div>'; },
+    'style' => [ 'handle' ], 'view_script' => 'handle',
+]);
+```
+
+- Belső blokkos konténer: `editJS` → `InnerBlocks`, `saveJS` → `InnerBlocks.Content`; a `template` második paramétere a renderelt gyerekek tömbje.
+- A kimenet `do_shortcode`-on megy át. Mindig escapelj (`esc_html`, `esc_url`, `esc_attr`).
+
+## WooCommerce (`iu_woocommerce` mu-plugin)
+
+- **Terméklista:** oldal `[products … class="mainquery"]` shortcode-dal és `iu-woocommerce/filter` blokkal; a kártya kinézetét a „Loop Product” nevű `iu_pattern` adja (`loop-product-title`, `-image`, `-pirce` [sic], `-button`, `product-badges`, `product-brand`, `product-attributes`, `stock`, `short-description`).
+- **Termékoldal:** `single_product_content.html` sablon a blokkokból: `images`, `price`, `add-to-cart`, `short-description`, `stock`, `product-brand`, `product-badges`, `product-attributes`, `iu/title`, `iu/breadcrumbs`, `iu/content` (leírás).
+- **Fejléc:** `search`, `mini-cart`, `account-menu`; karusszel: `product-carousel` (a legújabb 12 termék; válogatáshoz saját blokk kell).
+- A kosár, pénztár és fiók oldal shortcode-os; a sablonfelülírások az `iu_woocommerce/inc/templates/` mappában vannak. **Klasszikus pénztár:** a csak blokkos pénztárral működő funkciók (pl. „Pickup location” szállítás) nem jelennek meg. Helyettük `local_pickup` kell.
+- Árak: magyar B2C-nél bruttó ár (`woocommerce_prices_include_tax = yes`) és 27% ÁFA-kulcs kell.
 
 ## Űrlapok (`iu/form`)
 
-- A `formId` egyedi, stabil, kebab-case azonosító (pl. `ajanlatkeres`), mert a hookok erre épülnek: `iu_form_submit_{formId}` és `iu_form_ac_data_{formId}`. Élesítés után ne nevezd át.
-- A mezők `name` értéke űrlapon belül egyedi. Az ActiveCampaign mezőnév is ez lesz.
-- `validate` formátuma: soronként egy `szabály|hibaüzenet`, a támogatott szabályok `required` és `email`. Példa: `"required|Kötelező mező\nemail|Érvénytelen e-mail cím"`.
-- Minden űrlapra kell egy `iu/form-accept` adatvédelmi checkbox (GDPR), linkkel az adatkezelési tájékoztatóra.
-- Töltsd ki az `email`, `subject`, `from` és `success` attribútumot. A `from` a weboldal saját domainjén legyen, különben romlik a kézbesíthetőség. SMTP-t kell beállítani.
-- A backend az űrlapot a header, content és footer sablonokban keresi. Ha `iu/pattern`-be vagy `iu/modal`-ba kerül, mindenképp teszteld a beküldést.
-- Az `ac_key` a bejegyzés tartalmában tárolódik, tehát minden szerkesztő látja. Csak akkor add meg, ha ez elfogadható. A hook-függvények pontos paramétereit az `inc/forms.php`-ból nézd meg.
-- Többlépcsős űrlaphoz: `iu/form-steps` + `iu/form-step`.
+- **Keretrendszer-hiba:** az `iu/form` e-mailje csak a `message` attribútum fix szövegét küldi, a kitöltött mezőket nem, és a `From` fejléc sosem áll be. Megoldás: az `email` attribútum maradjon üres, és az `iu_form_submit_{formId}` szűrőben küldd el a mezőket (`$form['innerBlocks']`-ből a címkékkel), válaszcímnek a kitöltő e-mailjével. Hiba esetén a válasz `['errors' => [], 'error' => '…']` legyen (az `errors` kulcs kötelező, különben a JS elszáll).
+- A kötelező `iu/form-accept` checkboxot a szerver nem ellenőrzi; a szűrőben kell.
+- A backend az űrlapot a header, content és footer sablonban, illetve az oldal tartalmában keresi.
+- A `formId` stabil, kebab-case; `validate`: soronként `szabály|hibaüzenet` (`required`, `email`).
 
-## Csúszkák és listák
+## Telepítés: adatbázis-változások kódként
 
-- A csúszkák Slick Slidert használnak, a `params` Slick-opciókat vár.
-- A `_content-slider` mappa `_` prefixe miatt **az `iu/content-slider` nincs regisztrálva**. Helyette `iu/slider` > `iu/slide` kell, hacsak nem kapcsolod be kifejezetten.
-- Az `iu/logo-slider` mappája elgépelve `logo-sider`. Ne javítsd ki, mert a blokk betöltése erre épül.
-- `iu/query`: archív és keresés sablonban `"main_query": true`, egyedi listához `false` + `params`. Az elem-sablonban az `[iu_post_*]` shortcode-ok használhatók. Lapozáshoz `"paging": true`.
-
-## Új blokk fejlesztése
-
-- Helye `inc/blocks/{nev}/` (vagy a child témában), a `block.json` neve `iu/{nev}`. A `_` prefixes mappa nem töltődik be, így lehet egy blokkot kikapcsolni.
-- Az extra paneleket a `block.json` kapcsolja be: `"supports": { "iu": { "spacing": true, "background": true, "link": true } }`. A spacing- és háttér-stílust a téma sorszámozott osztállyal (`.iu-{blokk}_{n}`) a `<head>`-be írja, a render.php-ba ne írj erre inline stílust.
-- Dinamikus blokkhoz `render.php`, frontend JS-hez `viewScript` kell (csak akkor töltődik be, ha a blokk az oldalon van). Az interaktív blokkok jQuery-re épülnek.
-- CSS osztályok: `.iu-{blokk}`, módosítók: `.iu-{blokk}-{modifier}`. Színt, betűt, térközt `var(--iu-…)` változóval adj meg.
+A tartalom és a beállítások (oldalak, menü, WooCommerce opciók, sablonok) a child témában verziózott, egyszer futó lépésekként legyenek (`inc/setup.php`: `admin_init`-en egy admin első betöltésekor, vagy WP-CLI parancs). Meglévő, szerkeszthető tartalmat csak akkor írj felül, ha az eredetivel egyezik (md5 a manifestben); ellenkező esetben figyelmeztess.
 
 ## Buktatók
 
-- **REST API prefix:** a `/wp-json/` helyett `/87sdtzugas76fgcw8atedw/`. A beégetett `/wp-json/` URL-ek (saját JS, pluginek) nem működnek, ezért mindig `rest_url()` kell. Új plugin telepítése után ezt teszteld.
-- **`--iu-text-font-size: 1vw`:** mobilon ez nagyon kicsi. Minden projektben ellenőrizd, és ha nincs mobil felülírás, állítsd be pl. `clamp()`-pel a child témában.
-- A `wp-block-library` CSS nem töltődik be, így a core blokkoknak nincs gyári stílusa.
-- **Menü ID:** az `iu/menu` `menu` attribútuma term ID, ami a helyi és az éles környezetben eltérhet. Deploy után ellenőrizd a header és footer menüket.
-- Az `iu/video` a szerkesztőben nem jelenik meg, csak a frontenden.
-- Az adminban a fájlszerkesztő ki van kapcsolva, a deploy git/FTP-n megy.
-- SVG feltöltés engedélyezve van, ezért SVG-t csak megbízható forrásból tölts fel.
+- **REST API prefix:** `/wp-json/` helyett egyedi prefix; mindig `rest_url()`.
+- **Relatív `require_once('blocks.php')`** a keretrendszerben: ha a PHP munkakönyvtárában van ilyen fájl, rossz töltődik be. A saját kódban mindig `__DIR__.'/…'`, és WP-CLI-t semleges mappából futtass.
+- **`is_archive('product_cat')`** (iu_woocommerce) minden archívumon igaz: márka/címke oldalon a lista a slugot kategóriaként kapja, ezért üres. Javítás `shortcode_atts_products` szűrővel.
+- **WooCommerce márka-archívum** saját sablont töltene (fejléc/lábléc nélkül): `template_include` szűrővel a téma `index.php`-jára kell irányítani.
+- A téma a keresést bejegyzésekre szűkítheti (`pre_get_posts`); ez a `get_posts(['s' => …])` hívásokat is érinti.
+- A `--iu-text-font-size` alapból vw-alapú: mobilon mindig ellenőrizd.
+- A fejléc és a lábléc fix oszlopszélességei (pl. `width: 32%`) mobilon felülírandók.
+- Az `iu/video` a szerkesztőben nem jelenik meg; az adminban a fájlszerkesztő ki van kapcsolva.
 
-## Új weboldal: ellenőrzőlista
+## Ellenőrzőlista új weboldalhoz / webshophoz
 
-1. Child téma: stíluslap-fejléc `Template: iu_theme`, `:root` változók (betűk, méretek, színek, térközök), webfontok.
-2. `theme.json` paletta a márkaszínekre (white, primary, dark-gray, light-gray slugok).
-3. Sablonok a `child/templates/`-ben: `global_header` (logó + `iu/menu`), `global_footer` (`[iu_year]`), `single_page_content` (ha hero-s oldalak vannak), `front_page_content`, `404_content`, `search_content`, és post type-onként a `single_*`, `archive_*` sablonok.
-4. Menük a WP adminban, a menü ID beírása az `iu/menu`-be.
-5. Ismétlődő szekciók (CTA, kapcsolat) `iu_pattern`-ként.
-6. Oldalak Section > Row > Column szerkezettel.
-7. Űrlapok: validáció, e-mail kézbesítés és sikerüzenet tesztje.
-8. Átadás előtt: mobil nézet, oldalanként egy H1, 404, keresés, breadcrumbs, REST-hívások, Lighthouse.
+1. Child téma: `Template: iu_theme`, `vars.css` változók, `theme.json` paletta.
+2. Sablonok a `templates/` mappában: header, footer, `single_page_content`, `front_page_content`, `404`, `search`, `blog_page`, `single_post`, post type-onként `single_*`, `archive_*`, `tax_*`.
+3. Menü, oldalak, jogi szövegek (ÁSZF, adatkezelés, elállás) telepítő lépésként.
+4. Webshop: ÁFA, szállítás (klasszikus pénztárral működő módok), fizetés, e-mail feladó, ÁSZF oldal a pénztárhoz, termékoldal-, kategória-, márka- és keresősablon.
+5. Minden tartalom átfut a szerkesztős ellenőrzésen (`"invalid":[]`).
+6. Tesztek: rendelés végig (kosár → pénztár → köszönő oldal → e-mailek), minden űrlap beküldése, mobil nézet (vízszintes görgetés nincs), oldalanként egy H1, 404, keresés.
 
 ## Referencia fejezetek (`references/iu_theme_documentation.md`)
 
@@ -138,7 +155,7 @@ iu/section          legfelső szint; csak iu/row lehet benne
 | 8 | Section, Row, Column, Group |
 | 9 | Title, Content, Card |
 | 10 | Image, Featured Image, Video, Icon Group / Icon |
-| 11 | Csúszkák: Image Carousel, Image Slider, Slider/Slide, Content Slider, HTML Slider, Logo Slider, Text Scroller |
+| 11 | Csúszkák (Image Carousel, Image Slider, Slider/Slide, Content Slider, HTML Slider, Logo Slider, Text Scroller) |
 | 12 | Menu, Breadcrumbs, Post Navigation, Search, Back to Top |
 | 13 | Query, Terms, Term Cloud |
 | 14 | Accordion, Tabs, Modal, Button Group / Button |
