@@ -95,6 +95,52 @@ function sanitize_textarea_field( $text ) {
 	return trim( strip_tags( $text ) );
 }
 
+function esc_textarea( $text ) {
+	return htmlspecialchars( $text, ENT_QUOTES );
+}
+
+function checked( $value, $current = true ) {
+	if ( (bool) $value === (bool) $current ) {
+		echo ' checked="checked"';
+	}
+}
+
+function current_user_can( $capability ) {
+	return true;
+}
+
+function admin_url( $path = '' ) {
+	return 'https://helloprovision.com/wp-admin/' . $path;
+}
+
+function settings_fields( $group ) {
+	echo '<input type="hidden" name="option_page" value="' . esc_attr( $group ) . '">';
+}
+
+function submit_button( $text = 'Save' ) {
+	echo '<input type="submit" name="submit" value="' . esc_attr( $text ) . '">';
+}
+
+function wp_json_encode( $data, $flags = 0 ) {
+	return json_encode( $data, $flags );
+}
+
+function get_post_types( $args = array(), $output = 'names' ) {
+	return array( 'post' => 'post', 'page' => 'page', 'location_page' => 'location_page' );
+}
+
+function get_posts( $args = array() ) {
+	return array( 11, 12 );
+}
+
+function get_permalink( $id ) {
+	return array( 11 => 'https://helloprovision.com/seo/', 12 => 'https://helloprovision.com/markets/cape-coral-digital-marketing/' )[ $id ];
+}
+
+function get_the_title( $id = 0 ) {
+	return 'Page ' . $id;
+}
+
 class WP_Post {
 	public $post_title = '';
 }

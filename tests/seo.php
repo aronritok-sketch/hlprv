@@ -104,4 +104,118 @@ $links = array(
 check( 'első elem Home', 'Home' === hpv_seo_fix_breadcrumb_links( $links )[0]['text'] );
 check( 'ha nincs főoldal morzsa, nem nyúl hozzá', 'SEO' === hpv_seo_fix_breadcrumb_links( array( $links[1] ) )[0]['text'] );
 
+echo "Beállítások: nyitvatartás, útvonalak\n";
+$hours = hpv_seo_default_settings()['hours'];
+$specs = hpv_seo_hours_to_specs( $hours );
+check( 'alap: H–P 9–17 egy csoportban', 1 === count( $specs ) && 5 === count( $specs[0]['dayOfWeek'] ) );
+$hours['Saturday'] = array( 'open' => true, 'opens' => '10:00', 'closes' => '14:00' );
+$specs             = hpv_seo_hours_to_specs( $hours );
+check( 'eltérő szombat külön csoport', 2 === count( $specs ) && array( 'Saturday' ) === $specs[1]['dayOfWeek'] );
+check( 'teljes URL → útvonal', '/markets/cape-coral-seo/' === hpv_seo_normalize_path( 'https://helloprovision.com/markets/cape-coral-seo' ) );
+check( 'perjel nélküli útvonal', '/seo/' === hpv_seo_normalize_path( 'seo' ) );
+check( 'üres útvonal', '' === hpv_seo_normalize_path( '  ' ) );
+
+echo "Beállítások mentése\n";
+$GLOBALS['hpv_test_errors'] = array();
+$clean = hpv_seo_sanitize_settings(
+	array(
+		'brand_name'      => '',
+		'alternate_names' => "HelloProvision\n\n Hello ProVision \nHelloProvision",
+		'telephone'       => '+1-239-955-1655',
+		'hours_override'  => '1',
+		'hours'           => array(
+			'Monday'  => array( 'open' => '1', 'opens' => '09:00', 'closes' => '17:00' ),
+			'Tuesday' => array( 'open' => '1', 'opens' => '25:00', 'closes' => 'x' ),
+			'Friday'  => array( 'open' => '1', 'opens' => '18:00', 'closes' => '08:00' ),
+		),
+		'same_as'         => "https://www.linkedin.com/company/helloprovision\nnem link\nhttps://www.linkedin.com/company/helloprovision",
+		'area_served'     => array(
+			array( 'name' => 'Fort Myers', 'wiki' => 'https://en.wikipedia.org/wiki/Fort_Myers,_Florida' ),
+			array( 'name' => 'Cape Coral', 'wiki' => 'https://example.com/cape' ),
+			array( 'name' => '', 'wiki' => '' ),
+		),
+		'services'        => array(
+			array( 'path' => 'https://helloprovision.com/markets/cape-coral-seo', 'name' => 'SEO in Cape Coral', 'type' => '', 'areas' => 'Cape Coral, Tampa' ),
+			array( 'path' => '/markets/cape-coral-seo/', 'name' => 'Duplikátum', 'type' => '', 'areas' => '' ),
+			array( 'path' => '/valami/', 'name' => '', 'type' => '', 'areas' => '' ),
+			array( 'path' => '', 'name' => '', 'type' => '', 'areas' => '' ),
+		),
+	)
+);
+check( 'üres márkanév → alapérték', 'HelloProVision' === $clean['brand_name'] );
+check( 'írásmódok soronként, duplikáció nélkül', array( 'HelloProvision', 'Hello ProVision' ) === $clean['alternate_names'] );
+check( 'hibás idő → alapérték', '09:00' === $clean['hours']['Tuesday']['opens'] && '17:00' === $clean['hours']['Tuesday']['closes'] );
+check( 'be nem küldött nap zárva', false === $clean['hours']['Sunday']['open'] );
+check( 'fordított nyitvatartásra figyelmeztet', in_array( 'hours_Friday', $GLOBALS['hpv_test_errors'], true ) );
+check( 'érvénytelen profil link kihagyva', array( 'https://www.linkedin.com/company/helloprovision' ) === $clean['same_as'] && in_array( 'same_as', $GLOBALS['hpv_test_errors'], true ) );
+check( 'nem Wikipedia link törölve, város marad', array( 'name' => 'Cape Coral', 'wiki' => '' ) === $clean['area_served'][1] );
+check( 'üres város sor kimarad', 2 === count( $clean['area_served'] ) );
+check( 'szolgáltatás: URL → útvonal, típus = név', array( 'path' => '/markets/cape-coral-seo/', 'name' => 'SEO in Cape Coral', 'type' => 'SEO in Cape Coral', 'areas' => 'Cape Coral' ) === $clean['services'][0] );
+check( 'ismeretlen város (Tampa) jelezve', in_array( 'service_area', $GLOBALS['hpv_test_errors'], true ) );
+check( 'duplikált és hiányos sor kimarad', 1 === count( $clean['services'] ) );
+check( 'kétszeri tisztítás ugyanazt adja', $clean === hpv_seo_sanitize_settings( $clean ) );
+check( 'visszaállítás', hpv_seo_default_settings() === hpv_seo_sanitize_settings( array( 'reset' => '1' ) ) );
+
+echo "Mentett beállítások → schema\n";
+$GLOBALS['hpv_test_options'][ HPV_SEO_OPTION ] = $clean;
+$cfg = hpv_seo_config();
+check( 'nyitvatartás felülírás bekapcsolva', is_array( $cfg['opening_hours'] ) && 'Monday' === $cfg['opening_hours'][0]['dayOfWeek'][0] );
+check( 'szolgáltatás a configban', array( 'Cape Coral' ) === $cfg['services']['/markets/cape-coral-seo/']['area'] );
+$url     = 'https://helloprovision.com/markets/cape-coral-seo/';
+$page    = home_graph();
+$page[0]['@id'] = $url;
+$service = find_node( hpv_seo_fix_graph( $page, (object) array( 'canonical' => $url ) ), 'Service' );
+check( 'új város-oldal Service jelölést kap', 'SEO in Cape Coral' === $service['name'] );
+$GLOBALS['hpv_test_options'] = array();
+
+echo "Szerkesztő oldal\n";
+set_error_handler(
+	function ( $no, $message, $file, $line ) {
+		throw new ErrorException( $message, 0, $no, $file, $line );
+	}
+);
+ob_start();
+hpv_seo_render_settings_page();
+$html = ob_get_clean();
+restore_error_handler();
+check( 'az oldal hiba nélkül megjelenik', false !== strpos( $html, '<h1>HelloProVision SEO</h1>' ) );
+check( 'oldalválasztó a meglévő oldalakkal', false !== strpos( $html, '<option value="/markets/cape-coral-digital-marketing/">' ) );
+
+/**
+ * A böngésző módjára összegyűjti az űrlap mezőit (bepipált checkboxok, szövegmezők), és PHP tömbbé alakítja.
+ */
+function submit_form( string $html ): array {
+	$doc = new DOMDocument();
+	libxml_use_internal_errors( true );
+	$doc->loadHTML( '<?xml encoding="utf-8"?>' . $html );
+	$pairs = array();
+	foreach ( $doc->getElementsByTagName( 'form' )->item( 0 )->getElementsByTagName( '*' ) as $el ) {
+		$name = $el->getAttribute( 'name' );
+		if ( '' === $name || 'submit' === $name ) {
+			continue;
+		}
+		if ( 'input' === $el->nodeName ) {
+			if ( 'checkbox' === $el->getAttribute( 'type' ) && ! $el->hasAttribute( 'checked' ) ) {
+				continue;
+			}
+			$pairs[] = rawurlencode( $name ) . '=' . rawurlencode( $el->getAttribute( 'value' ) );
+		} elseif ( 'textarea' === $el->nodeName ) {
+			$pairs[] = rawurlencode( $name ) . '=' . rawurlencode( $el->textContent );
+		}
+	}
+	parse_str( implode( '&', $pairs ), $post );
+	return $post;
+}
+
+$post = submit_form( $html );
+check( 'az űrlap a helyes beállítás-csoportot küldi', 'hpv_seo' === $post['option_page'] );
+check( 'változtatás nélküli mentés = alapértékek', hpv_seo_default_settings() === hpv_seo_sanitize_settings( $post[ HPV_SEO_OPTION ] ) );
+
+$GLOBALS['hpv_test_options'][ HPV_SEO_OPTION ] = $clean;
+ob_start();
+hpv_seo_render_settings_page();
+$post = submit_form( ob_get_clean() );
+check( 'módosított beállítások: újramentés = ugyanaz', $clean === hpv_seo_sanitize_settings( $post[ HPV_SEO_OPTION ] ) );
+$GLOBALS['hpv_test_options'] = array();
+
 finish();

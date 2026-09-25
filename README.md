@@ -4,7 +4,7 @@ A `helloprovision.com` WordPress oldal helyi SEO-javításai (Fort Myers, Cape C
 
 ## `mu-plugins/helloprovision-seo.php`
 
-Must-use plugin, ami a Yoast SEO és a Yoast Local SEO által generált schema adatokat javítja. A Yoast beállításaihoz nem nyúl, csak a kimenetet igazítja.
+Bővítmény, ami a Yoast SEO és a Yoast Local SEO által generált schema adatokat javítja. A Yoast beállításaihoz nem nyúl, csak a kimenetet igazítja.
 
 | Hiba az élő oldalon | Javítás |
 |---|---|
@@ -20,19 +20,27 @@ Must-use plugin, ami a Yoast SEO és a Yoast Local SEO által generált schema a
 
 ### Telepítés
 
-1. A `mu-plugins/helloprovision-seo.php` fájlt töltsd fel a szerverre ide: `wp-content/mu-plugins/`. Ha a mappa nem létezik, hozd létre. Aktiválni nem kell.
+1. Bővítmények → Új hozzáadása → Bővítmény feltöltése: `helloprovision-seo.zip`, majd Bekapcsolás.
+   - **Frissítésnél:** ha a régebbi verzió már fel van töltve zipként, a WordPress rákérdez, hogy lecserélje-e. Válaszd a „Csere a feltöltöttre” lehetőséget.
+   - **Ha korábban FTP-n a `wp-content/mu-plugins/` mappába másoltad:** előbb töröld onnan a `helloprovision-seo.php` fájlt. Ha mindkét helyen ott van, az oldal „kritikus hibával” leáll.
 2. Ha van cache plugin vagy CDN, ürítsd a gyorsítótárat.
 3. Ellenőrizd a [Rich Results Test](https://search.google.com/test/rich-results?url=https%3A%2F%2Fhelloprovision.com%2F) és a [Schema Validator](https://validator.schema.org/) segítségével, majd kérj újraindexelést a Search Console-ban (URL-ellenőrzés, majd „Indexelés kérése”).
 
-### Amit ki kell tölteni (a fájl tetején, `hpv_seo_config()`)
+### Beállítások: Beállítások → HelloProVision SEO
 
-- **`same_as`**: a Google Business Profile linkje, a LinkedIn, a saját Instagram, a Clutch és a Yelp. Az üres sorok kimaradnak, ezért a profilokat akkor is fel lehet venni, amikor később létrejönnek.
-- **`opening_hours`**: most hétfőtől vasárnapig 9–17 szerepel. Ha ez nem igaz, állítsd be, és **egyezzen a Google Business Profile-lal**.
-- **`hide_address`**: állítsd `true`-ra, ha a Google Business Profile-t service-area vállalkozásként, rejtett címmel regisztráljátok. Ez a javasolt megoldás, ha a New Brittany Blvd-i cím virtuális iroda. Ekkor a cím kikerül a schemából, és csak a kiszolgált városok maradnak.
-- **`services`**: ha új szolgáltatás × város oldal készül (pl. `/markets/cape-coral-seo/`), vedd fel ide.
+Minden beállítás az admin felületen szerkeszthető, kódot nem kell írni. A Bővítmények listában a bővítmény alatt is van egy „Beállítások” link.
 
-A beállításokat a fájl módosítása nélkül is felül lehet írni, egy másik fájlból a `hpv_seo_config` filterrel.
+- **Cégadatok:** márkanév, egyéb írásmódok, cégjogi név, rövid leírás, telefonszám.
+- **Cím és nyitvatartás:**
+  - utcacím;
+  - **Cím elrejtése:** kapcsold be, ha a Google Business Profile service-area (rejtett címes) lesz;
+  - napi nyitvatartás: a pipával bekapcsolva ez lép a Yoast Local SEO-ban beállított helyére.
+- **Hivatalos profilok:** soronként egy link (LinkedIn, Instagram, Clutch, Yelp stb.). A Google-profil linkjét a Google értékelések bővítmény magától hozzáadja.
+- **Kiszolgált városok:** város és Wikipedia link. Minden mentés után 3 üres sor jelenik meg az új városoknak.
+- **Szolgáltatás- és városoldalak:** oldal, szolgáltatás neve, típus, városok. Az oldal mezőben gépelés közben felajánlja a meglévő oldalakat. Új város-oldal (pl. `/markets/cape-coral-seo/`) létrehozása után vedd fel ide.
+- **Ellenőrzés:** mentés után minden oldalhoz van egy link a Google Rich Results Testhez.
 
+Ha valamit hibásan adsz meg (pl. rossz link, ismeretlen város, a nyitásnál korábbi zárás), a mentés után figyelmeztetés jelenik meg, és a hibás elem kimarad.
 
 ## `plugins/helloprovision-reviews/` – Google értékelés-kérő rendszer
 
