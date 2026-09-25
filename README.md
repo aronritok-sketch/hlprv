@@ -135,6 +135,7 @@ Az érdeklődők a **Website Grader → Érdeklődők** menüben vannak: teljes 
 php tests/seo.php
 php tests/reviews.php
 php tests/grader.php
+php tests/linora.php
 ```
 
 WordPress nélkül futnak. Az SEO teszt az élő főoldal valódi schemáját, a grader teszt a főoldal megtisztított HTML-jét használja (`tests/fixtures/`).
@@ -153,3 +154,7 @@ WordPress nélkül futnak. Az SEO teszt az élő főoldal valódi schemáját, a
 
 - **H1:** most csak `for Southwest Florida Businesses`, mert a kulcsszó („SEO & Local Search”) a H1-en kívül, egy animált `div`-ben van. A teljes szöveg kerüljön a H1-be, az animáció maradhat díszítésnek.
 - **Mobil sebesség:** a hero részben futó UnicornStudio WebGL-animációt mobilon érdemes statikus képre cserélni (LCP, INP).
+
+## `linora/` – L'INORA időpontfoglaló
+
+Külön ügyfél (L'INORA, Zsadányi Zsanett): kezelési konfigurátor blokk Amelia + WooCommerce alapon. Részletek: [`linora/README.md`](linora/README.md).
