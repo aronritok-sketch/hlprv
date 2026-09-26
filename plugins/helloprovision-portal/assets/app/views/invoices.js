@@ -314,7 +314,7 @@ function TimeModal({ inv, onClose, onDone }) {
 	const submit = () => {
 		setBusy(true);
 		api('/billing/invoices/' + inv.id + '/time', { method: 'POST', body: { entry_ids: pick, group, rate: Number(rate) || 0 } })
-			.then((d) => { toast(hours + ' óra a számlán.'); onDone(d); })
+			.then((d) => { toast(hours.toLocaleString('hu-HU') + ' óra a számlán.'); onDone(d); })
 			.catch((e) => { toast(e.message, 'error'); setBusy(false); });
 	};
 	return html`
@@ -333,7 +333,7 @@ function TimeModal({ inv, onClose, onDone }) {
 						</div>` : html`<p class="hint">Nincs ki nem számlázott munkaidő ennél az ügyfélnél ebben az időszakban.</p>`}
 					<div class="row">
 						<label class="field"><span>Óradíj (${data.currency})</span><input type="number" step="0.01" min="0" value=${rate} onInput=${(e) => setRate(e.target.value)} placeholder="ügyfél / beállítás szerint" /></label>
-						<div class="field"><span>Összesen</span><strong class="time-total">${hours} óra · ${money(Math.round(hours * (Number(rate) || 0) * 100), data.currency)}</strong></div>
+						<div class="field"><span>Összesen</span><strong class="time-total">${hours.toLocaleString('hu-HU')} óra · ${money(Math.round(hours * (Number(rate) || 0) * 100), data.currency)}</strong></div>
 					</div>
 					<footer class="form__foot"><button type="button" class="btn btn--ghost" onClick=${onClose}>Mégse</button><button class="btn" disabled=${busy || !pick.length || !(Number(rate) > 0)} onClick=${submit}>Hozzáadás a számlához</button></footer>
 				</div>`}

@@ -800,3 +800,34 @@ button.convert:hover { border-color: var(--ink); }
 }
 .time-list { display: grid; gap: 6px; max-height: 320px; overflow-y: auto; }
 .time-total { display: block; padding-top: 8px; font-size: 18px; }
+
+/* Ügyfél-adatlap */
+.client-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.client-main, .client-side { display: grid; gap: 16px; }
+.client-main .card, .client-side .card { display: grid; gap: 10px; }
+.client-main h3, .client-side h3 { margin: 0; font-size: 15px; }
+.client-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.client-fields .field { align-content: start; }
+.client-fields .field--wide { grid-column: 1 / -1; }
+.client-fields small { font-size: 12px; }
+.timeline-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.timeline-list li { padding: 8px 10px; border-radius: 10px; background: #fafaf6; }
+.timeline-list li p { margin: 2px 0 0; font-size: 14px; white-space: pre-line; }
+.timeline-list .tl--note { background: #fffbe8; }
+.people { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.people li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.people li span { display: grid; }
+.invite-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 6px; }
+.invite-form input { min-width: 0; padding: 7px 10px; border: 1px solid var(--line); border-radius: 9px; font-size: 13px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; font-weight: 600; }
+.mini-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: 14px; }
+.links-row { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; }
+@media (max-width: 1000px) {
+	.client-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 720px) {
+	.client-fields { grid-template-columns: minmax(0, 1fr); }
+	.invite-form { grid-template-columns: minmax(0, 1fr); }
+}

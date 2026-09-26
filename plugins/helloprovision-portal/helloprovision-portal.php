@@ -27,6 +27,7 @@ require_once __DIR__ . '/includes/recurring.php';
 require_once __DIR__ . '/includes/retainer.php';
 require_once __DIR__ . '/includes/invoices-api.php';
 require_once __DIR__ . '/includes/dunning.php';
+require_once __DIR__ . '/includes/clients-api.php';
 require_once __DIR__ . '/includes/domains.php';
 require_once __DIR__ . '/includes/notify.php';
 require_once __DIR__ . '/includes/chat.php';

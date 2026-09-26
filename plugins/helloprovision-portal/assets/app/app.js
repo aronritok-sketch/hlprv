@@ -16,6 +16,7 @@ import { Templates } from './views/templates.js';
 import { Files } from './views/files.js';
 import { Content, ContentPage } from './views/content.js';
 import { Reports, ReportPage, DataSourcesModal } from './views/reports.js';
+import { ClientPage, NewClientModal, Services } from './views/client.js';
 import { ImportPage } from './views/import.js';
 import { Invoices, InvoicePage, Subscriptions } from './views/invoices.js';
 
@@ -41,19 +42,20 @@ function ChatView({ channel, client }) {
 	return html`<div class="page page--chat"><div class="hpv-chat hpv-chat--app" ref=${ref}></div></div>`;
 }
 
-/* ── Ügyfelek (gyors lista; a részletes szerkesztés még a klasszikus CRM-ben) ── */
+/* ── Ügyfelek ─────────────────────────────────────── */
 
 function Clients() {
 	const { boot } = useApp();
 	const [q, setQ] = useState('');
 	const [sources, setSources] = useState(null);
+	const [creating, setCreating] = useState(false);
 	const list = boot.clients.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()));
 	const labels = { lead: 'Érdeklődő', active: 'Aktív', paused: 'Szünetel', former: 'Korábbi' };
 	return html`
 		<div class="page">
 			<header class="page__head">
 				<div><h1>Ügyfelek</h1><p class="muted">${boot.clients.length} ügyfél</p></div>
-				<a class="btn" href=${CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm&action=edit&entity=client')}><${Icon} name="plus" /> Új ügyfél</a>
+				<button class="btn" onClick=${() => setCreating(true)}><${Icon} name="plus" /> Új ügyfél</button>
 			</header>
 			<input class="search-input" placeholder="Keresés…" value=${q} onInput=${(e) => setQ(e.target.value)} />
 			<div class="card table-card">
@@ -62,7 +64,7 @@ function Clients() {
 					<tbody>
 						${list.map((c) => html`
 							<tr key=${c.id}>
-								<td><strong>${c.name}</strong></td>
+								<td><a class="link" href=${'#/clients/' + c.id}><strong>${c.name}</strong></a></td>
 								<td>${c.country === 'HU' ? 'Magyarország' : 'USA'}</td>
 								<td><span class=${'pill pill--' + c.status}>${labels[c.status] || c.status}</span></td>
 								<td class="right">
@@ -72,13 +74,14 @@ function Clients() {
 									<a class="link" href=${'#/files?client=' + c.id}>Fájlok</a>
 									<button class="link" onClick=${() => setSources(c)}>Riport adatok</button>
 									${boot.me.caps && boot.me.caps.invoices ? html`<a class="link" href=${'#/invoices?client=' + c.id}>Számlák</a>` : null}
-									<a class="link" href=${CFG.adminUrl + '&client=' + c.id}>Adatlap <${Icon} name="ext" size="13" /></a>
+									<a class="link" href=${'#/clients/' + c.id}>Adatlap</a>
 								</td>
 							</tr>`)}
 					</tbody>
 				</table>
 			</div>
 			${sources ? html`<${DataSourcesModal} client=${sources} onClose=${() => setSources(null)} />` : null}
+			${creating ? html`<${NewClientModal} onClose=${() => setCreating(false)} />` : null}
 		</div>`;
 }
 
@@ -168,7 +171,6 @@ function Sidebar({ path }) {
 	const { boot, unread } = useApp();
 	const caps = boot.me.caps || {};
 	const legacy = [];
-	if (caps.invoices) legacy.push({ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-services'), label: 'Szolgáltatások', icon: 'tag' });
 	if (boot.me.is_admin) legacy.push({ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-settings'), label: 'Beállítások', icon: 'cog' });
 	const isActive = (p) => (p === '/' ? path === '/' : path.startsWith(p));
 	return html`
@@ -186,6 +188,7 @@ function Sidebar({ path }) {
 			<nav class="nav nav--secondary">
 				${caps.invoices ? html`<a href="#/invoices" class=${isActive('/invoices') ? 'is-active' : ''}><${Icon} name="receipt" /><span>Számlák</span></a>` : null}
 				${caps.invoices ? html`<a href="#/subscriptions" class=${isActive('/subscriptions') ? 'is-active' : ''}><${Icon} name="clock" /><span>Előfizetések</span></a>` : null}
+				${caps.invoices ? html`<a href="#/services" class=${isActive('/services') ? 'is-active' : ''}><${Icon} name="tag" /><span>Szolgáltatások</span></a>` : null}
 				${caps.contracts || caps.proposals ? html`<a href="#/templates" class=${isActive('/templates') ? 'is-active' : ''}><${Icon} name="template" /><span>Minták</span></a>` : null}
 				${boot.me.is_admin ? html`<a href="#/team" class=${isActive('/team') ? 'is-active' : ''}><${Icon} name="users" /><span>Csapat és jogok</span></a>` : null}
 				${boot.me.is_admin ? html`<a href="#/import" class=${isActive('/import') ? 'is-active' : ''}><${Icon} name="down" /><span>Import (Bitrix24)</span></a>` : null}
@@ -251,6 +254,8 @@ function App() {
 	else if (path === '/calls') page = html`<${Calls} params=${params} />`;
 	else if ((m = path.match(/^\/calls\/(\d+)$/))) page = html`<${CallPage} key=${'call' + m[1]} id=${Number(m[1])} params=${params} />`;
 	else if (path === '/clients') page = html`<${Clients} />`;
+	else if ((m = path.match(/^\/clients\/(\d+)$/))) page = html`<${ClientPage} key=${'cl-' + m[1]} id=${Number(m[1])} />`;
+	else if (path === '/services') page = html`<${Services} />`;
 	else if (path === '/content') page = html`<${Content} params=${params} />`;
 	else if ((m = path.match(/^\/content\/(\d+)$/))) page = html`<${ContentPage} key=${'ct-' + m[1]} id=${Number(m[1])} />`;
 	else if (path === '/reports') page = html`<${Reports} params=${params} />`;

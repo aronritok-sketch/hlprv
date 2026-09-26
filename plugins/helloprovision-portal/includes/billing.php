@@ -11,8 +11,11 @@ defined( 'ABSPATH' ) || exit;
 
 /* ─── Ország, pénznem, cím ───────────────────────────────── */
 
-function hpv_p_client_country( int $client_id ): string {
+function hpv_p_client_country( int $client_id, bool $reset = false ): string {
 	static $cache = array();
+	if ( $reset ) {
+		unset( $cache[ $client_id ] );
+	}
 	if ( ! isset( $cache[ $client_id ] ) ) {
 		$client               = hpv_p_get( 'client', $client_id );
 		$cache[ $client_id ] = $client && 'HU' === $client['country'] ? 'HU' : 'US';
