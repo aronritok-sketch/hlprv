@@ -110,6 +110,66 @@ line( 'api.anthropic.com', probe( 'https://api.anthropic.com/v1/models' ) );
 line( 'onrender.com', probe( 'https://render.com/' ) );
 echo "\n(A 401 / 403 válasz itt jó jel: a kapcsolat létrejött, csak nincs kulcs megadva.)\n";
 
+section( 'Nginx (webszerver) – be van-e töltve a módosított beállítás?' );
+$conf   = '/home/container/etc/nginx/nginx.conf';
+$pidf   = '/home/container/logs/nginx/nginx.pid';
+$marker = '/home/container/tmp/hpv-nginx-reloaded';
+$pid    = @is_readable( $pidf ) ? (int) trim( (string) @file_get_contents( $pidf ) ) : 0;
+$conf_t = @is_readable( $conf ) ? filemtime( $conf ) : 0;
+$load_t = max( $pid ? (int) @filemtime( $pidf ) : 0, @file_exists( $marker ) ? (int) @filemtime( $marker ) : 0 );
+$fmt    = function ( $t ) { return $t ? date( 'Y-m-d H:i:s', $t ) : '?'; };
+line( 'nginx.conf módosítva', $conf_t ? $fmt( $conf_t ) : 'nem olvasható (' . $conf . ')' );
+line( 'nginx elindítva / újratöltve', $pid ? $fmt( $load_t ) . " (folyamat: $pid)" : 'nem található (' . $pidf . ')' );
+$stale = $conf_t && $load_t && $conf_t > $load_t;
+line( 'Állapot', ! $conf_t || ! $pid ? 'nem megállapítható' : ( $stale ? 'A MÓDOSÍTÁS MÉG NINCS BETÖLTVE' : 'a jelenlegi beállítás van betöltve' ) );
+$me = function_exists( 'posix_geteuid' ) ? ( posix_getpwuid( posix_geteuid() )['name'] ?? posix_geteuid() ) : '?';
+line( 'PHP felhasználó', (string) $me );
+line( 'nginx felhasználó', $pid && function_exists( 'posix_getpwuid' ) && @file_exists( "/proc/$pid" ) ? ( posix_getpwuid( fileowner( "/proc/$pid" ) )['name'] ?? '?' ) : '?' );
+
+$can_exec = function_exists( 'exec' ) && ! in_array( 'exec', $disabled, true );
+$bin      = '';
+foreach ( array( '/usr/local/openresty/bin/openresty', '/usr/local/openresty/nginx/sbin/nginx', '/usr/bin/openresty', '/usr/sbin/nginx', '/usr/bin/nginx' ) as $b ) {
+	if ( @is_executable( $b ) ) {
+		$bin = $b;
+		break;
+	}
+}
+line( 'nginx program', $bin ?: 'nem található' );
+
+$token = (string) filemtime( __FILE__ );
+if ( isset( $_GET['reload'] ) && hash_equals( $token, (string) $_GET['reload'] ) ) {
+	echo "\n--- Újratöltés ---\n";
+	$ok_test = null;
+	if ( $bin && $can_exec ) {
+		$out = array();
+		exec( escapeshellarg( $bin ) . ' -t -c ' . escapeshellarg( $conf ) . ' 2>&1', $out, $rc );
+		echo "Beállítás ellenőrzése:\n  " . implode( "\n  ", $out ) . "\n";
+		$ok_test = 0 === $rc;
+	} else {
+		echo "Ellenőrzés: nem futtatható ezen a tárhelyen – az nginx hibás beállításnál a régit tartja meg.\n";
+	}
+	if ( false === $ok_test ) {
+		echo "\nA beállításban HIBA van – nem töltöttem újra. Javítsd a fenti hibát (vagy töltsd vissza a mentett nginx.conf-ot).\n";
+	} elseif ( ! $pid ) {
+		echo "\nNem találom az nginx folyamatot – újratöltés nem lehetséges innen.\n";
+	} else {
+		$sent = function_exists( 'posix_kill' ) ? @posix_kill( $pid, 1 ) : false;
+		if ( ! $sent && $can_exec ) {
+			exec( 'kill -HUP ' . (int) $pid . ' 2>&1', $o, $rc2 );
+			$sent = 0 === $rc2;
+		}
+		if ( $sent ) {
+			@touch( $marker );
+			echo "\nKÉSZ: az nginx újratöltötte a beállítást. Most nyisd meg: https://seo.helloprovision.com/hpv-check.php\n";
+		} else {
+			echo "\nNem sikerült jelezni az nginx-nek (nincs jogosultság). Ilyenkor a tárhely-szolgáltató tudja újraindítani.\n";
+		}
+	}
+} elseif ( $stale ) {
+	$self = strtok( (string) ( $_SERVER['REQUEST_URI'] ?? '/hpv-check.php' ), '?' );
+	echo "\n>>> Újratöltéshez nyisd meg ezt a címet:\n    https://" . ( $_SERVER['HTTP_HOST'] ?? 'helloprovision.com' ) . $self . "?reload=$token\n";
+}
+
 section( 'Ütemezés' );
 line( 'Most (szerveridő)', date( 'Y-m-d H:i:s T' ) );
 
