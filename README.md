@@ -129,7 +129,7 @@ Az érdeklődők a **Website Grader → Érdeklődők** menüben vannak: teljes 
 - A Google sebességmérése futásonként néhány pontot ingadozhat. Ez normális, az eszköz GYIK része is elmondja.
 - Ha a szerver Cloudflare vagy más proxy mögött van, a látogatónkénti korlát a proxy IP-címét látja. Ilyenkor a `hpv_grader_client_ip` filterrel állítható be a valódi IP.
 
-## `plugins/helloprovision-portal/` – Ügyfélportál, CRM, projektkezelő, videóhívás, számlázás, ajánlatok és szerződések (0.5)
+## `plugins/helloprovision-portal/` – Ügyfélportál, CRM, projektkezelő, videóhívás, számlázás, ajánlatok és szerződések (0.6)
 
 Egy WordPress bővítmény, két bejárattal:
 
@@ -172,6 +172,11 @@ Saját, gyors felület, nem a WordPress admin. Oldalújratöltés nélkül műk�
   - ha egy látható feladat „Ügyfélre vár” lesz, az ügyfél is értesítést kap.
 - **Keresés (Ctrl+K):** projektek, feladatok és ügyfelek egy helyen.
 - **Chat:** csoportok és ügyfél-csatornák, olvasatlan-számlálóval; a projekt fejlécéből egy kattintással nyílik az ügyfél csatornája.
+- **Fájlok:**
+  - ügyfelenként (Fájlok menü) vagy projektenként (a projekt „Fájlok” füle), húzással feltölthető, több fájl egyszerre;
+  - fájlonként kapcsolható, hogy az ügyfél látja-e (belső fájl is lehet), feltöltéskor kérhető e-mail az ügyfélnek;
+  - amit az ügyfél a portálon feltölt, arról a csapat e-mailt kap;
+  - a fájlok védett mappában vannak, csak jogosultsággal tölthetők le; futtatható és szkriptet tartalmazó típusok (php, html, svg, js…) nem tölthetők fel.
 - **Videóhívás (Daily.co):**
   - indítás a Hívások oldalról vagy a projekt fejlécéből („Hívás”);
   - a csatlakozási link bekerül az ügyfél chat-csatornájába, kérésre e-mail meghívó is megy;
@@ -203,7 +208,15 @@ Saját, gyors felület, nem a WordPress admin. Oldalújratöltés nélkül műk�
   - elfogadás után egy kattintással: **szerződés AI-val** az elfogadott tételekből, **előleg/számla piszkozat** (30/50/100%), **havi díjak előfizetésként**, **projekt** az ütemterv lépéseivel;
   - az érdeklődő elfogadáskor aktív ügyfél lesz; az ügyfél a portálon a „Proposals” menüben is látja az ajánlatait.
 
-A számla- és szolgáltatás-szerkesztő egyelőre a klasszikus CRM-ben van (WordPress admin). A webalkalmazás oldalsávja oda linkel.
+- **Számlák** (számlázási joggal):
+  - lista: kintlévőség, lejárt, e havi befolyt összeg és havi ismétlődő bevétel pénznemenként; szűrés (piszkozat, nyitott, lejárt, fizetve, érvénytelen), keresés;
+  - szerkesztő: tételek élő összesítéssel, magyar ügyfélnél ÁFA-kulcs;
+  - műveletek: kiküldés (USA) / kiállítás a Számlázz.hu-ban (Magyarország), befizetés rögzítése (részletben is), érvénytelenítés vagy sztornó, újraszinkron, Teya fizetési link, PDF, portál-előnézet.
+- **Előfizetések:** a következő 30 nap esedékes számlái, „Esedékesek elkészítése most”, szüneteltetés és a következő számla dátuma soron belül, új előfizetés a szolgáltatás-katalógusból.
+- **Ismétlődő számlák:** az aktív előfizetésekből a „Következő számla” napján reggel 7-kor ügyfelenként egy számla készül, az időszak megnevezésével („Karbantartás — 2026. október”). Beállítás: piszkozat (ti nézitek át és külditek ki, ez az alapértelmezés), automatikus kiküldés vagy kikapcsolva. A csapat összefoglaló e-mailt kap.
+- **Import (Bitrix24)** (csak az adminisztrátor): cégek, kapcsolatok, érdeklődők, üzletek, munkacsoportok és feladatok átköltöztetése, lásd lent.
+
+A szolgáltatás-katalógus és az ügyfél-adatlap szerkesztése egyelőre a klasszikus CRM-ben van (WordPress admin). A webalkalmazás oldalsávja oda linkel.
 
 **Számlázás és fizetés országonként** (az ügyfél adatlapján az „Ország” mező dönt):
 
@@ -240,13 +253,17 @@ A számla- és szolgáltatás-szerkesztő egyelőre a klasszikus CRM-ben van (Wo
   - e-mail értesítés, ha a címzett 2 perce nem nézte a csatornát, csatornánként legfeljebb 15 percenként egy.
 - **Tevékenység:** belső jegyzetek és rendszeresemények idővonala.
 
-**A portálon (angol felület):**
-- **Overview:** egyenleg, teendők (fizetendő számla, aláírandó szerződés, „Waiting on you” feladat, olvasatlan üzenet), friss hírek.
+**A portálon (amerikai ügyfélnek angolul, magyar ügyfélnek magyarul):**
+
+A nyelv az ügyfél országától függ: a magyar ügyfél a portált, a leveleket, a dátumokat („2026. szept. 26.”) és az idővonalat is magyarul kapja. A bejelentkezés előtt a böngésző nyelve dönt, és lent át lehet váltani. A magyar szövegek tegező hangnemben vannak, egy fájlban (`includes/i18n.php`), ha magázásra váltanátok.
+
+- **Overview:** egyenleg, teendők (fizetendő számla, aláírandó szerződés, „Waiting on you” feladat, új fájl, olvasatlan üzenet), friss hírek.
 - **Projects:** haladás és feladattábla.
 - **Messages:** chat a csapattal.
 - **Meetings:** élő hívásba belépés (hozzájárulás után), és a megosztott hívás-összefoglalók: „Your next steps” és „What we'll do”.
 - **Invoices:** nyomtatható számlakép, „Pay now” gomb, „Download PDF” (böngészős nyomtatás).
 - **Contracts:** elolvasás és aláírás.
+- **Files:** a megosztott fájlok, feltöltés (projekthez is), a saját feltöltés törölhető.
 - **Services, Account.**
 
 A portál saját keretben fut, a WordPress témától függetlenül, mobilon is.
@@ -289,11 +306,34 @@ A portál saját keretben fut, a WordPress témától függetlenül, mobilon is.
      ```
    - CRM → Beállítások → Videóhívás: „Kapcsolat tesztelése”, majd „Webhook regisztrálása”.
    - Valódi cron kell (5 percenként): a leirat feldolgozása háttérben fut.
+10. **Ismétlődő számlák:** CRM → Beállítások → „Ismétlődő számlák” (alapból piszkozat). **Frissítéskor** a múltbeli „Következő számla” dátumok a következő jövőbeli napra lépnek, így semmi nem számlázódik utólag.
+11. **Fájlok:** a feltöltési korlát a PHP `upload_max_filesize` és `post_max_size` beállításától függ (legfeljebb 100 MB). nginx alatt a `wp-content/uploads/hpv-private/` mappát tiltani kell (lásd a fejlesztői dokumentációt).
+
+### Átköltözés a Bitrix24-ből
+
+1. Bitrix24: **Fejlesztői erőforrások → Egyéb → Bejövő webhook**, jogok: `crm`, `task`, `sonet_group`, `user`. Másold ki a „Webhook a REST hívásához” címet.
+2. CRM app → **Import (Bitrix24)** → a cím bemásolása → „Kapcsolódás”.
+3. **Próbafuttatás:** semmit nem ír, csak megmutatja, mi jönne át (új, meglévő, kiegészített, kihagyott).
+4. **Importálás.** Lépésenként fut, a haladás látszik; ha a Bitrix24 lassít, kivár.
+
+Mi hova kerül:
+
+| Bitrix24 | Itt |
+|---|---|
+| Cég | ügyfél (név, e-mail, telefon, web, cím; az ország a címből, a +36-os telefonból vagy a .hu e-mailből) |
+| Kapcsolat céggel | a cég kapcsolattartója (csak ha még üres) |
+| Kapcsolat cég nélkül | magánszemély ügyfél |
+| Érdeklődő (nem átalakított) | „Érdeklődő” státuszú ügyfél |
+| Üzlet | belső jegyzet az ügyfélnél (állapot, összeg, zárás); a megnyert üzlet ügyfele aktív lesz |
+| Munkacsoport | projekt, rejtve (ha a neve egy ügyfél nevével kezdődik, ahhoz kötve) |
+| Feladat | feladat a projektben (státusz, prioritás, határidő, felelős e-mail alapján, alfeladatok); csoport nélküli feladatok egy gyűjtőprojektbe |
+
+Többször is futtatható: ami már átjött, nem lesz dupla; a már meglévő (kézzel felvitt) ügyfeleket név vagy e-mail alapján megtalálja, és csak az üres mezőiket tölti ki. Levelet nem küld, portál-hozzáférést nem ad. A Bitrix24 idővonal-hozzászólásai és fájljai nem jönnek át. Import után a webhook törölhető.
 
 ### Következő ütemek
 
-1. **Teya API** (automatikus magyar kártyás fizetés), ismétlődő számlák automatikus kiállítása.
-2. **Egyebek:** fájlmegosztás, Bitrix24 átköltöztetés, a számla-szerkesztő átköltözése a webalkalmazásba, magyar nyelvű portál a magyar ügyfeleknek.
+1. **Teya API** (automatikus magyar kártyás fizetés): a fejlesztő feladata, a lépések a fejlesztői dokumentációban.
+2. **Ügyfél-adatlap és szolgáltatás-katalógus** átköltözése a webalkalmazásba (most még a klasszikus CRM-ben).
 
 ## Tesztek
 
@@ -305,9 +345,14 @@ wp eval-file tests/portal-integration.php   # valódi WordPressen, a portál bő
 wp eval-file tests/video-integration.php    # ugyanott, videó kulcsok nélkül (a Daily-t és az AI-t a teszt helyettesíti)
 wp eval-file tests/billing-integration.php  # ugyanott, számlázási kulcsok nélkül (Számlázz.hu, Stripe, QuickBooks helyettesítve)
 wp eval-file tests/docs-integration.php     # ugyanott, AI kulcs nélkül (az AI-t a teszt helyettesíti)
+wp eval-file tests/recurring-integration.php     # ismétlődő számlák
+wp eval-file tests/files-integration.php         # fájlmegosztás
+wp eval-file tests/bitrix-integration.php        # Bitrix24 import (a Bitrix24-et a teszt helyettesíti)
+wp eval-file tests/invoices-api-integration.php  # számlák a CRM appban (Számlázz.hu helyettesítve)
+php tests/i18n.php                               # minden magyar fordítás megvan-e
 ```
 
-Az első három WordPress nélkül fut. A portál teszt valódi WordPressen és adatbázison fut, és a projektkezelő API-t is végigpróbálja: sablonmásolás, átrendezés, függőségek, stopper, jogosultságok, törlés. A videó teszt a teljes hívás-folyamatot végigviszi: szoba, belépők, hozzájárulás, lezárás, leirat, AI-összefoglaló és hibakezelés, teendőből feladat, webhook, portál. Az SEO teszt az élő főoldal valódi schemáját, a grader teszt a főoldal megtisztított HTML-jét használja (`tests/fixtures/`).
+Az első három és az i18n WordPress nélkül fut. A portál teszt valódi WordPressen és adatbázison fut, és a projektkezelő API-t is végigpróbálja: sablonmásolás, átrendezés, függőségek, stopper, jogosultságok, törlés. A videó teszt a teljes hívás-folyamatot végigviszi: szoba, belépők, hozzájárulás, lezárás, leirat, AI-összefoglaló és hibakezelés, teendőből feladat, webhook, portál. Az SEO teszt az élő főoldal valódi schemáját, a grader teszt a főoldal megtisztított HTML-jét használja (`tests/fixtures/`).
 
 ## Amit a plugin nem tud javítani (admin felületen kell)
 
