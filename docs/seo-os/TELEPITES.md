@@ -33,6 +33,9 @@ szolgáltatáson fut, amit böngészőből lehet beállítani; a WordPress (fel�
    define( 'DISABLE_WP_CRON', true );
    ```
    Majd a WordPress adminban a bővítmények bekapcsolása.
+   **TiDB adatbázisnál** (a hibaüzenetben „Unsupported collation when new collation is enabled”) a wp-config.php-ban
+   `define( 'DB_COLLATE', 'utf8mb4_general_ci' );` kell: az `utf8mb4_unicode_ci` értéknél a WordPress a TiDB által nem
+   ismert `utf8mb4_unicode_520_ci`-re vált, és egyetlen tábla sem jön létre.
 5. **Cron terminál nélkül:** a tárhely vezérlőpultjának cron-beállításában, vagy ingyenes külső szolgáltatással
    (pl. cron-job.org) 5 percenként: `https://seo.helloprovision.com/wp-cron.php?doing_wp_cron`.
 6. **Ellenőrzés:** `seo.helloprovision.com` → Beállítások → Rendszer állapot – az ellenőrzőlista mutatja, mi van hátra.
