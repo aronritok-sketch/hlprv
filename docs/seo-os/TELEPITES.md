@@ -11,6 +11,15 @@ A rendszer három részből áll:
 A böngésző csak a WordPresst látja; az API nem nyilvános (csak a `127.0.0.1:8100` címen figyel), minden kérés
 HMAC-SHA256 aláírással érkezik a bővítménytől.
 
+## 0. Gyors telepítés szkriptekkel
+
+1. A repó `services` mappáját töltsd fel a szerverre `/opt/seo-os` néven (FileZilla).
+2. Felmérés (csak olvas, jelszót nem ír ki): `sudo bash /opt/seo-os/deploy/diagnose.sh` – az eredmény a
+   `/tmp/hpv-diagnose.txt` fájlban is megvan.
+3. Telepítés: `sudo bash /opt/seo-os/deploy/install-api.sh` – feltelepíti a Dockert, véletlen titkokkal létrehozza a
+   `.env`-et, elindítja az adatbázist, az API-t és a workert, végül kiírja a `wp-config.php`-ba másolandó sorokat,
+   a cron sort és az ügynök tokenjét. Frissítéskor: új fájlok feltöltése, majd ugyanez a parancs.
+
 ## 1. Szerver: API, worker, adatbázis
 
 ```bash
