@@ -74,3 +74,4 @@ from .collab import (  # noqa: F401
     Notification,
 )
 from .system import RankingSnapshot, ServiceHeartbeat  # noqa: F401
+from .mail import MailAccount, MailContact, MailMessage, MailProfile  # noqa: F401

@@ -8,7 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from .jobs.registry import load_handlers
-from .routers import admin, audit, collab, core, dashboard, documents, intelligence, projects, research
+from .routers import admin, audit, collab, core, dashboard, documents, intelligence, mail, projects, research
 
 
 def create_app() -> FastAPI:
@@ -39,6 +39,7 @@ def create_app() -> FastAPI:
     app.include_router(audit.router)
     app.include_router(collab.router)
     app.include_router(admin.router)
+    app.include_router(mail.router)
     load_handlers()
     return app
 

@@ -9,10 +9,11 @@ ROLES = {
     "content_manager": "Content manager",
     "designer": "Designer",
     "developer": "Fejlesztő",
+    "staff": "CRM munkatárs",  # csak a CRM levelezéshez (SEO OS szerepkör nélkül)
 }
 
 # Magasabb szám = szélesebb jogkör (több szerepkörnél a legerősebb érvényes).
-ROLE_RANK = {"designer": 1, "developer": 1, "content_manager": 2, "seo_manager": 3, "admin": 4}
+ROLE_RANK = {"staff": 0, "designer": 1, "developer": 1, "content_manager": 2, "seo_manager": 3, "admin": 4}
 
 STATUSES = {
     "draft": "Vázlat",

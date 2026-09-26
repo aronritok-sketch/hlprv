@@ -75,6 +75,7 @@ USERS = {
     "content_manager": (3, "Zsolti Content"),
     "designer": (4, "Grafikus"),
     "developer": (5, "Laci Dev"),
+    "staff": (6, "Kata CRM"),
 }
 
 

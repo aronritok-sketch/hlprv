@@ -15,7 +15,7 @@ CAPS: dict[str, set[str]] = {
         "tasks.view", "tasks.edit", "tasks.update",
         "approve.internal", "approve.request_client",
         "ai.run", "integrations.run", "audit.view", "audit.edit",
-        "team.view", "comments.write",
+        "team.view", "comments.write", "mail.use",
     },
     "content_manager": {
         "project.view",
@@ -24,16 +24,17 @@ CAPS: dict[str, set[str]] = {
         "wireframes.view", "wireframes.edit",
         "documents.view", "documents.generate.writer",
         "tasks.view", "tasks.update",
-        "team.view", "comments.write",
+        "team.view", "comments.write", "mail.use",
     },
     "designer": {
         "project.view", "structure.view", "wireframes.view",
-        "documents.view", "tasks.view", "tasks.update", "comments.write",
+        "documents.view", "tasks.view", "tasks.update", "comments.write", "mail.use",
     },
     "developer": {
         "project.view", "structure.view", "wireframes.view",
-        "documents.view", "tasks.view", "tasks.update", "audit.view", "comments.write",
+        "documents.view", "tasks.view", "tasks.update", "audit.view", "comments.write", "mail.use",
     },
+    "staff": {"mail.use"},
 }
 
 # Melyik szerepkör milyen dokumentumtípust láthat (a "documents.view" mellett).

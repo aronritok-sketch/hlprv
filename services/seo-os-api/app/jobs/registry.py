@@ -10,6 +10,7 @@ MODULES = [
     "app.services.audit",
     "app.services.api_research",
     "app.services.demo",
+    "app.services.mail",
 ]
 
 

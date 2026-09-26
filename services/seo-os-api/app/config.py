@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     storage_dir: str = "/var/lib/seo-os/files"
     # A Screaming Frog ügynök tokenje (Bearer). Üresen az ügynök nem tud csatlakozni.
     agent_token: str = ""
+    # A postafiók-jelszavak titkosító kulcsa. Üresen a hmac_secret-ből származik.
+    mail_key: str = ""
+    # A levelek szinkronizálásának gyakorisága (másodperc) a workerben; 0 = kikapcsolva.
+    mail_sync_seconds: int = 120
 
     openai_api_key: str = ""
     anthropic_api_key: str = ""
