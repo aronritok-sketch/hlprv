@@ -263,6 +263,11 @@ def job_import_crawl(db: Session, job: Job, progress: Progress):
     run.status, run.finished_at, run.error = "done", utcnow(), ""
     run.message = f"{sum(1 for v in counts.values() if v)} megállapítás"
     log(db, run.project_id, job.created_by, "crawl", run.id, "imported", run.message)
+    if run.source == "agent" and run.created_by:
+        from .collab import notify
+
+        notify(db, [run.created_by], "crawl", f"A Screaming Frog crawl elkészült ({run.message})", body=run.start_url,
+               link=f"#/projects/{run.project_id}?tab=audit", project_id=run.project_id)
     return {"run_id": run.id, "findings": len([v for v in counts.values() if v]), "urls": c.stats.get("urls")}
 
 

@@ -13,7 +13,7 @@ Tartalomformátum:
 import hashlib
 import json
 from collections import Counter, defaultdict
-from datetime import date
+from datetime import date, timedelta
 from typing import Any, Optional
 
 from sqlalchemy import select
@@ -514,6 +514,81 @@ def tech_audit(d: Data, language: str) -> tuple[dict, dict]:
     return facts, content
 
 
+def _period(d: Data) -> tuple[date, date]:
+    raw = getattr(d, "period", None)
+    if raw:
+        y, m = (int(x) for x in raw.split("-")[:2])
+        start = date(y, m, 1)
+    else:
+        first = date.today().replace(day=1)
+        start = (first - timedelta(days=1)).replace(day=1)  # az előző hónap
+    end = (start.replace(day=28) + timedelta(days=4)).replace(day=1)
+    return start, end
+
+
+def monthly_report(d: Data, language: str) -> tuple[dict, dict]:
+    from sqlalchemy import and_
+
+    from ..models import AuditFinding, ProductionTask
+    from ..models.documents import TASK_ROLES
+
+    p = d.project
+    L = lang_of(language)
+    hu = L == "hu"
+    start, end = _period(d)
+    in_month = lambda ts: ts is not None and start <= ts.date() < end  # noqa: E731
+    tasks = d.db.scalars(select(ProductionTask).where(ProductionTask.project_id == p.id, ProductionTask.status == "done")).all()
+    done = [t for t in tasks if in_month(t.updated_at)]
+    published = [r for r in d.roadmap if r.status == "published" and in_month(r.updated_at)]
+    fixed = d.db.scalars(select(AuditFinding).where(and_(AuditFinding.project_id == p.id, AuditFinding.status == "fixed"))).all()
+    fixed = [f for f in fixed if in_month(f.updated_at)]
+    next_start = end
+    upcoming = [r for r in d.roadmap if r.month == next_start]
+    own = sorted([(k, r) for _, k in d.analysed for r in k.rankings if r.is_own and r.position], key=lambda x: x[1].position)
+    top3 = sum(1 for _, r in own if r.position <= 3)
+    top10 = sum(1 for _, r in own if r.position <= 10)
+    label = month_label(start, L)
+    facts = {"project": p.name, "domain": p.domain, "period": start.isoformat(), "done": [(t.role, t.title) for t in done],
+             "published": [r.title for r in published], "fixed": [(f.issue_key, f.previous_count) for f in fixed],
+             "top3": top3, "top10": top10, "rankings": [(k.term, r.position) for k, r in own[:20]], "next": [r.title for r in upcoming]}
+    from . import audit_rules as AR
+
+    content = {
+        "title": ("Havi SEO riport" if hu else "Monthly SEO report"), "subtitle": f"{p.client.name} · {p.domain} · {label}", "chip": label.upper(),
+        "sections": [
+            section("summary", "Összefoglaló" if hu else "Summary", [{"type": "kpis", "items": [
+                {"label": "Elvégzett feladat" if hu else "Tasks completed", "value": num(len(done))},
+                {"label": "Megjelent tartalom" if hu else "Content published", "value": num(len(published))},
+                {"label": "Javított technikai hiba" if hu else "Technical fixes", "value": num(len(fixed))},
+                {"label": "Top 10 kulcsszó" if hu else "Top-10 keywords", "value": num(top10), "hint": (f"ebből top 3: {top3}" if hu else f"top 3: {top3}")},
+            ]}]),
+            section("search_console", "Keresési teljesítmény" if hu else "Search performance", [
+                {"type": "callout", "title": "Google Search Console", "text": (
+                    "A kattintások, megjelenések és átlagos pozíció havi alakulása a Search Console bekötése után automatikusan itt jelenik meg. Addig a mérési terv szerinti számokat a SEO manager adja meg."
+                    if hu else "Clicks, impressions and average position will appear here automatically once Search Console is connected.")},
+            ], narrative=False),
+            section("work", "Elvégzett munka" if hu else "Work completed", [
+                T(["Terület" if hu else "Area", "Feladat" if hu else "Task", "URL"], [[TASK_ROLES.get(t.role, t.role), t.title, t.target_url or t.source_url] for t in done])
+            ] if done else [P("Ebben a hónapban nem zárult feladat." if hu else "No tasks were closed this month.")]),
+            section("content", "Megjelent tartalmak" if hu else "Published content", [
+                T(["Cím" if hu else "Title", "URL", "Elsődleges kulcsszó" if hu else "Primary keyword"], [[r.title, r.url, d.kw[r.keyword_id].term if r.keyword_id in d.kw else "–"] for r in published])
+            ] if published else []),
+            section("technical", "Technikai javítások" if hu else "Technical fixes", [
+                T(["Téma" if hu else "Topic", "Megállapítás" if hu else "Finding", "Korábban" if hu else "Before"],
+                  [[AR.TOPICS[f.topic]["title"], AR.label_for(f.issue_key, f.previous_count or 0), f.previous_count] for f in fixed])
+            ] if fixed else []),
+            section("rankings", "Helyezések" if hu else "Rankings", [
+                T(["Kulcsszó" if hu else "Keyword", "Pozíció" if hu else "Position", "URL"], [[k.term, r.position, r.url] for k, r in own[:20]])
+            ] if own else []),
+            section("next", "Következő hónap" if hu else "Next month", [
+                T(["Tartalom" if hu else "Content", "Típus" if hu else "Type", "Prioritás" if hu else "Priority"], [[r.title, lbl("content_type", r.content_type, L), r.priority] for r in upcoming])
+            ] if upcoming else []),
+        ],
+    }
+    content["sections"] = [s for s in content["sections"] if s["blocks"]]
+    return facts, content
+
+
 BUILDERS = {
     "seo_strategy": seo_strategy,
     "content_strategy": content_strategy,
@@ -524,10 +599,12 @@ BUILDERS = {
     "designer_brief": designer_brief,
     "seo_checklist": seo_checklist,
     "tech_audit": tech_audit,
+    "monthly_report": monthly_report,
 }
 
 
-def build(db: Session, project: Project, doc_type: str, language: str) -> tuple[dict, dict, Data]:
+def build(db: Session, project: Project, doc_type: str, language: str, period: Optional[str] = None) -> tuple[dict, dict, Data]:
     d = Data(db, project)
+    d.period = period
     facts, content = BUILDERS[doc_type](d, language)
     return facts, content, d

@@ -500,3 +500,28 @@ textarea.input { resize: vertical; min-height: 60px; }
 }
 
 .card--form > .segmented { margin-bottom: 16px; }
+
+/* Együttműködés */
+.bell { position: relative; }
+.bell .icon-btn { position: relative; }
+.bell__dot { position: absolute; top: 2px; right: 0; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 99px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; }
+.bell__panel { position: absolute; right: 0; top: calc(100% + 8px); width: 360px; max-width: calc(100vw - 32px); max-height: 70vh; overflow: auto; background: var(--card); border: 1px solid var(--line-2); border-radius: var(--radius); box-shadow: 0 18px 40px rgba(0, 0, 0, .45); z-index: 60; }
+.bell__panel header { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.bell__panel ul { list-style: none; margin: 0; padding: 0; }
+.bell__panel li { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.bell__panel li:hover { background: var(--card-2); }
+.bell__panel li.is-unread { box-shadow: inset 3px 0 0 var(--accent); }
+.bell__title { font-weight: 600; font-size: 13px; }
+.bell__body { font-size: 12px; color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.comment { padding: 8px 0; border-top: 1px solid var(--line); }
+.comment:first-child { border-top: 0; }
+.comment--reply { margin-left: 22px; border-top: 0; padding: 6px 0 0 12px; border-left: 2px solid var(--line-2); }
+.comment--client .comment__body { color: var(--warn); }
+.comment.is-resolved > .comment__body { opacity: .55; text-decoration: line-through; }
+.comment__head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.comment__body { white-space: pre-line; margin-top: 2px; }
+.comment-form { display: flex; flex-direction: column; gap: 8px; padding-top: 6px; }
+.comment-form .input { width: auto; }
+.approval { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.approval__row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.approval__decide { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 520px; }

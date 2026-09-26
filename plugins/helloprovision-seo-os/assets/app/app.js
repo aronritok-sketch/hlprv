@@ -9,6 +9,7 @@ import { ProjectNew } from './views/project-new.js';
 import { ProjectPage } from './views/project.js';
 import { MyWork } from './views/mywork.js';
 import { Settings } from './views/settings.js';
+import { Bell } from './views/collab.js';
 
 const NAV = [
 	['/', 'Vezérlőpult', 'home', null],
@@ -81,6 +82,7 @@ function App() {
 					<header class="topbar">
 						<button class="icon-btn topbar__menu" onClick=${() => setMenu(true)} aria-label="Menü"><${Icon} name="menu" /></button>
 						<div class="topbar__title">SEO OS</div>
+						<${Bell} />
 						${can(boot.me, 'project.create') ? html`<button class="btn btn--sm" onClick=${() => navigate('/projects/new')}><${Icon} name="plus" /> Új projekt</button>` : ''}
 					</header>
 					<${Router} route=${route} />

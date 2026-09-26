@@ -19,6 +19,8 @@ require_once __DIR__ . '/includes/settings.php';
 require_once __DIR__ . '/includes/users.php';
 require_once __DIR__ . '/includes/proxy.php';
 require_once __DIR__ . '/includes/crm.php';
+require_once __DIR__ . '/includes/notify.php';
+require_once __DIR__ . '/includes/review.php';
 require_once __DIR__ . '/includes/app.php';
 
 if ( is_admin() ) {
@@ -31,3 +33,11 @@ function hpv_seo_activate() {
 	// Olyan munkatársnak, akinek nincs más WordPress szerepköre (pl. külsős grafikus): csak az SEO OS.
 	add_role( 'hpv_seo_user', 'SEO OS munkatárs', array( 'read' => true ) );
 }
+
+register_deactivation_hook(
+	__FILE__,
+	function () {
+		wp_clear_scheduled_hook( 'hpv_seo_outbox' );
+		wp_clear_scheduled_hook( 'hpv_seo_daily' );
+	}
+);

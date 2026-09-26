@@ -6,7 +6,7 @@ from typing import Any, Optional
 from urllib.parse import unquote
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -108,6 +108,7 @@ class GenerateIn(BaseModel):
     doc_type: str
     language: Optional[str] = None
     formats: Optional[list[str]] = None
+    period: Optional[str] = Field(default=None, pattern=r"^\d{4}-\d{2}$")  # havi riporthoz: ÉÉÉÉ-HH
 
 
 @router.post("/projects/{project_id}/documents/generate")
@@ -120,7 +121,7 @@ def generate_document(project_id: int, body: GenerateIn, db: Session = Depends(g
     if body.language and body.language not in ("hu", "en"):
         raise HTTPException(422, "A nyelv hu vagy en lehet.")
     formats = [f for f in (body.formats or []) if f in ("pdf", "docx", "xlsx")] or None
-    job = runner.enqueue(db, "generate_document", project_id, {"doc_type": body.doc_type, "language": body.language, "formats": formats}, user.id)
+    job = runner.enqueue(db, "generate_document", project_id, {"doc_type": body.doc_type, "language": body.language, "formats": formats, "period": body.period}, user.id)
     return job_payload(job)
 
 
@@ -350,6 +351,11 @@ def patch_task(task_id: int, body: TaskPatch, db: Session = Depends(get_db), use
     diff = changes(t, data)
     if diff:
         log(db, t.project_id, user.id, "task", t.id, "updated", t.title, diff)
+    if "assignee_id" in diff and t.assignee_id:
+        from ..services import collab
+
+        collab.notify(db, [t.assignee_id], "task_assigned", f"Új feladat: {t.title}", body=t.done_when and "Akkor kész, ha: " + t.done_when,
+                      link=f"#/projects/{t.project_id}?tab=documents&sub=tasks", project_id=t.project_id, exclude=user.id)
     db.commit()
     return task_payload(t, _users(db))
 

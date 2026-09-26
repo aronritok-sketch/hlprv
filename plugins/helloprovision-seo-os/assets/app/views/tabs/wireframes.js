@@ -3,6 +3,7 @@
  * kötelező / tilos lista, vizuális sorrend, kötelező inputok). Generálás, szerkesztés, jóváhagyás, verziók.
  */
 import { html, useState, useEffect, useApp, api, useLoad, useJob, setParam, toast, errorText, fmt, Icon, Spinner, ErrorBox, Empty, Field, Textarea, Pill, InlineEdit, Checkbox, Select, can } from '../../ui.js';
+import { Comments } from '../collab.js';
 
 const STATUS = { draft: 'Vázlat', review: 'Ellenőrzésre', approved: 'Jóváhagyva' };
 
@@ -68,6 +69,7 @@ function Viewer({ project, id, onChanged }) {
 			<table class="table table--dense"><tbody>${wf.inputs.map((inp, i) => html`<tr key=${i}><td><${Checkbox} checked=${inp.provided} label=${inp.item} onChange=${(v) => editable && patch({ inputs: wf.inputs.map((x, j) => (j === i ? { ...x, provided: v } : x)) })} /></td><td class="small">${inp.description}</td></tr>`)}</tbody></table>
 		</section>` : ''}
 		${can(me, 'wireframes.view') ? html`<section class="card pad"><h3 class="subhead">UX-megjegyzés a grafikusnak</h3>${editable ? html`<${InlineEdit} multiline value=${wf.ux_notes} onSave=${(v) => patch({ ux_notes: v })} placeholder="pl. hero: responsive mockup, proof az első képernyőn" />` : html`<p>${wf.ux_notes || '–'}</p>`}</section>` : ''}
+		<${Comments} subject="wireframe" id=${wf.id} />
 	</div>`;
 }
 

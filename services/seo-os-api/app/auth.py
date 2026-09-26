@@ -102,6 +102,15 @@ async def current_agent(request: Request) -> None:
         raise HTTPException(401, "Érvénytelen ügynök token.")
 
 
+async def current_system(request: Request) -> None:
+    """A WordPress bővítmény saját, szerveroldali hívásai (ütemezett e-mail küldés, ügyfél-jóváhagyó oldal).
+    A „system” szerepkört a bővítmény csak a saját kódjából küldi; a böngészőből érkező kérések a felhasználó
+    szerepkörével vannak aláírva, így ezt nem érhetik el."""
+    info = await verify_request(request)
+    if info["role"] != "system":
+        raise HTTPException(403, "Csak a rendszer hívhatja.")
+
+
 def need(cap: str):
     """Függőség: a végponthoz szükséges jogosultság."""
 

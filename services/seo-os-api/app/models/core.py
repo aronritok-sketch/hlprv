@@ -92,6 +92,7 @@ class Project(Timestamps, Base):
     strategy_months: Mapped[int] = mapped_column(Integer, default=6, server_default="6")
     content_per_month: Mapped[int] = mapped_column(Integer, default=2, server_default="2")
     upsell_reminder_at: Mapped[Optional[date]] = mapped_column(Date)
+    upsell_notified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     archived_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
     client: Mapped[Client] = relationship(lazy="joined")

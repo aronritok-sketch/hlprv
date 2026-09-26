@@ -22,6 +22,11 @@ function hpv_seo_route() {
 	if ( ! hpv_seo_is_app_request() ) {
 		return;
 	}
+	// Ügyfél-jóváhagyó oldal: belépés nélkül, titkos linkkel.
+	$review = hpv_seo_review_match();
+	if ( $review ) {
+		hpv_seo_review_handle( $review );
+	}
 	if ( ! is_user_logged_in() ) {
 		auth_redirect();
 	}

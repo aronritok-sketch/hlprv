@@ -3,12 +3,21 @@
  * (PDF / DOCX / XLSX), elavultság jelzése. Második fül: gyártási feladatok szerepkörönként, CRM-be küldéssel.
  */
 import { html, useState, useApp, api, useLoad, useJob, setParam, toast, errorText, fmt, download, Icon, Spinner, ErrorBox, Empty, Pill, Select, InlineEdit, Drawer, Field, Textarea, Input, Confirm, can } from '../../ui.js';
+import { Comments, ApprovalPanel } from '../collab.js';
 
 const STATUS_KIND = { draft: '', review: 'warn', approved: 'ok', sent: 'ok' };
 const LANGS = [['hu', 'Magyar'], ['en', 'Angol']];
 
+function prevMonth() {
+	const d = new Date();
+	d.setDate(1);
+	d.setMonth(d.getMonth() - 1);
+	return d.toISOString().slice(0, 7);
+}
+
 function TypeCard({ t, latest, active, onOpen, onGenerate, busy }) {
 	const [lang, setLang] = useState(latest ? latest.language : t.default_language);
+	const [period, setPeriod] = useState(prevMonth());
 	return html`<li class=${'doc-type' + (active ? ' is-active' : '')}>
 		<button class="doc-type__main" onClick=${() => latest && onOpen(latest.id)} disabled=${!latest}>
 			<span class="doc-type__title"><${Icon} name="doc" size="15" /> ${t.label}</span>
@@ -21,7 +30,8 @@ function TypeCard({ t, latest, active, onOpen, onGenerate, busy }) {
 		</button>
 		${t.can_generate ? html`<div class="doc-type__actions">
 			${(t.languages || []).length > 1 ? html`<${Select} value=${lang} onChange=${setLang} options=${LANGS} />` : ''}
-			<button class="btn btn--sm" disabled=${busy} onClick=${() => onGenerate(t.doc_type, lang)}><${Icon} name="spark" size="14" /> ${latest ? 'Új változat' : 'Generálás'}</button>
+			${t.doc_type === 'monthly_report' ? html`<input class="input" type="month" value=${period} onInput=${(e) => setPeriod(e.target.value)} aria-label="Időszak" />` : ''}
+			<button class="btn btn--sm" disabled=${busy} onClick=${() => onGenerate(t.doc_type, lang, t.doc_type === 'monthly_report' ? period : undefined)}><${Icon} name="spark" size="14" /> ${latest ? 'Új változat' : 'Generálás'}</button>
 		</div>` : ''}
 	</li>`;
 }
@@ -50,7 +60,7 @@ function Editor({ doc, onSave, onClose }) {
 	</${Drawer}>`;
 }
 
-function Viewer({ id, versions, onChanged }) {
+function Viewer({ id, versions, onChanged, project }) {
 	const { me } = useApp();
 	const [doc, loading, error, reload, setDoc] = useLoad('/documents/' + id, [id]);
 	const [preview] = useLoad('/documents/' + id + '/preview', [id, doc && doc.files.map((f) => f.file_id).join()]);
@@ -74,14 +84,13 @@ function Viewer({ id, versions, onChanged }) {
 		${doc.method !== 'claude' ? html`<div class="alert alert--info small"><span>Ez a változat sablonszöveggel készült (nincs Anthropic API-kulcs, vagy a Claude hívás nem sikerült). A táblák így is teljesek; a szöveget szerkesztheted, vagy a kulcs beállítása után generálj új változatot.</span></div>` : ''}
 		<div class="toolbar">
 			${canEdit ? html`<button class="btn btn--ghost btn--sm" onClick=${() => setEditing(true)}><${Icon} name="edit" size="14" /> Szöveg szerkesztése</button>` : ''}
-			${canEdit && doc.status === 'draft' ? html`<button class="btn btn--ghost btn--sm" onClick=${() => patch({ status: 'review' })}>Ellenőrzésre</button>` : ''}
-			${can(me, 'approve.internal') && ['draft', 'review'].includes(doc.status) ? html`<button class="btn btn--sm" onClick=${() => patch({ status: 'approved' })}><${Icon} name="check" size="14" /> Jóváhagyás</button>` : ''}
-			${versions.canEdit && doc.status === 'approved' ? html`<button class="btn btn--sm" onClick=${() => patch({ status: 'sent' })}>Kiküldve jelölés</button>` : ''}
 			${doc.status === 'sent' ? html`<span class="muted small">Kiküldve: ${fmt.datetime(doc.sent_at)}</span>` : ''}
 			<span class="toolbar__spacer"></span>
 			${can(me, 'documents.generate') ? html`<button class="btn btn--ghost btn--sm" onClick=${() => setConfirm(true)}><${Icon} name="trash" size="14" /></button>` : ''}
 		</div>
+		<${ApprovalPanel} subject="document" id=${doc.id} doc=${doc} project=${project} onChanged=${() => { reload(); onChanged(); }} />
 		${preview ? html`<iframe class="doc-frame" title="Előnézet" srcdoc=${preview.html}></iframe>` : html`<${Spinner} />`}
+		<${Comments} subject="document" id=${doc.id} />
 		${editing ? html`<${Editor} doc=${doc} onClose=${() => setEditing(false)} onSave=${(content) => patch({ content })} />` : ''}
 		${confirm ? html`<${Confirm} danger text=${'Törlöd ezt a változatot (v' + doc.version + ')?'} yes="Törlés" onClose=${() => setConfirm(false)}
 			onYes=${async () => { try { await api('/documents/' + doc.id, { method: 'DELETE' }); setParam('doc', ''); onChanged(); } catch (e) { toast(errorText(e), 'error'); } }} />` : ''}
@@ -101,8 +110,8 @@ function DocumentList({ project, params }) {
 	const latestOf = (type) => data.documents.find((d) => d.doc_type === type && d.stale !== null) || data.documents.find((d) => d.doc_type === type);
 	const openId = params.doc ? Number(params.doc) : null;
 	const open = data.documents.find((d) => d.id === openId);
-	const generate = async (doc_type, language) => {
-		try { setJob(await api('/projects/' + project.id + '/documents/generate', { method: 'POST', body: { doc_type, language } })); } catch (e) { toast(errorText(e), 'error'); }
+	const generate = async (doc_type, language, period) => {
+		try { setJob(await api('/projects/' + project.id + '/documents/generate', { method: 'POST', body: { doc_type, language, period } })); } catch (e) { toast(errorText(e), 'error'); }
 	};
 	const client = data.types.filter((t) => t.audience === 'client');
 	const internal = data.types.filter((t) => t.audience !== 'client');
@@ -115,7 +124,7 @@ function DocumentList({ project, params }) {
 			${group('Ügyféldokumentumok', client)}
 			${group('Belső briefek', internal)}
 		</div>
-		<div>${open ? html`<${Viewer} key=${open.id} id=${open.id} onChanged=${reload}
+		<div>${open ? html`<${Viewer} key=${open.id} id=${open.id} project=${project} onChanged=${reload}
 				versions=${{ list: data.documents.filter((d) => d.doc_type === open.doc_type), canEdit: (data.types.find((t) => t.doc_type === open.doc_type) || {}).can_generate }} />`
 			: html`<${Empty} icon="doc" title="Válassz dokumentumot">A dokumentumok az adatbázisból épülnek (kulcsszavak, struktúra, roadmap, wireframe-ek); a magyarázó szöveget a Claude írja a saját mintáink alapján.</${Empty}>`}</div>
 	</div>`;
@@ -138,6 +147,7 @@ function TaskDrawer({ task, users, onClose, onPatch, full }) {
 			${task.crm_task_id ? html`<dt>CRM</dt><dd>#${task.crm_task_id}</dd>` : ''}
 		</dl>
 		<${Field} label="Megjegyzés"><${Textarea} rows="3" value=${notes} onInput=${(v) => setNotes(v)} onBlur=${() => notes !== (task.notes || '') && onPatch({ notes })} /></${Field}>
+		<${Comments} subject="task" id=${task.id} />
 	</${Drawer}>`;
 }
 

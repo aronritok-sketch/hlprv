@@ -35,6 +35,7 @@ FORMATS_BY_TYPE = {
     "designer_brief": ["docx", "pdf"],
     "seo_checklist": ["xlsx", "pdf"],
     "tech_audit": ["pdf", "docx", "xlsx"],
+    "monthly_report": ["pdf", "docx"],
 }
 
 # Mi kell az egyes dokumentumokhoz (ha hiányzik, a generálás érthető hibával áll meg).
@@ -217,6 +218,13 @@ def template_narrative(doc_type: str, language: str, facts: dict, content: dict)
         xl = [TOPICS[t["topic"]]["title"].lower() for t in facts.get("topics", []) if t["size"] == "XL" and t["findings"]]
         lead = (f"A(z) {facts.get('domain')} technikai állapotát Screaming Froggal és helyszíni ellenőrzésekkel vizsgáltuk. "
                 + (f"A legsürgetőbb (XL) teendők: {', '.join(xl)}." if xl else "Kritikus (XL) hibát nem találtunk."))
+    elif doc_type == "monthly_report":
+        lead = (f"A(z) {facts.get('domain')} havi összefoglalója: {len(facts.get('done', []))} elvégzett feladat, {len(facts.get('published', []))} megjelent tartalom, "
+                f"{len(facts.get('fixed', []))} javított technikai hiba." if hu else
+                f"Monthly summary for {facts.get('domain')}: {len(facts.get('done', []))} tasks completed, {len(facts.get('published', []))} pieces published, "
+                f"{len(facts.get('fixed', []))} technical fixes.")
+        out["summary"] = [("A következő hónapban a roadmap szerinti tartalmak és a nyitott technikai feladatok folytatódnak." if hu else
+                           "Next month we continue with the roadmap content and the open technical tasks.")]
     elif doc_type == "designer_brief":
         lead = "Oldalcélok, kötelező szakaszok és képi irány a jóváhagyott wireframe-ek alapján."
     return {"lead": lead, "sections": [{"key": k, "paragraphs": v, "bullets": []} for k, v in out.items()]}
@@ -320,7 +328,7 @@ def job_generate_document(db: Session, job: Job, progress: Progress):
     language = job.payload.get("language") or default_language(project, doc_type)
     formats = job.payload.get("formats") or FORMATS_BY_TYPE[doc_type]
     progress(0.05, "Adatok összegyűjtése…")
-    facts, content, d = docfacts.build(db, project, doc_type, language)
+    facts, content, d = docfacts.build(db, project, doc_type, language, job.payload.get("period"))
     check_requirements(d, doc_type)
     method, model, warning = "template", "", ""
     if claude_available(db) and any(s.get("narrative") for s in content["sections"]):

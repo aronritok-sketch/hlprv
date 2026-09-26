@@ -4,6 +4,7 @@
  * audit XLSX és a „Technikai SEO audit” dokumentum.
  */
 import { html, useState, useApp, api, upload, useLoad, useJob, setParam, toast, errorText, fmt, download, Icon, Spinner, ErrorBox, Empty, Pill, Select, Drawer, Field, Textarea, Input, Checkbox, DropZone, can } from '../../ui.js';
+import { Comments } from '../collab.js';
 
 const SIZE_KIND = { XL: 'XL', M: 'M', S: 'S' };
 const RUN_KIND = { done: 'ok', failed: 'danger', queued: 'warn', running: 'warn', importing: 'warn', draft: '', cancelled: '' };
@@ -29,6 +30,7 @@ function FindingDrawer({ id, onClose, onPatch, editable }) {
 		<table class="table table--dense"><thead><tr><th>URL</th><th>Részlet</th></tr></thead>
 			<tbody>${f.urls.map((u, i) => html`<tr key=${i}><td class="url"><a class="link" href=${u.url} target="_blank" rel="noopener">${u.url}</a>${u.from ? html`<div class="muted small">forrás: ${u.from}</div>` : ''}</td><td class="small">${u.detail}</td></tr>`)}</tbody>
 		</table>
+		<${Comments} subject="finding" id=${f.id} />
 	</${Drawer}>`;
 }
 

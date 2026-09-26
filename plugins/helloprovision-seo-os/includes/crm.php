@@ -24,6 +24,15 @@ function hpv_seo_crm_routes() {
 	);
 	register_rest_route(
 		'hpv-seo/v1',
+		'/crm/client-review',
+		array(
+			'methods'             => 'POST',
+			'permission_callback' => fn() => in_array( hpv_seo_user_role(), array( 'admin', 'seo_manager' ), true ),
+			'callback'            => 'hpv_seo_crm_client_review',
+		)
+	);
+	register_rest_route(
+		'hpv-seo/v1',
 		'/crm/push-tasks',
 		array(
 			'methods'             => 'POST',
@@ -153,4 +162,54 @@ function hpv_seo_crm_task_description( array $task ): string {
 	$lines[] = 'SEO OS: ' . hpv_seo_app_url( '/projects/' . (int) $task['project_id'] . '?tab=documents' );
 
 	return implode( "\n", $lines );
+}
+
+/**
+ * Dokumentum küldése ügyfél-jóváhagyásra: jóváhagyó link (SEO OS), majd értesítés az ügyfélportálon keresztül –
+ * e-mail az ügyfél portál-felhasználóinak és üzenet az ügyfél chat-csatornájába. CRM nélkül a megadott e-mail címre.
+ */
+function hpv_seo_crm_client_review( WP_REST_Request $request ) {
+	$doc_id = absint( $request->get_param( 'document_id' ) );
+	$email  = sanitize_email( (string) $request->get_param( 'email' ) );
+	$msg    = sanitize_textarea_field( (string) $request->get_param( 'message' ) );
+	$lang   = 'en' === $request->get_param( 'language' ) ? 'en' : ( 'hu' === $request->get_param( 'language' ) ? 'hu' : null );
+	$chat   = (bool) $request->get_param( 'chat' );
+
+	$review = hpv_seo_api_json( 'POST', 'documents/' . $doc_id . '/client-review', array_filter( array( 'email' => $email, 'message' => $msg, 'language' => $lang ) ) );
+	if ( is_wp_error( $review ) ) {
+		return $review;
+	}
+	$url     = hpv_seo_review_url( (string) $review['token'] );
+	$en      = 'en' === ( $review['language'] ?? 'hu' ) ? true : false;
+	$subject = $en ? sprintf( 'Please review: %s – %s', $review['title'], $review['domain'] ) : sprintf( 'Jóváhagyásra vár: %s – %s', $review['title'], $review['domain'] );
+	$body    = '<p>' . esc_html( $en ? 'We have prepared a document for your review. You can download it, ask questions, approve it or request changes on the page below.' : 'Elkészült egy dokumentum, amit kérjük, nézz át. Az alábbi oldalon letöltheted, kérdezhetsz, jóváhagyhatod vagy módosítást kérhetsz.' ) . '</p>'
+		. ( $msg ? '<p><em>' . nl2br( esc_html( $msg ) ) . '</em></p>' : '' );
+	$cta     = $en ? 'Review document' : 'Dokumentum megtekintése';
+
+	$crm_client = (int) ( $review['crm_client_id'] ?? 0 );
+	$emailed    = false;
+	$chatted    = false;
+	if ( $crm_client && function_exists( 'hpv_p_notify_client' ) && hpv_p_get( 'client', $crm_client ) ) {
+		$emailed = hpv_p_notify_client( $crm_client, $subject, (string) $review['title'], $body, $cta, $url );
+		if ( $chat && function_exists( 'hpv_chat_client_channel' ) && function_exists( 'hpv_chat_post' ) ) {
+			$channel = hpv_chat_client_channel( $crm_client );
+			if ( $channel ) {
+				$posted  = hpv_chat_post( (int) $channel['id'], get_current_user_id(), ( $en ? 'Document ready for your review: ' : 'Jóváhagyásra vár: ' ) . $review['title'] . "\n" . ( $msg ? $msg . "\n" : '' ) . $url );
+				$chatted = ! is_wp_error( $posted );
+			}
+		}
+	}
+	if ( $email && ( ! $emailed || ! $crm_client ) ) {
+		$html    = function_exists( 'hpv_p_email_html' ) ? hpv_p_email_html( (string) $review['title'], $body, $cta, $url ) : hpv_seo_mail_html( (string) $review['title'], wp_strip_all_tags( $body ), $cta, $url );
+		$emailed = wp_mail( $email, $subject, $html, array( 'Content-Type: text/html; charset=UTF-8' ) ) || $emailed;
+	}
+
+	return rest_ensure_response(
+		array(
+			'url'      => $url,
+			'emailed'  => (bool) $emailed,
+			'chat'     => $chatted,
+			'approval' => $review,
+		)
+	);
 }

@@ -22,6 +22,7 @@ DOC_TYPES = {
     "designer_brief": ("Grafikusi brief", "internal"),
     "seo_checklist": ("SEO checklist", "internal"),
     "tech_audit": ("Technikai SEO audit", "client"),
+    "monthly_report": ("Havi riport", "client"),
 }
 DOC_STATUSES = {"draft": "Vázlat", "review": "Ellenőrzésre", "approved": "Jóváhagyva", "sent": "Kiküldve"}
 TASK_ROLES = {"seo": "SEO", "writer": "Szövegíró", "developer": "Fejlesztő", "designer": "Grafikus"}
@@ -108,3 +109,4 @@ class ProductionTask(Timestamps, Base):
     due_date: Mapped[Optional[date]] = mapped_column(Date)
     crm_task_id: Mapped[Optional[int]] = mapped_column(BigInteger)
     key: Mapped[str] = mapped_column(String(128), default="")  # ismételt generálásnál ez alapján nem duplikál
+    overdue_notified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
