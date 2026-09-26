@@ -224,7 +224,7 @@ A portál saját keretben fut, a WordPress témától függetlenül, mobilon is.
 3. **`wp-config.php`**, a `require_once ABSPATH . 'wp-settings.php';` sor elé:
    ```php
    $hpv_host = strtolower( $_SERVER['HTTP_HOST'] ?? '' );
-   if ( in_array( $hpv_host, array( 'crm.helloprovision.com', 'clients.helloprovision.com' ), true ) ) {
+   if ( in_array( $hpv_host, array( 'crm.helloprovision.com', 'clients.helloprovision.com', 'seo.helloprovision.com' ), true ) ) {
        define( 'WP_HOME', 'https://' . $hpv_host );
        define( 'WP_SITEURL', 'https://' . $hpv_host );
    }
@@ -279,3 +279,13 @@ Az első három WordPress nélkül fut. A portál teszt valódi WordPressen és 
 
 - **H1:** most csak `for Southwest Florida Businesses`, mert a kulcsszó („SEO & Local Search”) a H1-en kívül, egy animált `div`-ben van. A teljes szöveg kerüljön a H1-be, az animáció maradhat díszítésnek.
 - **Mobil sebesség:** a hero részben futó UnicornStudio WebGL-animációt mobilon érdemes statikus képre cserélni (LCP, INP).
+
+## SEO OS (`seo.helloprovision.com`)
+
+Belső SEO projektgyártó rendszer: kutatás (Ahrefs / Keyword Planner / DataForSEO), AI kulcsszó-elemzés és klaszterek,
+oldalstruktúra, tartalomstratégia és roadmap, wireframe-ek, ügyfél- és belső dokumentumok (Claude), technikai audit
+Screaming Froggal, gyártási feladatok a CRM-be, jóváhagyások az ügyfélportálon keresztül.
+
+- Bővítmény: `plugins/helloprovision-seo-os` · API és worker: `services/seo-os-api` · Screaming Frog ügynök: `services/seo-os-crawler`
+- Telepítés, Screaming Frog beállítás, üzemeltetés: [`docs/seo-os/TELEPITES.md`](docs/seo-os/TELEPITES.md)
+- Architektúra és módszertan: [`docs/seo-os/ARCHITECTURE.md`](docs/seo-os/ARCHITECTURE.md)

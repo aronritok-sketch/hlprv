@@ -1,0 +1,68 @@
+# HelloProVision SEO OS – szerveroldali szolgáltatások.
+#   docker compose up -d                    → adatbázis, API, háttérfeladat-worker
+#   docker compose --profile crawler up -d  → + Screaming Frog ügynök a szerveren (licenc kell hozzá)
+# Az API csak a WordPress szerver felől legyen elérhető (127.0.0.1 vagy belső hálózat), a böngésző felől nem.
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: seo_os
+      POSTGRES_USER: seo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Add meg a POSTGRES_PASSWORD értékét a .env-ben}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U seo -d seo_os"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: ./seo-os-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SEO_OS_DATABASE_URL: postgresql+psycopg://seo:${POSTGRES_PASSWORD}@db/seo_os
+    volumes:
+      - files:/var/lib/seo-os/files
+    ports:
+      - "127.0.0.1:8100:8100"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  worker:
+    build: ./seo-os-api
+    restart: unless-stopped
+    command: ["python", "-m", "app.jobs.worker"]
+    env_file: .env
+    environment:
+      SEO_OS_DATABASE_URL: postgresql+psycopg://seo:${POSTGRES_PASSWORD}@db/seo_os
+    volumes:
+      - files:/var/lib/seo-os/files
+    depends_on:
+      api:
+        condition: service_started
+
+  crawler:
+    profiles: ["crawler"]
+    build:
+      context: ./seo-os-crawler
+      args:
+        SF_VERSION: ${SF_VERSION:-22.0}
+    restart: unless-stopped
+    environment:
+      HPV_SEO_URL: ${HPV_SEO_URL:-https://seo.helloprovision.com}
+      HPV_AGENT_TOKEN: ${SEO_OS_AGENT_TOKEN}
+      HPV_AGENT_NAME: szerver-sf
+      SF_LICENCE_USER: ${SF_LICENCE_USER:-}
+      SF_LICENCE_KEY: ${SF_LICENCE_KEY:-}
+      SF_EULA: ${SF_EULA:-}
+      SF_MEMORY: ${SF_MEMORY:-4g}
+    volumes:
+      - crawlwork:/work
+
+volumes:
+  pgdata:
+  files:
+  crawlwork:
