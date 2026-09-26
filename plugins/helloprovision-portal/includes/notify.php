@@ -74,7 +74,7 @@ function hpv_p_event_invoice_sent( array $invoice ) {
 		sprintf( 'Invoice %s', $invoice['number'] ),
 		sprintf(
 			'<p>A new invoice is ready in your client portal.</p><p><strong>Amount due:</strong> %s<br><strong>Due date:</strong> %s</p>',
-			esc_html( hpv_p_money( $invoice['total'], $s['currency'] ) ),
+			esc_html( hpv_p_money( hpv_p_invoice_balance( $invoice ), hpv_p_invoice_currency( $invoice ) ) ),
 			esc_html( $invoice['due_date'] ? mysql2date( 'F j, Y', $invoice['due_date'] ) : 'upon receipt' )
 		),
 		'View & pay invoice',

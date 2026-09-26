@@ -129,7 +129,7 @@ Az érdeklődők a **Website Grader → Érdeklődők** menüben vannak: teljes 
 - A Google sebességmérése futásonként néhány pontot ingadozhat. Ez normális, az eszköz GYIK része is elmondja.
 - Ha a szerver Cloudflare vagy más proxy mögött van, a látogatónkénti korlát a proxy IP-címét látja. Ilyenkor a `hpv_grader_client_ip` filterrel állítható be a valódi IP.
 
-## `plugins/helloprovision-portal/` – Ügyfélportál, CRM, projektkezelő és videóhívás (0.3)
+## `plugins/helloprovision-portal/` – Ügyfélportál, CRM, projektkezelő, videóhívás és számlázás (0.4)
 
 Egy WordPress bővítmény, két bejárattal:
 
@@ -184,7 +184,27 @@ Saját, gyors felület, nem a WordPress admin. Oldalújratöltés nélkül műk�
   - kereshető leirat, felvétel letöltése, e-mail a hívást indítónak, ha kész.
 - **Hozzájárulás a rögzítéshez:** Floridában minden fél beleegyezése kell. Az ügyfél csak a hozzájárulás bejelölése után léphet be; a rendszer naplózza, ki, mikor, milyen IP-címről fogadta el.
 
+- **Csapat és jogok** (csak az adminisztrátor látja):
+  - munkatársanként kapcsolható: **Számlázás**, **Szerződések**, **Ajánlatok**;
+  - akinek nincs számlázási joga, a számlákat, a díjakat és a bevételi számokat sem látja (a vezérlőpulton, az ügyféllistán, az ügyfél adatlapján és a portál-előnézetben sem);
+  - projekteket, chatet és hívásokat minden munkatárs kezelhet.
+
 A számla-, szerződés- és szolgáltatás-szerkesztők egyelőre a klasszikus CRM-ben vannak (WordPress admin). A webalkalmazás oldalsávja oda linkel.
+
+**Számlázás és fizetés országonként** (az ügyfél adatlapján az „Ország” mező dönt):
+
+| | USA | Magyarország |
+|---|---|---|
+| Pénznem | USD | HUF |
+| Számla | a CRM-ben, saját sorszámmal (HPV-1001) | a **Számlázz.hu** állítja ki: sorszám, PDF, NAV-jelentés, e-mail a vevőnek |
+| Könyvelés | **QuickBooks**: ügyfél, számla és befizetés automatikusan átkerül | a Számlázz.hu-ban (a befizetés automatikusan rögzül rajta) |
+| Fizetés | **Stripe**: „Pay now” a portálon (kártya, és ha a Stripe fiókban be van kapcsolva, ACH, Apple Pay, Google Pay); a számla magától „Fizetve” lesz | **Teya**: egyelőre a Teya appban készült fizetési link a portálon, a befizetést kézzel kell jelölni; az automatikus Teya API a fejlesztő következő feladata |
+
+- A kiállított magyar számla nem módosítható, csak sztornózható (a Számlázz.hu sztornó számlát készít).
+- Befizetés részletekben is rögzíthető; ugyanaz az online tranzakció csak egyszer kerül be.
+- Ha a QuickBooks vagy a Számlázz.hu nem érhető el, a számla „Szinkron: Hiba” jelzést kap, és egy gombbal újrapróbálható.
+- A kintlévőség és a havi bevétel pénznemenként látszik (pl. „$7,224.50 · 523 900 Ft”).
+- A magyar számla PDF-je védett mappában van, csak az ügyfél és a számlázási joggal rendelkező munkatárs töltheti le.
 
 **A klasszikus CRM-ben (WordPress admin, magyar felület):**
 - **Ügyfelek:** kulcsszámok (aktív ügyfelek, havi ismétlődő bevétel, kintlévőség, lejárt számlák, aláírásra váró szerződések), ügyfél-adatlap.
@@ -234,7 +254,17 @@ A portál saját keretben fut, a WordPress témától függetlenül, mobilon is.
 5. **CRM → Beállítások:** cégadatok, számlaszám előtag, fizetési határidő, értesítési cím.
 6. **Levélküldés:** WP Mail SMTP, az e-mail útmutató szerint.
 7. **Munkatársak:** felhasználóként, „Munkatárs (CRM)” szerepkörrel. Ők csak a CRM-et és a profiljukat látják.
-8. **Videóhívás:**
+8. **Számlázás és fizetés** (kulcsok a `wp-config.php`-ba, a részletes lépések a fejlesztői dokumentációban):
+   ```php
+   define( 'HPV_SZAMLAZZ_AGENT_KEY', '…' );      // Számlázz.hu → Beállítások → Számla Agent kulcsok
+   define( 'HPV_STRIPE_SECRET_KEY', 'sk_live_…' );
+   define( 'HPV_STRIPE_WEBHOOK_SECRET', 'whsec_…' );
+   define( 'HPV_QBO_CLIENT_ID', '…' );
+   define( 'HPV_QBO_CLIENT_SECRET', '…' );
+   ```
+   Utána: CRM → Beállítások → „QuickBooks összekapcsolása”, és a Stripe-ban a webhook felvétele (a címet a Beállítások oldal mutatja).
+   Munkatársak jogai: a CRM webalkalmazásban „Csapat és jogok”. **Frissítés után a munkatársaknak nincs számlázási és szerződés-joga, az adminisztrátornak kell bekapcsolnia.**
+9. **Videóhívás:**
    - Daily.co fiók → Developers → API key;
    - AI kulcs az összefoglalóhoz: Anthropic Console → API keys.
    - A `wp-config.php`-ba:
@@ -248,10 +278,9 @@ A portál saját keretben fut, a WordPress témától függetlenül, mobilon is.
 
 ### Következő ütemek
 
-1. **Pénzügy és egyebek:**
-   - Stripe fizetés automatikus „fizetve” jelöléssel, ismétlődő számlák automatikus kiállítása;
-   - fájlmegosztás, Bitrix24 átköltöztetés;
-   - a számla- és szerződés-szerkesztő átköltözése a webalkalmazásba.
+1. **Ajánlatok és szerződések AI-val:** a saját mintáitokból, az ügyfél és a szolgáltatások adataiból AI írja meg a szerződést és az ajánlatot; márkázott ajánlat oldal elfogadással.
+2. **Teya API** (automatikus magyar kártyás fizetés), ismétlődő számlák automatikus kiállítása.
+3. **Egyebek:** fájlmegosztás, Bitrix24 átköltöztetés, a számla- és szerződés-szerkesztő átköltözése a webalkalmazásba, magyar nyelvű portál a magyar ügyfeleknek.
 
 ## Tesztek
 
@@ -261,6 +290,7 @@ php tests/reviews.php
 php tests/grader.php
 wp eval-file tests/portal-integration.php   # valódi WordPressen, a portál bővítménnyel
 wp eval-file tests/video-integration.php    # ugyanott, videó kulcsok nélkül (a Daily-t és az AI-t a teszt helyettesíti)
+wp eval-file tests/billing-integration.php  # ugyanott, számlázási kulcsok nélkül (Számlázz.hu, Stripe, QuickBooks helyettesítve)
 ```
 
 Az első három WordPress nélkül fut. A portál teszt valódi WordPressen és adatbázison fut, és a projektkezelő API-t is végigpróbálja: sablonmásolás, átrendezés, függőségek, stopper, jogosultságok, törlés. A videó teszt a teljes hívás-folyamatot végigviszi: szoba, belépők, hozzájárulás, lezárás, leirat, AI-összefoglaló és hibakezelés, teendőből feladat, webhook, portál. Az SEO teszt az élő főoldal valódi schemáját, a grader teszt a főoldal megtisztított HTML-jét használja (`tests/fixtures/`).

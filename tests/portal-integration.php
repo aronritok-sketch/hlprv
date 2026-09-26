@@ -241,7 +241,11 @@ wp_set_current_user( 1 );
 list( , $mine ) = $rest( 'GET', '/my-tasks' );
 it( 'saját feladataim: a Design feladat', in_array( $design, array_column( $mine, 'id' ), true ) );
 list( $st, $dash ) = $rest( 'GET', '/dashboard' );
-it( 'vezérlőpult', 200 === $st && isset( $dash['mrr'], $dash['my_open'] ) );
+it( 'vezérlőpult (adminisztrátor: bevételi számokkal)', 200 === $st && isset( $dash['money']['mrr'], $dash['my_open'] ) );
+wp_set_current_user( $staff_id );
+list( $st, $dash ) = $rest( 'GET', '/dashboard' );
+it( 'számlázási jog nélkül nincsenek bevételi számok', 200 === $st && null === $dash['money'] && null === $dash['contracts_waiting'] );
+wp_set_current_user( 1 );
 list( , $found ) = $rest( 'GET', '/search', array( 'q' => 'Gulf redesign' ) );
 it( 'keresés megtalálja a projektet', in_array( 'project', array_column( $found, 'type' ), true ) );
 

@@ -188,8 +188,16 @@ function hpv_p_portal_app(): string {
 
 		<main class="hpv-main" id="main">
 			<?php
-			$id = absint( $_GET['id'] ?? 0 );
+			$id   = absint( $_GET['id'] ?? 0 );
+			$need = array( 'invoices' => 'invoices', 'services' => 'invoices', 'contracts' => 'contracts' )[ $view ] ?? '';
+			if ( $need && hpv_p_is_staff() && ! hpv_p_can( $need ) ) {
+				$view = 'no_access';
+				hpv_p_portal_header( HPV_PORTAL_VIEWS[ sanitize_key( $_GET['view'] ?? '' ) ] ?? '', '' );
+				echo '<div class="hpv-alert">Staff preview: you do not have access to this section.</div>';
+			}
 			switch ( $view ) {
+				case 'no_access':
+					break;
 				case 'projects':
 					$id ? hpv_pv_project( $client_id, $id ) : hpv_pv_projects( $client_id );
 					break;
@@ -287,7 +295,7 @@ function hpv_pv_overview( array $client, array $counts ) {
 	$s        = hpv_p_settings();
 	$today    = current_time( 'Y-m-d' );
 	$invoices = array_filter( hpv_p_portal_invoices( (int) $client['id'] ), fn( $i ) => 'sent' === $i['status'] );
-	$balance  = array_sum( array_map( fn( $i ) => hpv_p_to_cents( $i['total'] ), $invoices ) );
+	$balance  = hpv_p_outstanding_by_currency( $invoices );
 	$projects = hpv_p_portal_projects( (int) $client['id'] );
 	$active   = array_filter( $projects, fn( $p ) => in_array( $p['status'], array( 'planning', 'in_progress', 'review' ), true ) );
 	$subs     = array_filter( hpv_p_portal_subscriptions( (int) $client['id'] ), fn( $x ) => 'active' === $x['status'] );
@@ -306,7 +314,7 @@ function hpv_pv_overview( array $client, array $counts ) {
 	}
 	foreach ( $invoices as $inv ) {
 		$todo[] = array(
-			'label' => sprintf( 'Pay invoice %s — %s', $inv['number'], hpv_p_money( $inv['total'], $s['currency'] ) ),
+			'label' => sprintf( 'Pay invoice %s — %s', $inv['number'], hpv_p_money( hpv_p_invoice_balance( $inv ), hpv_p_invoice_currency( $inv ) ) ),
 			'meta'  => hpv_p_invoice_is_overdue( $inv, $today ) ? 'Overdue since ' . mysql2date( 'M j', $inv['due_date'] ) : ( $inv['due_date'] ? 'Due ' . mysql2date( 'M j', $inv['due_date'] ) : '' ),
 			'url'   => hpv_p_portal_link( 'invoices', array( 'id' => $inv['id'] ) ),
 			'alert' => hpv_p_invoice_is_overdue( $inv, $today ),
@@ -346,7 +354,7 @@ function hpv_pv_overview( array $client, array $counts ) {
 	<?php hpv_p_portal_header( 'Hi ' . $first, $client['name'] ); ?>
 
 	<div class="hpv-stats">
-		<a class="hpv-stat" href="<?php echo esc_url( hpv_p_portal_link( 'invoices' ) ); ?>"><span>Balance due</span><strong><?php echo esc_html( hpv_p_money( $balance, $s['currency'] ) ); ?></strong></a>
+		<a class="hpv-stat" href="<?php echo esc_url( hpv_p_portal_link( 'invoices' ) ); ?>"><span>Balance due</span><strong><?php echo esc_html( hpv_p_money_multi( $balance, hpv_p_client_currency( (int) $client['id'] ) ) ); ?></strong></a>
 		<a class="hpv-stat" href="<?php echo esc_url( hpv_p_portal_link( 'projects' ) ); ?>"><span>Active projects</span><strong><?php echo count( $active ); ?></strong></a>
 		<a class="hpv-stat" href="<?php echo esc_url( hpv_p_portal_link( 'services' ) ); ?>"><span>Active services</span><strong><?php echo count( $subs ); ?></strong></a>
 		<a class="hpv-stat" href="<?php echo esc_url( hpv_p_portal_link( 'messages' ) ); ?>"><span>Unread messages</span><strong><?php echo (int) $counts['messages']; ?></strong></a>
@@ -476,7 +484,7 @@ function hpv_pv_invoices_list( int $client_id ) {
 					<td><a href="<?php echo esc_url( hpv_p_portal_link( 'invoices', array( 'id' => $inv['id'] ) ) ); ?>"><strong><?php echo esc_html( $inv['number'] ); ?></strong></a></td>
 					<td><?php echo hpv_p_portal_date( $inv['issue_date'] ); // phpcs:ignore ?></td>
 					<td><?php echo hpv_p_portal_date( $inv['due_date'] ); // phpcs:ignore ?></td>
-					<td class="hpv-num"><?php echo esc_html( hpv_p_money( $inv['total'], $s['currency'] ) ); ?></td>
+					<td class="hpv-num"><?php echo esc_html( hpv_p_money( $inv['total'], hpv_p_invoice_currency( $inv ) ) ); ?></td>
 					<td><?php echo hpv_p_invoice_is_overdue( $inv, $today ) ? hpv_p_portal_badge( 'invoice', 'status', 'sent', 'overdue' ) : hpv_p_portal_badge( 'invoice', 'status', $inv['status'] ); // phpcs:ignore ?></td>
 				</tr>
 			<?php endforeach; ?>
@@ -492,25 +500,50 @@ function hpv_pv_invoice( array $client, int $id ) {
 		hpv_p_portal_header( 'Invoice not found', '', hpv_p_portal_link( 'invoices' ) );
 		return;
 	}
+	// Visszatérés a Stripe fizetőoldalról: a fizetést azonnal ellenőrizzük (a webhook is jelzi).
+	if ( ! empty( $_GET['session_id'] ) && ! hpv_p_is_staff() ) {
+		hpv_stripe_confirm_return( $invoice, sanitize_text_field( wp_unslash( $_GET['session_id'] ) ) );
+		$invoice = hpv_p_portal_get( 'invoice', $id, (int) $client['id'] );
+	}
 	$s       = hpv_p_settings();
+	$cur     = hpv_p_invoice_currency( $invoice );
+	$is_hu   = hpv_p_is_hu_invoice( $invoice );
 	$items   = hpv_p_find( 'invoice_item', array( 'invoice_id' => $id ), array( 'orderby' => 'sort', 'order' => 'ASC' ) );
 	$overdue = hpv_p_invoice_is_overdue( $invoice, current_time( 'Y-m-d' ) );
+	$balance = hpv_p_invoice_balance( $invoice );
+	$pay     = hpv_p_is_staff() ? '' : hpv_p_pay_url( $invoice );
+	$error   = sanitize_text_field( wp_unslash( $_GET['error'] ?? '' ) );
 	?>
 	<div class="hpv-doc-actions">
 		<a class="hpv-back" href="<?php echo esc_url( hpv_p_portal_link( 'invoices' ) ); ?>">← All invoices</a>
 		<span>
-			<button type="button" class="hpv-btn hpv-btn--ghost" onclick="window.print()">Download PDF</button>
-			<?php if ( 'sent' === $invoice['status'] && $invoice['payment_url'] && ! hpv_p_is_staff() ) : ?>
-				<a class="hpv-btn" href="<?php echo esc_url( $invoice['payment_url'] ); ?>" target="_blank" rel="noopener">Pay now · <?php echo esc_html( hpv_p_money( $invoice['total'], $s['currency'] ) ); ?></a>
+			<?php if ( $invoice['pdf_file'] ) : ?>
+				<a class="hpv-btn hpv-btn--ghost" href="<?php echo esc_url( hpv_p_invoice_pdf_url( $invoice ) ); ?>" target="_blank" rel="noopener">Download invoice (PDF)</a>
+			<?php else : ?>
+				<button type="button" class="hpv-btn hpv-btn--ghost" onclick="window.print()">Download PDF</button>
+			<?php endif; ?>
+			<?php if ( $pay ) : ?>
+				<a class="hpv-btn" href="<?php echo esc_url( $pay ); ?>"<?php echo 0 === strpos( $pay, hpv_p_portal_url() ) ? '' : ' target="_blank" rel="noopener"'; ?>>Pay now · <?php echo esc_html( hpv_p_money( $balance, $cur ) ); ?></a>
 			<?php endif; ?>
 		</span>
 	</div>
+	<?php if ( ! empty( $_GET['paid'] ) ) : ?>
+		<div class="hpv-alert hpv-alert--ok"><?php echo 'paid' === $invoice['status'] ? 'Payment received — thank you! A receipt is on its way to your inbox.' : 'Thank you! Your payment is being processed; this page will show it as paid within a few minutes.'; ?></div>
+	<?php endif; ?>
+	<?php if ( $error ) : ?>
+		<div class="hpv-alert hpv-alert--error"><?php echo esc_html( $error ); ?></div>
+	<?php endif; ?>
+	<?php if ( $is_hu && $invoice['pdf_file'] ) : ?>
+		<div class="hpv-alert">This is a summary. The official invoice is the PDF issued by Számlázz.hu (also sent to you by email).</div>
+	<?php endif; ?>
 
 	<article class="hpv-paper hpv-invoice">
 		<header class="hpv-invoice__head">
 			<div>
 				<div class="hpv-invoice__brand"><?php echo esc_html( $s['company_name'] ); ?></div>
-				<div class="hpv-muted"><?php echo esc_html( $s['company_legal'] ); ?><br><?php echo nl2br( esc_html( $s['company_address'] ) ); ?><br><?php echo esc_html( $s['company_email'] ); ?> · <?php echo esc_html( $s['company_phone'] ); ?></div>
+				<?php if ( ! $is_hu ) : ?>
+					<div class="hpv-muted"><?php echo esc_html( $s['company_legal'] ); ?><br><?php echo nl2br( esc_html( $s['company_address'] ) ); ?><br><?php echo esc_html( $s['company_email'] ); ?> · <?php echo esc_html( $s['company_phone'] ); ?></div>
+				<?php endif; ?>
 			</div>
 			<div class="hpv-invoice__title">
 				<h1>Invoice</h1>
@@ -520,7 +553,7 @@ function hpv_pv_invoice( array $client, int $id ) {
 		</header>
 
 		<div class="hpv-invoice__meta">
-			<div><span>Bill to</span><strong><?php echo esc_html( $client['name'] ); ?></strong><div class="hpv-muted"><?php echo nl2br( esc_html( $client['address'] ) ); ?></div></div>
+			<div><span>Bill to</span><strong><?php echo esc_html( $client['billing_name'] ?: $client['name'] ); ?></strong><div class="hpv-muted"><?php echo implode( '<br>', array_map( 'esc_html', hpv_p_client_address_lines( $client ) ) ); // phpcs:ignore ?></div></div>
 			<div><span>Issued</span><strong><?php echo hpv_p_portal_date( $invoice['issue_date'] ); // phpcs:ignore ?></strong></div>
 			<div><span>Due</span><strong><?php echo hpv_p_portal_date( $invoice['due_date'] ); // phpcs:ignore ?></strong></div>
 			<?php if ( 'paid' === $invoice['status'] && $invoice['paid_at'] ) : ?>
@@ -535,17 +568,23 @@ function hpv_pv_invoice( array $client, int $id ) {
 				<tr>
 					<td><?php echo esc_html( $item['description'] ); ?></td>
 					<td class="hpv-num"><?php echo esc_html( rtrim( rtrim( $item['quantity'], '0' ), '.' ) ); ?></td>
-					<td class="hpv-num"><?php echo esc_html( hpv_p_money( $item['unit_price'], $s['currency'] ) ); ?></td>
-					<td class="hpv-num"><?php echo esc_html( hpv_p_money( $item['amount'], $s['currency'] ) ); ?></td>
+					<td class="hpv-num"><?php echo esc_html( hpv_p_money( $item['unit_price'], $cur ) ); ?></td>
+					<td class="hpv-num"><?php echo esc_html( hpv_p_money( $item['amount'], $cur ) ); ?></td>
 				</tr>
 			<?php endforeach; ?>
 			</tbody>
 			<tfoot>
-				<tr><td colspan="3">Subtotal</td><td class="hpv-num"><?php echo esc_html( hpv_p_money( $invoice['subtotal'], $s['currency'] ) ); ?></td></tr>
-				<?php if ( hpv_p_to_cents( $invoice['tax'] ) ) : ?>
-					<tr><td colspan="3">Tax (<?php echo esc_html( rtrim( rtrim( $invoice['tax_rate'], '0' ), '.' ) ); ?>%)</td><td class="hpv-num"><?php echo esc_html( hpv_p_money( $invoice['tax'], $s['currency'] ) ); ?></td></tr>
+				<tr><td colspan="3">Subtotal</td><td class="hpv-num"><?php echo esc_html( hpv_p_money( $invoice['subtotal'], $cur ) ); ?></td></tr>
+				<?php if ( $is_hu ) : ?>
+					<tr><td colspan="3">VAT (<?php echo esc_html( is_numeric( hpv_p_hu_vat_key( $invoice ) ) ? hpv_p_hu_vat_key( $invoice ) . '%' : hpv_p_hu_vat_key( $invoice ) ); ?>)</td><td class="hpv-num"><?php echo esc_html( hpv_p_money( $invoice['tax'], $cur ) ); ?></td></tr>
+				<?php elseif ( hpv_p_to_cents( $invoice['tax'] ) ) : ?>
+					<tr><td colspan="3">Tax (<?php echo esc_html( rtrim( rtrim( $invoice['tax_rate'], '0' ), '.' ) ); ?>%)</td><td class="hpv-num"><?php echo esc_html( hpv_p_money( $invoice['tax'], $cur ) ); ?></td></tr>
 				<?php endif; ?>
-				<tr class="hpv-invoice__total"><td colspan="3">Total</td><td class="hpv-num"><?php echo esc_html( hpv_p_money( $invoice['total'], $s['currency'] ) ); ?></td></tr>
+				<tr class="hpv-invoice__total"><td colspan="3">Total</td><td class="hpv-num"><?php echo esc_html( hpv_p_money( $invoice['total'], $cur ) ); ?></td></tr>
+				<?php if ( hpv_p_to_cents( $invoice['paid_amount'] ) > 0 && 'paid' !== $invoice['status'] ) : ?>
+					<tr><td colspan="3">Paid</td><td class="hpv-num">−<?php echo esc_html( hpv_p_money( $invoice['paid_amount'], $cur ) ); ?></td></tr>
+					<tr class="hpv-invoice__total"><td colspan="3">Balance due</td><td class="hpv-num"><?php echo esc_html( hpv_p_money( $balance, $cur ) ); ?></td></tr>
+				<?php endif; ?>
 			</tfoot>
 		</table>
 
@@ -640,7 +679,7 @@ function hpv_pv_services( int $client_id ) {
 		<div class="hpv-card-link hpv-service">
 			<span class="hpv-mini-project__top"><strong><?php echo esc_html( $sub['name'] ); ?></strong><?php echo hpv_p_portal_badge( 'subscription', 'status', $sub['status'] ); // phpcs:ignore ?></span>
 			<?php if ( $sub['description'] ) : ?><span class="hpv-muted"><?php echo nl2br( esc_html( $sub['description'] ) ); ?></span><?php endif; ?>
-			<span class="hpv-service__price"><?php echo esc_html( hpv_p_money( $sub['price'], $s['currency'] ) ); ?> <small><?php echo esc_html( strtolower( hpv_p_option_label( 'subscription', 'billing', $sub['billing'], 'en' ) ) ); ?></small></span>
+			<span class="hpv-service__price"><?php echo esc_html( hpv_p_money( $sub['price'], hpv_p_client_currency( $client_id ) ) ); ?> <small><?php echo esc_html( strtolower( hpv_p_option_label( 'subscription', 'billing', $sub['billing'], 'en' ) ) ); ?></small></span>
 			<?php if ( 'one_time' !== $sub['billing'] && $sub['next_invoice_date'] ) : ?><small>Next invoice <?php echo esc_html( mysql2date( 'M j, Y', $sub['next_invoice_date'] ) ); ?></small><?php endif; ?>
 		</div>
 		<?php
@@ -669,7 +708,7 @@ function hpv_pv_account( array $client ) {
 				<dt>Name</dt><dd><?php echo esc_html( $client['name'] ); ?></dd>
 				<dt>Email</dt><dd><?php echo esc_html( $client['email'] ?: '—' ); ?></dd>
 				<dt>Phone</dt><dd><?php echo esc_html( $client['phone'] ?: '—' ); ?></dd>
-				<dt>Billing address</dt><dd><?php echo nl2br( esc_html( $client['address'] ?: '—' ) ); ?></dd>
+				<dt>Billing address</dt><dd><?php echo hpv_p_client_address_lines( $client ) ? implode( '<br>', array_map( 'esc_html', hpv_p_client_address_lines( $client ) ) ) : '—'; // phpcs:ignore ?></dd>
 			</dl>
 			<p class="hpv-muted">Need to change something? Send us a message and we'll update it.</p>
 		</section>

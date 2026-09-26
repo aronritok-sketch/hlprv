@@ -1,4 +1,4 @@
-import { html, useState, useEffect, api, useApp, navigate, setParam, Icon, Avatar, Spinner, Empty, shortDate, minutesLabel, money, isOverdue, PriorityFlag } from '../ui.js';
+import { html, useState, useEffect, api, useApp, navigate, setParam, Icon, Avatar, Spinner, Empty, shortDate, minutesLabel, isOverdue, PriorityFlag } from '../ui.js';
 
 export function ProjectCard({ p }) {
 	return html`
@@ -51,12 +51,13 @@ export function Dashboard() {
 		{ label: 'Csapat: kész 7 nap alatt', value: d.done_week },
 		{ label: 'Rögzített idő (7 nap)', value: minutesLabel(d.my_minutes), sub: 'csapat: ' + minutesLabel(d.team_minutes) },
 	];
-	const money_kpis = [
-		{ label: 'Havi ismétlődő bevétel', value: money(d.mrr, boot.currency) },
-		{ label: 'Kintlévőség', value: money(d.outstanding, boot.currency), sub: d.overdue_invoices ? d.overdue_invoices + ' lejárt számla' : 'nincs lejárt', alert: d.overdue_invoices > 0 },
-		{ label: 'Aktív ügyfelek', value: d.active_clients },
-		{ label: 'Aláírásra vár', value: d.contracts_waiting },
-	];
+	const money_kpis = [];
+	if (d.money) {
+		money_kpis.push({ label: 'Havi ismétlődő bevétel', value: d.money.mrr });
+		money_kpis.push({ label: 'Kintlévőség', value: d.money.outstanding, sub: d.money.overdue_invoices ? d.money.overdue_invoices + ' lejárt számla' : 'nincs lejárt', alert: d.money.overdue_invoices > 0 });
+	}
+	money_kpis.push({ label: 'Aktív ügyfelek', value: d.active_clients });
+	if (d.contracts_waiting !== null && d.contracts_waiting !== undefined) money_kpis.push({ label: 'Aláírásra vár', value: d.contracts_waiting });
 	const Kpi = (k) => html`<a class=${'kpi' + (k.alert ? ' is-alert' : '')} href=${k.href || null}><span>${k.label}</span><strong>${k.value}</strong>${k.sub ? html`<small>${k.sub}</small>` : null}</a>`;
 
 	return html`

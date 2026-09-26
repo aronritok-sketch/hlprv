@@ -9,6 +9,7 @@ import { Projects } from './views/projects.js';
 import { ProjectPage } from './views/project.js';
 import { TaskDrawer } from './views/task.js';
 import { Calls, CallPage } from './views/calls.js';
+import { Team } from './views/team.js';
 
 /* ── Chat (a meglévő chat komponens beágyazva) ───── */
 
@@ -48,17 +49,18 @@ function Clients() {
 			<input class="search-input" placeholder="Keresés…" value=${q} onInput=${(e) => setQ(e.target.value)} />
 			<div class="card table-card">
 				<table class="table">
-					<thead><tr><th>Ügyfél</th><th>Státusz</th><th></th></tr></thead>
+					<thead><tr><th>Ügyfél</th><th>Ország</th><th>Státusz</th><th></th></tr></thead>
 					<tbody>
 						${list.map((c) => html`
 							<tr key=${c.id}>
 								<td><strong>${c.name}</strong></td>
+								<td>${c.country === 'HU' ? 'Magyarország' : 'USA'}</td>
 								<td><span class=${'pill pill--' + c.status}>${labels[c.status] || c.status}</span></td>
 								<td class="right">
 									<a class="link" href=${'#/projects?client=' + c.id}>Projektek</a>
 									<a class="link" href=${'#/chat?client=' + c.id}>Chat</a>
 									<a class="link" href=${'#/calls?client=' + c.id}>Hívások</a>
-									<a class="link" href=${CFG.adminUrl + '&client=' + c.id}>Adatlap, számlák, szerződések <${Icon} name="ext" size="13" /></a>
+									<a class="link" href=${CFG.adminUrl + '&client=' + c.id}>Adatlap${boot.me.caps && boot.me.caps.invoices ? ', számlák' : ''} <${Icon} name="ext" size="13" /></a>
 								</td>
 							</tr>`)}
 					</tbody>
@@ -146,11 +148,11 @@ const NAV = [
 
 function Sidebar({ path }) {
 	const { boot, unread } = useApp();
-	const legacy = [
-		{ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-invoices'), label: 'Számlák', icon: 'receipt' },
-		{ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-contracts'), label: 'Szerződések', icon: 'doc' },
-		{ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-services'), label: 'Szolgáltatások', icon: 'tag' },
-	];
+	const caps = boot.me.caps || {};
+	const legacy = [];
+	if (caps.invoices) legacy.push({ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-invoices'), label: 'Számlák', icon: 'receipt' });
+	if (caps.contracts) legacy.push({ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-contracts'), label: 'Szerződések', icon: 'doc' });
+	if (caps.invoices) legacy.push({ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-services'), label: 'Szolgáltatások', icon: 'tag' });
 	if (boot.me.is_admin) legacy.push({ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-settings'), label: 'Beállítások', icon: 'cog' });
 	const isActive = (p) => (p === '/' ? path === '/' : path.startsWith(p));
 	return html`
@@ -163,8 +165,9 @@ function Sidebar({ path }) {
 						${n.badge === 'unread' && unread ? html`<em class="count">${unread}</em>` : null}
 					</a>`)}
 			</nav>
-			<p class="nav-label">Pénzügy és admin</p>
+			${legacy.length || boot.me.is_admin ? html`<p class="nav-label">Pénzügy és admin</p>` : null}
 			<nav class="nav nav--secondary">
+				${boot.me.is_admin ? html`<a href="#/team" class=${isActive('/team') ? 'is-active' : ''}><${Icon} name="users" /><span>Csapat és jogok</span></a>` : null}
 				${legacy.map((n) => html`<a key=${n.label} href=${n.href}><${Icon} name=${n.icon} /><span>${n.label}</span><${Icon} name="ext" size="13" /></a>`)}
 			</nav>
 			<div class="side__user">
@@ -227,6 +230,7 @@ function App() {
 	else if (path === '/calls') page = html`<${Calls} params=${params} />`;
 	else if ((m = path.match(/^\/calls\/(\d+)$/))) page = html`<${CallPage} key=${'call' + m[1]} id=${Number(m[1])} params=${params} />`;
 	else if (path === '/clients') page = html`<${Clients} />`;
+	else if (path === '/team') page = html`<${Team} />`;
 	else page = html`<${Empty} title="Az oldal nem található" />`;
 
 	return html`

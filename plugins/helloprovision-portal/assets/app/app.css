@@ -488,3 +488,16 @@ tr.is-sub .list-title a { font-weight: 400; }
 @media (prefers-reduced-motion: reduce) {
 	*, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ── Csapat és jogok ─────────────────────────────── */
+.team-user { display: flex; align-items: center; gap: 10px; }
+.team-user small { display: block; }
+.table--team td:not(:first-child), .table--team th:not(:first-child) { text-align: center; }
+.switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+.switch input { position: absolute; inset: 0; opacity: 0; cursor: pointer; margin: 0; }
+.switch span { position: absolute; inset: 0; border-radius: 999px; background: #d9d9d2; transition: background .15s; pointer-events: none; }
+.switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform .15s; }
+.switch input:checked + span { background: var(--ink); }
+.switch input:checked + span::after { transform: translateX(18px); background: var(--accent); }
+.switch input:focus-visible + span { outline: 3px solid rgba(184,255,52,.6); }
+.team-help { margin: 16px 0 8px; padding-left: 18px; }

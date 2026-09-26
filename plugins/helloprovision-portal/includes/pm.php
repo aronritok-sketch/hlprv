@@ -367,13 +367,14 @@ function hpv_pm_rest_bootstrap() {
 
 	return rest_ensure_response(
 		array(
-			'me'         => array_merge( hpv_pm_user( $me->ID ), array( 'is_admin' => current_user_can( 'manage_options' ) ) ),
+			'me'         => array_merge( hpv_pm_user( $me->ID ), array( 'is_admin' => current_user_can( 'manage_options' ), 'caps' => hpv_p_caps_for( $me->ID ) ) ),
 			'users'      => array_map( fn( $u ) => hpv_pm_user( $u->ID ), get_users( array( 'capability' => 'hpv_manage_crm', 'orderby' => 'display_name' ) ) ),
 			'clients'    => array_map(
 				fn( $c ) => array(
-					'id'     => (int) $c['id'],
-					'name'   => $c['name'],
-					'status' => $c['status'],
+					'id'      => (int) $c['id'],
+					'name'    => $c['name'],
+					'status'  => $c['status'],
+					'country' => 'HU' === $c['country'] ? 'HU' : 'US',
 				),
 				hpv_p_find( 'client', array(), array( 'orderby' => 'name', 'order' => 'ASC', 'limit' => 2000 ) )
 			),
@@ -401,7 +402,9 @@ function hpv_pm_rest_dashboard() {
 	$team_minutes = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT SUM(minutes) FROM ' . hpv_p_table( 'time_entry' ) . ' WHERE work_date >= %s', $week ) ); // phpcs:ignore WordPress.DB.PreparedSQL
 	$done_week    = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . hpv_p_table( 'task' ) . ' WHERE completed_at >= %s', $week . ' 00:00:00' ) ); // phpcs:ignore WordPress.DB.PreparedSQL
 
-	$open_invoices = hpv_p_find( 'invoice', array( 'status' => 'sent' ), array( 'limit' => 2000 ) );
+	$money         = hpv_p_can( 'invoices' );
+	$open_invoices = $money ? hpv_p_find( 'invoice', array( 'status' => 'sent' ), array( 'limit' => 2000 ) ) : array();
+	$currency      = hpv_p_settings()['currency'];
 	$active        = hpv_p_find( 'project', array( 'status' => array( 'planning', 'in_progress', 'review' ), 'is_template' => 0 ), array( 'orderby' => 'due_date', 'order' => 'ASC', 'limit' => 50 ) );
 
 	return rest_ensure_response(
@@ -418,10 +421,13 @@ function hpv_pm_rest_dashboard() {
 			'team_minutes' => $team_minutes,
 			'done_week'    => $done_week,
 			'projects'     => array_map( 'hpv_pm_format_project', $active ),
-			'mrr'          => hpv_p_mrr( hpv_p_find( 'subscription', array( 'status' => 'active' ), array( 'limit' => 2000 ) ) ),
-			'outstanding'  => array_sum( array_map( fn( $i ) => hpv_p_to_cents( $i['total'] ), $open_invoices ) ),
-			'overdue_invoices' => count( array_filter( $open_invoices, fn( $i ) => hpv_p_invoice_is_overdue( $i, $today ) ) ),
-			'contracts_waiting' => count( hpv_p_find( 'contract', array( 'status' => 'sent' ), array( 'limit' => 2000 ) ) ),
+			// Bevételi számok csak számlázási joggal, pénznemenként összesítve.
+			'money'        => $money ? array(
+				'mrr'              => hpv_p_money_multi( hpv_p_mrr_by_currency( hpv_p_find( 'subscription', array( 'status' => 'active' ), array( 'limit' => 2000 ) ) ), $currency ),
+				'outstanding'      => hpv_p_money_multi( hpv_p_outstanding_by_currency( $open_invoices ), $currency ),
+				'overdue_invoices' => count( array_filter( $open_invoices, fn( $i ) => hpv_p_invoice_is_overdue( $i, $today ) ) ),
+			) : null,
+			'contracts_waiting' => hpv_p_can( 'contracts' ) ? count( hpv_p_find( 'contract', array( 'status' => 'sent' ), array( 'limit' => 2000 ) ) ) : null,
 			'active_clients' => count( hpv_p_find( 'client', array( 'status' => 'active' ), array( 'limit' => 2000 ) ) ),
 		)
 	);
