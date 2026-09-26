@@ -54,3 +54,13 @@ from .documents import (  # noqa: F401
     ProductionTask,
     ReferenceDoc,
 )
+from .audit import (  # noqa: F401
+    AUDIT_SIZES,
+    CRAWL_SOURCES,
+    CRAWL_STATUSES,
+    FINDING_STATUSES,
+    AuditFinding,
+    AuditTopic,
+    CrawlerAgent,
+    CrawlRun,
+)

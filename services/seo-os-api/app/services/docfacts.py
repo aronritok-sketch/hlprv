@@ -469,6 +469,51 @@ def seo_checklist(d: Data, language: str) -> tuple[dict, dict]:
                    "sections": [section("checklist", "Publikálási minimum oldalanként", [T(["URL", "Típus"] + checks, rows)], narrative=False)]}
 
 
+def tech_audit(d: Data, language: str) -> tuple[dict, dict]:
+    from . import audit as audit_service
+    from . import audit_rules as AR
+
+    p = d.project
+    ov = audit_service.overview(d.db, p.id)
+    topics = [t for t in ov["topics"] if t["included"] and (any(f["count"] for f in t["findings"]) or t["observation"] or t["metrics"])]
+    by_size = {sz: [t["title"] for t in topics if t["size"] == sz] for sz in ("XL", "M", "S")}
+    depth = max((len(v) for v in by_size.values()), default=0)
+    facts = {
+        "domain": p.domain,
+        "topics": [{"topic": t["topic"], "size": t["size"], "findings": [(f["issue_key"], f["count"]) for f in t["findings"] if f["count"]],
+                    "observation": t["observation"], "recommendation": t["recommendation"], "metrics": t["metrics"]} for t in topics],
+    }
+    sections = [section("priorities", "Prioritási lista", [
+        P("A feltárt hibákat fontosság szerint, a pólóméretekhez hasonló kategóriákba soroltuk. Minél nagyobb a méret, annál kritikusabb a hiba, annál sürgetőbb a javítása."),
+        T(["XL", "M", "S"], [[by_size[sz][i] if i < len(by_size[sz]) else "" for sz in ("XL", "M", "S")] for i in range(depth)]),
+    ], narrative=True)]
+    for t in topics:
+        meta = AR.TOPICS[t["topic"]]
+        seen = [f["label"] for f in t["findings"] if f["count"]]
+        if t["topic"] == "speed" and t["metrics"]:
+            m = t["metrics"]
+            if m.get("mobile") is not None:
+                seen.insert(0, f"A Google PageSpeed Insights mobil pontszáma {m['mobile']}/100" + (f", asztali {m['desktop']}/100." if m.get("desktop") is not None else "."))
+            if m.get("cwv_pass") is False:
+                seen.append("Az oldal jelenleg nem teljesíti a Core Web Vitals elvárásait.")
+        blocks = [P(meta["intro"]), {"type": "subhead", "text": "Ideális esetben:"}, B(meta["ideal"]),
+                  {"type": "subhead", "text": "Miért fontos?"}, P(meta["why"]),
+                  {"type": "subhead", "text": f"Mit látunk a(z) {p.domain} esetében?"}]
+        if seen:
+            blocks.append(B(seen))
+        if t["observation"]:
+            blocks.append(P(t["observation"]))
+        blocks.append({"type": "narrative_slot"})
+        blocks += [{"type": "subhead", "text": "Fejlesztési javaslatok"}, P(t["recommendation"] or meta["recommendation"])]
+        sample = [[u["url"], f["label"].split(" ", 1)[1] if f["label"][:1].isdigit() else f["label"], u.get("detail", "")]
+                  for f in t["findings"] if f["count"] for u in f["sample"][:3]]
+        if sample:
+            blocks.append(T(["Példa URL", "Megállapítás", "Részlet"], sample[:12]))
+        sections.append(section(t["topic"], f"{meta['title']} ({t['size']})", blocks, narrative=True))
+    content = {"title": "Technikai SEO audit", "subtitle": f"{p.client.name} · {p.domain}", "chip": "TECHNIKAI SEO AUDIT", "sections": sections}
+    return facts, content
+
+
 BUILDERS = {
     "seo_strategy": seo_strategy,
     "content_strategy": content_strategy,
@@ -478,6 +523,7 @@ BUILDERS = {
     "writer_brief": writer_brief,
     "designer_brief": designer_brief,
     "seo_checklist": seo_checklist,
+    "tech_audit": tech_audit,
 }
 
 

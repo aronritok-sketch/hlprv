@@ -47,12 +47,14 @@ REQUIRES = {
     "writer_brief": ("structure",),
     "designer_brief": ("structure",),
     "seo_checklist": ("structure",),
+    "tech_audit": ("audit",),
 }
 MISSING = {
     "analysis": "Előbb futtasd le a kulcsszó-elemzést.",
     "structure": "Előbb generáld le az oldalstruktúrát.",
     "roadmap": "Előbb generáld le a tartalmi roadmapet.",
     "wireframes": "Még nincs wireframe; előbb generálj legalább egyet.",
+    "audit": "Még nincs technikai audit adat: tölts fel Screaming Frog exportot, vagy futtass crawlt.",
 }
 
 HOUSE_STYLE = """A HelloProVision dokumentumstílusa:
@@ -93,8 +95,11 @@ def narrative_schema(keys: list[str]) -> dict:
     return s
 
 
+HU_ONLY = {"tech_audit"}
+
+
 def default_language(project: Project, doc_type: str) -> str:
-    if DOC_TYPES[doc_type][1] == "internal":
+    if DOC_TYPES[doc_type][1] == "internal" or doc_type in HU_ONLY:
         return "hu"
     return "hu" if (project.content_language or "hu").startswith("hu") else "en"
 
@@ -206,6 +211,12 @@ def template_narrative(doc_type: str, language: str, facts: dict, content: dict)
     elif doc_type == "writer_brief":
         lead = "Oldalankénti kulcsszó-mapping és szövegírói szabályok. Egy elsődleges kulcsszó = egy URL."
         out["principle"] = ["Szolgáltatási oldalnál a szolgáltatáskereső szándék elsőbbséget élvez a volumennel szemben."]
+    elif doc_type == "tech_audit":
+        from .audit_rules import TOPICS
+
+        xl = [TOPICS[t["topic"]]["title"].lower() for t in facts.get("topics", []) if t["size"] == "XL" and t["findings"]]
+        lead = (f"A(z) {facts.get('domain')} technikai állapotát Screaming Froggal és helyszíni ellenőrzésekkel vizsgáltuk. "
+                + (f"A legsürgetőbb (XL) teendők: {', '.join(xl)}." if xl else "Kritikus (XL) hibát nem találtunk."))
     elif doc_type == "designer_brief":
         lead = "Oldalcélok, kötelező szakaszok és képi irány a jóváhagyott wireframe-ek alapján."
     return {"lead": lead, "sections": [{"key": k, "paragraphs": v, "bullets": []} for k, v in out.items()]}
@@ -222,7 +233,10 @@ def merge_narrative(content: dict, narrative: dict) -> dict:
         pre = [{"type": "paragraph", "text": p} for p in n.get("paragraphs", []) if p.strip()]
         if n.get("bullets"):
             pre.append({"type": "bullets", "items": n["bullets"]})
-        s["blocks"] = pre + s["blocks"]
+        slot = next((i for i, b in enumerate(s["blocks"]) if b.get("type") == "narrative_slot"), None)
+        s["blocks"] = s["blocks"][:slot] + pre + s["blocks"][slot + 1:] if slot is not None else pre + s["blocks"]
+    for s in c["sections"]:
+        s["blocks"] = [b for b in s["blocks"] if b.get("type") != "narrative_slot"]
     c["sections"] = [s for s in c["sections"] if s["blocks"]]
     return c
 
@@ -286,7 +300,13 @@ def current_hash(db: Session, project: Project, doc_type: str, language: str) ->
 
 def check_requirements(d: docfacts.Data, doc_type: str) -> None:
     for need in REQUIRES.get(doc_type, ()):
-        ok = {"analysis": bool(d.analysed), "structure": bool(d.pages), "roadmap": bool(d.roadmap), "wireframes": bool(d.wireframes)}[need]
+        if need == "audit":
+            from ..models import AuditFinding, AuditTopic
+
+            ok = bool(d.db.scalar(select(func.count()).select_from(AuditFinding).where(AuditFinding.project_id == d.project.id, AuditFinding.count > 0))) or bool(
+                d.db.scalar(select(func.count()).select_from(AuditTopic).where(AuditTopic.project_id == d.project.id, AuditTopic.observation != "")))
+        else:
+            ok = {"analysis": bool(d.analysed), "structure": bool(d.pages), "roadmap": bool(d.roadmap), "wireframes": bool(d.wireframes)}[need]
         if not ok:
             raise JobError(MISSING[need])
 

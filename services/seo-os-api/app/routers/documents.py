@@ -96,7 +96,8 @@ def list_documents(project_id: int, db: Session = Depends(get_db), user: Current
         if not can_view_doc(user.role, key) or key not in docfacts.BUILDERS:
             continue
         types.append({"doc_type": key, "label": label, "audience": audience, "can_generate": can_generate(user, key),
-                      "formats": docs.FORMATS_BY_TYPE.get(key, []), "default_language": docs.default_language(project, key)})
+                      "formats": docs.FORMATS_BY_TYPE.get(key, []), "default_language": docs.default_language(project, key),
+                      "languages": ["hu"] if audience == "internal" or key in docs.HU_ONLY else ["hu", "en"]})
     return {
         "types": types,
         "documents": [doc_payload(d, stale.get(d.id, False) if latest.get((d.doc_type, d.language)) is d else None) for d in rows],

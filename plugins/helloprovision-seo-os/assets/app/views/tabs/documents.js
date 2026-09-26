@@ -20,7 +20,7 @@ function TypeCard({ t, latest, active, onOpen, onGenerate, busy }) {
 			</span>` : html`<span class="muted small">Még nincs generálva</span>`}
 		</button>
 		${t.can_generate ? html`<div class="doc-type__actions">
-			${t.audience === 'client' ? html`<${Select} value=${lang} onChange=${setLang} options=${LANGS} />` : ''}
+			${(t.languages || []).length > 1 ? html`<${Select} value=${lang} onChange=${setLang} options=${LANGS} />` : ''}
 			<button class="btn btn--sm" disabled=${busy} onClick=${() => onGenerate(t.doc_type, lang)}><${Icon} name="spark" size="14" /> ${latest ? 'Új változat' : 'Generálás'}</button>
 		</div>` : ''}
 	</li>`;

@@ -35,6 +35,8 @@ def test_template_documents_all_types(client):
     assert {t["doc_type"] for t in listing["types"]} >= {"seo_strategy", "content_strategy", "dev_brief", "writer_brief", "designer_brief", "seo_checklist"}
     ids = {}
     for t in listing["types"]:
+        if t["doc_type"] == "tech_audit":
+            continue  # audit-adat kell hozzá, lásd test_audit.py
         res = run(client, f"/projects/{pid}/documents/generate", {"doc_type": t["doc_type"]})
         assert res["method"] == "template" and res["version"] == 1
         ids[t["doc_type"]] = res["document_id"]

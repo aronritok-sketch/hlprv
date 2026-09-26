@@ -39,6 +39,7 @@ body { font: 9.6pt/1.5 "DejaVu Sans", "Liberation Sans", Arial, sans-serif; colo
 .cover .bar span + span { float: right; }
 .cover .dot { position: absolute; right: 22mm; top: 26mm; width: 18mm; height: 18mm; border-radius: 50%; background: {{ accent2 }}; }
 h2 { font-size: 16pt; margin: 0 0 3mm; padding-top: 2mm; color: #121210; page-break-after: avoid; }
+h3 { font-size: 11pt; margin: 4mm 0 1.5mm; color: #121210; page-break-after: avoid; }
 h2 .n { color: {{ accent_dark }}; margin-right: 2mm; }
 section { margin-bottom: 8mm; }
 section.break { page-break-before: always; }
@@ -78,6 +79,7 @@ tbody tr:nth-child(even) td { background: #f6f5ef; }
   <h2><span class="n">{{ '%02d' % loop.index }}</span>{{ s.title }}</h2>
   {% for b in s.blocks %}
     {% if b.type == 'paragraph' %}<p>{{ b.text }}</p>
+    {% elif b.type == 'subhead' %}<h3>{{ b.text }}</h3>
     {% elif b.type == 'bullets' %}<ul>{% for i in b['items'] %}<li>{{ i }}</li>{% endfor %}</ul>
     {% elif b.type == 'callout' %}<div class="callout">{% if b.title %}<b>{{ b.title }}</b>{% endif %}{{ b.text }}</div>
     {% elif b.type == 'kpis' %}<div class="kpis">{% for k in b['items'] %}<div class="kpi"><b>{{ k.value }}</b><span>{{ k.label }}</span>{% if k.hint %}<i>{{ k.hint }}</i>{% endif %}</div>{% endfor %}</div>
@@ -174,6 +176,8 @@ def docx(content: dict, style: dict, version: int = 0) -> bytes:
             t = b.get("type")
             if t == "paragraph":
                 doc.add_paragraph(b["text"])
+            elif t == "subhead":
+                doc.add_heading(b["text"], level=2)
             elif t == "bullets":
                 for it in b["items"]:
                     doc.add_paragraph(it, style="List Bullet")
