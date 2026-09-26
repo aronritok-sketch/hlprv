@@ -1250,3 +1250,85 @@
 	background: var(--p-ink);
 	color: #fff;
 }
+
+/* Jóváhagyások */
+.hpv-card-link--attention {
+	border-color: #e9d25b;
+	box-shadow: inset 4px 0 0 #e9d25b;
+}
+
+.hpv-approval__img {
+	margin: 0 0 16px;
+}
+
+.hpv-approval__img img {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	border-radius: 10px;
+}
+
+.hpv-decide {
+	display: grid;
+	gap: 12px;
+}
+
+.hpv-decide h2 {
+	margin: 0;
+}
+
+.hpv-field textarea,
+.hpv-comment-form textarea {
+	width: 100%;
+	padding: 10px 14px;
+	border: 1px solid var(--p-line);
+	border-radius: 12px;
+	font: inherit;
+	font-size: 16px;
+}
+
+.hpv-decide__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.hpv-thread {
+	display: grid;
+	gap: 12px;
+	margin: 0 0 16px;
+	padding: 0;
+	list-style: none;
+}
+
+.hpv-thread li {
+	padding: 10px 14px;
+	border-radius: 12px;
+	background: var(--p-bg);
+}
+
+.hpv-thread li p {
+	margin: 4px 0 0;
+}
+
+.hpv-thread__approved {
+	box-shadow: inset 3px 0 0 #7bc043;
+}
+
+.hpv-thread__changes {
+	box-shadow: inset 3px 0 0 #d93025;
+}
+
+.hpv-thread span {
+	margin-left: 8px;
+	font-size: 12px;
+}
+
+.hpv-comment-form {
+	display: grid;
+	gap: 8px;
+}
+
+.hpv-comment-form .hpv-btn {
+	justify-self: start;
+}

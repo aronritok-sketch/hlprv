@@ -74,7 +74,7 @@ foreach ( array_merge( glob( $plugin . '/includes/*.php' ), array( $plugin . '/h
 }
 // Az ügyfélnaplóba kerülő minták: hpv_p_log_client( $client, 'minta', … ).
 foreach ( glob( $plugin . '/includes/*.php' ) as $file ) {
-	preg_match_all( "/hpv_p_log_client\\([^,]+,\\s*'((?:[^'\\\\]|\\\\.)*)'/", file_get_contents( $file ), $m );
+	preg_match_all( "/hpv_p_log_client\\([^,]+,\\s*'((?:[^'\\\\]|\\\\.)*)'\\s*,/", file_get_contents( $file ), $m );
 	foreach ( $m[1] as $text ) {
 		$text          = stripslashes( $text );
 		$used[ $text ] = true;

@@ -586,6 +586,76 @@ function hpv_p_entities(): array {
 			),
 		),
 
+		// Jóváhagyandó anyag: tartalom (blog, poszt, Cégprofil, hirdetés), oldal vagy dokumentum. Az ügyfél a portálon dönt.
+		'approval'     => array(
+			'table'    => 'approvals',
+			'label'    => 'Jóváhagyások',
+			'singular' => 'Jóváhagyás',
+			'parent'   => 'client',
+			'fields'   => array(
+				'client_id'     => array( 'type' => 'ref', 'ref' => 'client', 'label' => 'Ügyfél', 'required' => true ),
+				'project_id'    => array( 'type' => 'ref', 'ref' => 'project', 'label' => 'Projekt' ),
+				'task_id'       => array( 'type' => 'ref', 'ref' => 'task', 'label' => 'Feladat' ),
+				'type'          => array(
+					'type'    => 'select',
+					'label'   => 'Típus',
+					'default' => 'social',
+					'options' => array(
+						'blog'     => array( 'Blogcikk', 'Blog post' ),
+						'social'   => array( 'Közösségi poszt', 'Social post' ),
+						'gbp'      => array( 'Cégprofil poszt', 'Business Profile post' ),
+						'ad'       => array( 'Hirdetés', 'Ad' ),
+						'email'    => array( 'Hírlevél', 'Email' ),
+						'page'     => array( 'Weboldal / landing', 'Web page' ),
+						'document' => array( 'Dokumentum', 'Document' ),
+						'other'    => array( 'Egyéb', 'Other' ),
+					),
+				),
+				'title'         => array( 'type' => 'text', 'label' => 'Cím', 'required' => true ),
+				'body'          => array( 'type' => 'html', 'label' => 'Tartalom' ),
+				'channel'       => array( 'type' => 'text', 'label' => 'Csatorna (pl. Facebook, Instagram, Cégprofil)' ),
+				'link'          => array( 'type' => 'url', 'label' => 'Link (előnézet, dokumentum, Figma)' ),
+				'file_ids'      => array( 'type' => 'text', 'label' => 'Csatolt fájlok (azonosítók)' ),
+				'publish_date'  => array( 'type' => 'date', 'label' => 'Megjelenés' ),
+				'due_date'      => array( 'type' => 'date', 'label' => 'Jóváhagyási határidő' ),
+				'status'        => array(
+					'type'    => 'select',
+					'label'   => 'Státusz',
+					'default' => 'draft',
+					'options' => array(
+						'draft'     => array( 'Piszkozat', 'Draft' ),
+						'pending'   => array( 'Jóváhagyásra vár', 'Awaiting your approval' ),
+						'changes'   => array( 'Javítást kért', 'Changes requested' ),
+						'approved'  => array( 'Jóváhagyva', 'Approved' ),
+						'published' => array( 'Megjelent', 'Published' ),
+						'cancelled' => array( 'Elvetve', 'Cancelled' ),
+					),
+				),
+				'sent_at'       => array( 'type' => 'datetime', 'label' => 'Kiküldve', 'readonly' => true ),
+				'reminded_at'   => array( 'type' => 'datetime', 'label' => 'Emlékeztető', 'readonly' => true ),
+				'decided_at'    => array( 'type' => 'datetime', 'label' => 'Döntés', 'readonly' => true ),
+				'decided_by'    => array( 'type' => 'int', 'label' => 'Döntött', 'readonly' => true ),
+				'decision_note' => array( 'type' => 'textarea', 'label' => 'Az ügyfél megjegyzése', 'readonly' => true ),
+				'round'         => array( 'type' => 'int', 'label' => 'Kör', 'default' => 0 ),
+				'source'        => array( 'type' => 'text', 'label' => 'Forrás (crm, seo-os)', 'readonly' => true ),
+				'external_ref'  => array( 'type' => 'text', 'label' => 'Külső azonosító', 'readonly' => true ),
+				'created_by'    => array( 'type' => 'int', 'label' => 'Létrehozta', 'readonly' => true ),
+			),
+		),
+
+		'approval_comment' => array(
+			'table'    => 'approval_comments',
+			'label'    => 'Jóváhagyás hozzászólások',
+			'singular' => 'Hozzászólás',
+			'parent'   => 'approval',
+			'fields'   => array(
+				'approval_id' => array( 'type' => 'ref', 'ref' => 'approval', 'label' => 'Jóváhagyás', 'required' => true ),
+				'user_id'     => array( 'type' => 'int', 'label' => 'Szerző' ),
+				'body'        => array( 'type' => 'textarea', 'label' => 'Szöveg', 'required' => true ),
+				'kind'        => array( 'type' => 'text', 'label' => 'Fajta (comment, approved, changes, sent)' ),
+			),
+		),
+
 		// Megosztott fájl (ügyfél vagy projekt). A tartalom a privát mappában van, csak jogosultsággal tölthető le.
 		'file'         => array(
 			'table'    => 'files',

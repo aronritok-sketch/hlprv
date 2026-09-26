@@ -14,6 +14,7 @@ import { Contracts, ContractPage } from './views/contracts.js';
 import { Proposals, ProposalPage } from './views/proposals.js';
 import { Templates } from './views/templates.js';
 import { Files } from './views/files.js';
+import { Content, ContentPage } from './views/content.js';
 import { ImportPage } from './views/import.js';
 import { Invoices, InvoicePage, Subscriptions } from './views/invoices.js';
 
@@ -151,6 +152,7 @@ const NAV = [
 	{ path: '/projects', label: 'Projektek', icon: 'folder' },
 	{ path: '/chat', label: 'Chat', icon: 'chat', badge: 'unread' },
 	{ path: '/calls', label: 'Hívások', icon: 'video' },
+	{ path: '/content', label: 'Tartalom', icon: 'proposal', badge: 'approvals' },
 	{ path: '/files', label: 'Fájlok', icon: 'files' },
 	{ path: '/clients', label: 'Ügyfelek', icon: 'users' },
 	{ path: '/proposals', label: 'Ajánlatok', icon: 'proposal', cap: 'proposals' },
@@ -172,6 +174,7 @@ function Sidebar({ path }) {
 					<a key=${n.path} href=${'#' + n.path} class=${isActive(n.path) ? 'is-active' : ''}>
 						<${Icon} name=${n.icon} /><span>${n.label}</span>
 						${n.badge === 'unread' && unread ? html`<em class="count">${unread}</em>` : null}
+						${n.badge === 'approvals' && boot.approvalsAttention ? html`<em class="count" title="Javítást kértek">${boot.approvalsAttention}</em>` : null}
 					</a>`)}
 			</nav>
 			${legacy.length || boot.me.is_admin || caps.contracts || caps.proposals ? html`<p class="nav-label">Pénzügy és admin</p>` : null}
@@ -243,6 +246,8 @@ function App() {
 	else if (path === '/calls') page = html`<${Calls} params=${params} />`;
 	else if ((m = path.match(/^\/calls\/(\d+)$/))) page = html`<${CallPage} key=${'call' + m[1]} id=${Number(m[1])} params=${params} />`;
 	else if (path === '/clients') page = html`<${Clients} />`;
+	else if (path === '/content') page = html`<${Content} params=${params} />`;
+	else if ((m = path.match(/^\/content\/(\d+)$/))) page = html`<${ContentPage} key=${'ct-' + m[1]} id=${Number(m[1])} />`;
 	else if (path === '/files') page = html`<${Files} key=${'files' + (params.client || '')} params=${params} />`;
 	else if (path === '/team') page = html`<${Team} />`;
 	else if (path === '/import') page = html`<${ImportPage} />`;

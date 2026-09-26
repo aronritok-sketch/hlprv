@@ -12,6 +12,7 @@ const HPV_PORTAL_VIEWS = array(
 	'messages'  => 'Messages',
 	'meetings'  => 'Meetings',
 	'files'     => 'Files',
+	'approvals' => 'Approvals',
 	'proposals' => 'Proposals',
 	'invoices'  => 'Invoices',
 	'contracts' => 'Contracts',
@@ -53,6 +54,7 @@ function hpv_p_portal_icon( string $name ): string {
 		'messages'  => 'M4 5h16v11H8l-4 4z',
 		'meetings'  => 'M3 7h12v10H3zM15 10l6-3v10l-6-3',
 		'files'     => 'M3 6h6l2 2h10v11H3zM3 10h18',
+		'approvals' => 'M5 3h14v18H5zM9 12l2 2 4-4',
 		'proposals' => 'M5 3h10l4 4v14H5zM14 3v5h5M9 13l2 2 4-4',
 		'invoices'  => 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6',
 		'contracts' => 'M6 3h9l3 3v15H6zM9 10h6M9 14h6M9 18h3',
@@ -192,6 +194,7 @@ function hpv_p_portal_app(): string {
 		'messages'  => hpv_p_is_staff() ? 0 : hpv_chat_total_unread( $user->ID ),
 		'invoices'  => count( array_filter( hpv_p_portal_invoices( $client_id ), fn( $i ) => 'sent' === $i['status'] ) ),
 		'contracts' => count( array_filter( hpv_p_portal_contracts( $client_id ), fn( $c ) => 'sent' === $c['status'] ) ),
+		'approvals' => count( hpv_p_find( 'approval', array( 'client_id' => $client_id, 'status' => 'pending' ), array( 'limit' => 500 ) ) ),
 	);
 	?>
 	<div class="hpv-portal">
@@ -248,6 +251,9 @@ function hpv_p_portal_app(): string {
 					break;
 				case 'files':
 					hpv_pv_files( $client_id );
+					break;
+				case 'approvals':
+					hpv_pv_approvals( $client_id, $id );
 					break;
 				case 'proposals':
 					hpv_pv_proposals( $client_id );
@@ -360,6 +366,14 @@ function hpv_pv_overview( array $client, array $counts ) {
 				'alert' => false,
 			);
 		}
+	}
+	foreach ( hpv_p_find( 'approval', array( 'client_id' => (int) $client['id'], 'status' => 'pending' ), array( 'limit' => 100 ) ) as $ap ) {
+		$todo[] = array(
+			'label' => hpv_t( 'Approve: %s', $ap['title'] ),
+			'meta'  => hpv_t( hpv_p_option_label( 'approval', 'type', $ap['type'], 'en' ) ) . ( $ap['publish_date'] ? ' · ' . hpv_date( $ap['publish_date'], 'short' ) : '' ),
+			'url'   => hpv_p_portal_link( 'approvals', array( 'id' => $ap['id'] ) ),
+			'alert' => false,
+		);
 	}
 	$week = gmdate( 'Y-m-d H:i:s', time() - 7 * DAY_IN_SECONDS );
 	foreach ( hpv_files_portal_list( (int) $client['id'] ) as $f ) {

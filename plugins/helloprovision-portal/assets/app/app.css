@@ -728,3 +728,51 @@ button.convert:hover { border-color: var(--ink); }
 }
 .chip--kind { background: #f1e5ff; color: #6b21a8; }
 .meta-select--month { font-weight: 600; }
+
+/* Tartalom és jóváhagyás */
+.month-nav { display: inline-flex; align-items: center; gap: 6px; }
+.month-nav .icon-btn:first-child svg { transform: rotate(180deg); }
+.month-nav strong { min-width: 140px; text-align: center; }
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.cal__head { padding: 4px 8px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.cal__day { display: grid; align-content: start; gap: 4px; min-height: 108px; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.cal__day--empty { border: 0; background: none; }
+.cal__day.is-today { border-color: var(--ink); }
+.cal__num { justify-self: start; padding: 0 4px; border: 0; background: none; color: var(--muted); font-size: 12px; cursor: pointer; }
+.cal__num:hover { color: var(--ink); text-decoration: underline; }
+.cal__item { display: block; overflow: hidden; padding: 4px 6px; border-radius: 7px; background: #efefea; color: var(--ink); font-size: 12px; line-height: 1.3; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.cal__item strong { font-weight: 600; }
+.cal__item--pending { background: #fff3cf; }
+.cal__item--changes { background: #ffe5e3; }
+.cal__item--approved { background: #ecffd0; }
+.cal__item--published { background: #e5f0ff; }
+.cal__item--cancelled { text-decoration: line-through; opacity: .6; }
+.undated { display: grid; gap: 6px; margin-top: 16px; }
+.undated h3 { margin: 0 0 4px; font-size: 15px; }
+.undated__item { display: flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; }
+.pill--ap-draft { background: #efefea; color: #555; }
+.pill--ap-pending { background: #fff3cf; color: #7a5500; }
+.pill--ap-changes { background: #ffe5e3; color: #b3261e; }
+.pill--ap-approved { background: #ecffd0; color: var(--accent-ink); }
+.pill--ap-published { background: #e5f0ff; color: #1f4fbf; }
+.pill--ap-cancelled { background: #efefea; color: #888; }
+.content-title { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.content-title .pill { font-size: 13px; }
+.content-edit { display: grid; gap: 14px; }
+.alert--warn { background: #fffbe0; color: #5c4400; }
+.file-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.file-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink); font-size: 13px; text-decoration: none; }
+.file-chip img { width: 28px; height: 28px; border-radius: 5px; object-fit: cover; }
+.file-chip button { border: 0; background: none; color: var(--muted); font-size: 16px; line-height: 1; cursor: pointer; }
+.thread { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.thread li { padding: 8px 10px; border-radius: 10px; background: #fafaf6; font-size: 14px; }
+.thread li p { margin: 2px 0 0; white-space: pre-line; }
+.thread--client { background: #fffbe8; }
+.thread__approved { box-shadow: inset 3px 0 0 #7bc043; }
+.thread__changes { box-shadow: inset 3px 0 0 var(--late); }
+@media (max-width: 900px) {
+	.cal { grid-template-columns: minmax(0, 1fr); }
+	.cal__head, .cal__day--empty { display: none; }
+	.cal__day { min-height: 0; }
+	.cal__day:not(:has(.cal__item)) { display: none; }
+}
