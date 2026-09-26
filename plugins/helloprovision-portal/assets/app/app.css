@@ -376,8 +376,8 @@ tr.is-sub .list-title a { font-weight: 400; }
 .timer-pill__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.4s infinite; }
 @keyframes pulse { 50% { opacity: .3; } }
 .timer-pill__task { overflow: hidden; color: rgba(255,255,255,.75); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-.timer-pill strong { font-variant-numeric: tabular-nums; }
-.timer-pill__stop { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #0d0d0d; }
+.timer-pill strong { flex: none; font-variant-numeric: tabular-nums; }
+.timer-pill__stop { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #0d0d0d; }
 
 .empty { display: grid; justify-items: center; gap: 8px; padding: 36px 16px; color: var(--muted); text-align: center; }
 .empty strong { color: var(--ink); font-size: 15px; }
@@ -411,6 +411,14 @@ tr.is-sub .list-title a { font-weight: 400; }
 	.nav a span { font-size: 13px; }
 	.topbar { top: 52px; padding: 10px 14px; }
 	.search-btn kbd, .timer-pill__task { display: none; }
+	.search-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.timer-pill { flex: none; }
+	/* Feladatsor mobilon: a cím teljes szélességben, a címkék alatta. */
+	.task-row { flex-wrap: wrap; row-gap: 6px; }
+	.task-row__title { flex: 1 1 calc(100% - 40px); white-space: normal; }
+	.task-row > :nth-child(3) { margin-left: 32px; }
+	.task-row .chip { flex: 0 1 auto; min-width: 0; max-width: 42%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.task-row .due { margin-left: auto; }
 	.content { padding: 4px 14px 48px; }
 	.manual-time { grid-template-columns: 1fr 1fr; }
 	.hpv-chat--app { height: calc(100vh - 170px); }
