@@ -452,6 +452,7 @@ function hpv_prop_send( array $p, string $to, string $message, int $user_id ) {
 		)
 	);
 	hpv_p_log( (int) $p['client_id'], 'system', sprintf( 'Ajánlat kiküldve: %s (%s) → %s', $p['number'], $p['title'], $to ), false, $user_id );
+	do_action( 'hpv_proposal_sent', $p, $user_id );
 
 	return hpv_p_get( 'proposal', (int) $p['id'] );
 }

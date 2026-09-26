@@ -64,6 +64,14 @@ A marketing weboldalra kerül. Aki kitölt egy űrlapot, „Érdeklődő” ügy
 
 Egy űrlap kihagyása (pl. hírlevél): `add_filter( 'hpv_leads_capture', fn( $lead ) => 'Newsletter' === $lead['form'] ? false : $lead );`
 
+**Forrásmérés:** egy kis szkript megjegyzi (`hpv_attr` süti, 90 napig), honnan jött a látogató:
+- az első látogatás és az utolsó kampányos vagy más oldalról érkező látogatás;
+- UTM-paraméterek, Google/Meta/Microsoft kattintás-azonosító, hivatkozó oldal, érkezési oldal.
+
+Kitöltéskor ez is a CRM-be megy, így a Források kimutatás megmutatja, melyik csatorna és kampány hozza az ügyfeleket. Személyes adatot nem tárol, gyorsítótárazott oldalon is működik. Kikapcsolás: `define( 'HPV_LEADS_ATTRIBUTION', false );`. Ha az oldalon süti-hozzájárulás kezelő van, ezt a sütit a statisztikai kategóriába érdemes sorolni.
+
+A saját kampánylinkekbe tegyetek UTM-et, pl. Google Cégprofil: `?utm_source=google&utm_medium=organic&utm_campaign=gbp`, hírlevél: `?utm_source=newsletter&utm_medium=email&utm_campaign=2026-10`. A Google Ads és a Meta a saját kattintás-azonosítóját magától hozzáteszi.
+
 A téma űrlapja mellett a téma valószínűleg most is küld e-mailt az info@ címre; ha a CRM levele elég, azt a témában ki lehet kapcsolni.
 
 ## `plugins/helloprovision-reviews/` – Google értékelés-kérő rendszer
@@ -153,7 +161,7 @@ Az érdeklődők a **Website Grader → Érdeklődők** menüben vannak: teljes 
 - A Google sebességmérése futásonként néhány pontot ingadozhat. Ez normális, az eszköz GYIK része is elmondja.
 - Ha a szerver Cloudflare vagy más proxy mögött van, a látogatónkénti korlát a proxy IP-címét látja. Ilyenkor a `hpv_grader_client_ip` filterrel állítható be a valódi IP.
 
-## `plugins/helloprovision-portal/` – Ügyfélportál, CRM, projektkezelő, videóhívás, számlázás, ajánlatok, szerződések, marketing és SEO ügyfelek (0.7)
+## `plugins/helloprovision-portal/` – Ügyfélportál, CRM, projektkezelő, videóhívás, számlázás, ajánlatok, szerződések, marketing és SEO ügyfelek, értékesítés (0.8)
 
 Egy WordPress bővítmény, két bejárattal:
 
@@ -247,6 +255,20 @@ Saját, gyors felület, nem a WordPress admin. Oldalújratöltés nélkül műk�
   - pénzügy (kintlévőség, havi díjak, utolsó számlák, előfizetések), projektek, fájlok, tartalom, riportok, szerződések;
   - amerikai ügyfélnél „Google értékelés kérése” gomb.
 - **Szolgáltatás-katalógus** (számlázási joggal): név, leírás, alapár, számlázási gyakoriság, hány aktív előfizetés használja; archiválható.
+- **Értékesítés (0.8):**
+  - **Tölcsér:** minden érdeklődő egy táblán, szakaszokkal: Új → Felvettük a kapcsolatot → Igényfelmérés → Ajánlat kint → Megnyert / Elveszett.
+    - Bárhonnan jön (weboldal űrlap, Grader, Bitrix24 import, kézi felvitel, ajánlat ablak), automatikusan bekerül.
+    - Húzással vagy a kártya választójával mozgatható; kattintásra nyílik az adatlap.
+    - Elvesztésnél kötelező az ok (túl drága, mást választott, nem reagál…); ha később újra jelentkezik, magától visszakerül az elejére.
+  - **Automatikus lépések:** az ajánlat kiküldése „Ajánlat kint” (és ha nincs becsült érték, az ajánlat első évi értéke), az elfogadása vagy az ügyfél aktívvá tétele „Megnyert”.
+  - **Kártyánként:** csatorna, űrlap, kampány, becsült érték (első év), következő lépés határidővel, felelős; az új érdeklődőn, hogy mióta vár válaszra.
+  - **Mutatók:** válaszra vár (és ebből mennyi késik), új érdeklődők és átlagos első válaszidő (30 nap), nyerési arány (90 nap), a nyitott tölcsér értéke.
+  - **Források:** időszakra (30 nap, 90 nap, idei év, 12 hónap), csatornánként, kampányonként vagy űrlaponként:
+    - érdeklődő, ajánlat, megnyert, elveszett, nyerési arány, átlagos első válasz, havi grafikon;
+    - számlázási joggal a megnyertek eddigi befizetései és havi díjai is: így látszik, melyik marketing éri meg.
+  - **Figyelmeztetések:** ha egy új érdeklődő 2 óránál (állítható) tovább vár válaszra, a felelőse e-mailt kap; reggelente összefoglaló az esedékes következő lépésekről.
+  - **Az adatlapon:** értékesítési panel (szakasz, következő lépés, érték, felelős, csatorna, kampány) és „Honnan jött”: az első látogatás és az utolsó kampány UTM-adatai, kattintás-azonosítója, hivatkozó és érkezési oldala.
+  - **Csatornák:** Google Ads, Meta hirdetés, egyéb hirdetés, organikus kereső, Google Cégprofil, közösségi média, e-mail, hivatkozó oldal, egyéb kampány, közvetlen, személyes / ajánlás, Bitrix24 import. A weboldali érdeklődőnél az első látogatásból számolja; kézzel felülírható.
 
 **Marketing és SEO ügyfelek (0.7):**
 
@@ -400,7 +422,8 @@ A portál saját keretben fut, a WordPress témától függetlenül, mobilon is.
     // a CRM-be:          define( 'HPV_SITE_URL', 'https://helloprovision.com' );
     // a weboldalra:      define( 'HPV_CRM_URL', 'https://crm.helloprovision.com' );
     ```
-13. **Automatizmusok:** CRM → Beállítások: havi riport napja, fizetési emlékeztetők napjai, óradíjak (USD, HUF), értékeléskérés (késleltetés, országok). Mind naponta reggel fut, valódi cronnal.
+13. **Automatizmusok:** CRM → Beállítások: havi riport napja, fizetési emlékeztetők napjai, óradíjak (USD, HUF), értékeléskérés (késleltetés, országok), értékesítés (az új érdeklődő felelőse, válaszidő-figyelmeztetés órában, reggeli összefoglaló). A napiak reggel futnak, a válaszidő-figyelés óránként; valódi cron kell.
+    **Frissítéskor** a meglévő érdeklődők a tölcsér „Új” oszlopába kerülnek, válaszidő-figyelmeztetés nélkül.
 14. **Fájlok:** a feltöltési korlát a PHP `upload_max_filesize` és `post_max_size` beállításától függ (legfeljebb 100 MB). nginx alatt a `wp-content/uploads/hpv-private/` mappát tiltani kell (lásd a fejlesztői dokumentációt).
 
 ### Átköltözés a Bitrix24-ből
@@ -452,6 +475,7 @@ wp eval-file tests/reports-integration.php       # havi riport (Google, Meta és
 wp eval-file tests/automation-integration.php    # emlékeztetők, munkaidő, Grader és Reviews híd
 wp eval-file tests/clients-integration.php       # ügyfél-adatlap és szolgáltatás-katalógus
 HPV_TEST_SITE_URL=https://teszt.oldal wp eval-file tests/leads-integration.php  # weboldal űrlapjai → CRM (a leads mu-pluginnal)
+wp eval-file tests/sales-integration.php         # értékesítési tölcsér és forrásmérés
 php tests/i18n.php                               # minden magyar fordítás megvan-e
 ```
 

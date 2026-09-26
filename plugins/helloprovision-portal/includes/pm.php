@@ -391,6 +391,7 @@ function hpv_pm_rest_bootstrap() {
 			'statuses'   => hpv_pm_statuses(),
 			'priorities' => array_map( fn( $k, $v ) => array( 'key' => $k, 'label' => $v[0] ), array_keys( hpv_p_entity( 'task' )['fields']['priority']['options'] ), hpv_p_entity( 'task' )['fields']['priority']['options'] ),
 			'approvalsAttention' => count( hpv_p_find( 'approval', array( 'status' => 'changes' ), array( 'limit' => 500 ) ) ),
+			'salesAttention'     => count( hpv_p_find( 'client', array( 'status' => 'lead', 'lead_stage' => 'new' ), array( 'limit' => 500 ) ) ),
 			'projectKinds'    => array_map( fn( $k, $v ) => array( 'key' => $k, 'label' => $v[0] ), array_keys( hpv_p_entity( 'project' )['fields']['kind']['options'] ), hpv_p_entity( 'project' )['fields']['kind']['options'] ),
 			'projectStatuses' => array_map( fn( $k, $v ) => array( 'key' => $k, 'label' => $v[0] ), array_keys( hpv_p_entity( 'project' )['fields']['status']['options'] ), hpv_p_entity( 'project' )['fields']['status']['options'] ),
 			'timer'      => hpv_pm_format_timer( hpv_pm_running_timer( $me->ID ) ),

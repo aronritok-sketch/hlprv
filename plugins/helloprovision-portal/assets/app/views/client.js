@@ -3,6 +3,7 @@
  * Szolgáltatás-katalógus (számlázási joggal).
  */
 import { html, useState, useEffect, api, useApp, navigate, Icon, Modal, Spinner, Empty, toast, timeAgo, money } from '../ui.js';
+import { SalesPanel } from './sales.js';
 
 const GROUPS = { main: 'Alapadatok', billing: 'Számlázás', sources: 'Riport adatforrások' };
 const STATUS = { lead: 'Érdeklődő', active: 'Aktív', paused: 'Szünetel', former: 'Korábbi' };
@@ -101,6 +102,7 @@ export function ClientPage({ id }) {
 					</section>
 				</div>
 				<aside class="client-side">
+					${c.sales ? html`<${SalesPanel} client=${c} onChange=${() => api('/clients/' + id).then(take)} />` : null}
 					<section class="card">
 						<h3>Portál-hozzáférés</h3>
 						${c.users.length ? html`<ul class="people">${c.users.map((u) => html`<li key=${u.id}><span><strong>${u.name}</strong><small class="muted">${u.email}${u.last_login ? ' · belépett ' + timeAgo(u.last_login * 1000) : ' · még nem lépett be'}</small></span><button class="icon-btn" title="Visszavonás" aria-label="Visszavonás" onClick=${() => revoke(u)}><${Icon} name="x" size="15" /></button></li>`)}</ul>` : html`<p class="hint">Még nincs portál-felhasználó.</p>`}

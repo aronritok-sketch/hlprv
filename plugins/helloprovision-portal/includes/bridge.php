@@ -33,9 +33,12 @@ function hpv_bridge_verify( WP_REST_Request $r ): bool {
 /* ─── 1. Érdeklődő a weboldalról (Grader, kapcsolati űrlap) ── */
 
 const HPV_LEAD_SOURCES = array(
-	'grader'  => 'Website Grader',
-	'contact' => 'Kapcsolati űrlap',
-	'seo_os'  => 'SEO OS',
+	'grader'   => 'Website Grader',
+	'contact'  => 'Kapcsolati űrlap',
+	'seo_os'   => 'SEO OS',
+	'manual'   => 'Kézi felvitel',
+	'bitrix'   => 'Bitrix24',
+	'proposal' => 'Ajánlat ablak',
 );
 
 function hpv_lead_source_label( string $source ): string {
@@ -45,6 +48,7 @@ function hpv_lead_source_label( string $source ): string {
 /**
  * Mezők: email (kötelező), name, business, website, phone, country (US|HU), source (grader|contact|…),
  * form (az űrlap neve), page (ahol kitöltötték), message, fields (további kérdés → válasz),
+ * attribution (a weboldal sütijéből: { first, last } látogatás UTM-mel, kattintás-azonosítóval, hivatkozó oldallal),
  * a Graderből még: score, grade, issues, report_url.
  *
  * @return array|WP_Error { client_id, created }
@@ -73,6 +77,8 @@ function hpv_leads_ingest( array $d ) {
 		}
 	}
 	$label = hpv_lead_source_label( $source ) . ( $form ? ' (' . $form . ')' : '' );
+	$attr  = function_exists( 'hpv_sales_clean_attribution' ) ? hpv_sales_clean_attribution( $d['attribution'] ?? array() ) : array();
+	$track = function_exists( 'hpv_sales_source_fields' ) ? hpv_sales_source_fields( $source, $attr ) : array();
 
 	$existing = hpv_p_find( 'client', array( 'email' => $email ), array( 'limit' => 1 ) )[0] ?? null;
 	if ( ! $existing && function_exists( 'hpv_bx_find_client' ) ) {
@@ -92,6 +98,15 @@ function hpv_leads_ingest( array $d ) {
 		if ( $fill ) {
 			hpv_p_update( 'client', $client_id, $fill );
 		}
+		// Értékesítés: a korábbi vagy elveszett érdeklődő új esély; a nyitott érdeklődő forrásadatai kiegészülnek.
+		if ( $track && 'former' === $existing['status'] ) {
+			hpv_p_update( 'client', $client_id, array( 'status' => 'lead' ) );
+			hpv_p_update( 'client', $client_id, $track );
+		} elseif ( $track && 'lead' === $existing['status'] && 'lost' === $existing['lead_stage'] ) {
+			hpv_sales_reopen( $client_id, $track );
+		} elseif ( $track && 'lead' === $existing['status'] && '' === (string) $existing['lead_attribution'] && $attr ) {
+			hpv_p_update( 'client', $client_id, array_diff_key( $track, array( 'lead_source' => 0 ) ) );
+		}
 	} else {
 		$client_id = hpv_p_insert(
 			'client',
@@ -104,7 +119,7 @@ function hpv_leads_ingest( array $d ) {
 				'country'      => $country,
 				'status'       => 'lead',
 				'notes'        => 'Forrás: ' . $label,
-			)
+			) + $track
 		);
 		if ( ! $client_id ) {
 			return new WP_Error( 'db', 'Az adatbázisba írás nem sikerült.' );
@@ -133,6 +148,10 @@ function hpv_leads_ingest( array $d ) {
 	}
 	if ( ! empty( $d['report_url'] ) ) {
 		$lines[] = 'Riport: ' . esc_url_raw( (string) $d['report_url'] );
+	}
+	if ( ! empty( $attr['first'] ) ) {
+		$f       = $attr['first'];
+		$lines[] = 'Honnan: ' . ( HPV_SALES_CHANNELS[ hpv_sales_channel( $f ) ] ?? '' ) . ( ! empty( $f['utm_campaign'] ) ? ', kampány: ' . $f['utm_campaign'] : '' ) . ( ! empty( $f['ref'] ) ? ', ' . $f['ref'] : '' );
 	}
 	$note = implode( "\n", $lines );
 	hpv_p_log( $client_id, 'note', $note, false );

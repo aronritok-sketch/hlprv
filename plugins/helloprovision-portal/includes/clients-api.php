@@ -79,6 +79,9 @@ function hpv_client_full( int $id ): ?array {
 			hpv_p_find( 'contract', array( 'client_id' => $id ), array( 'orderby' => 'id', 'order' => 'DESC', 'limit' => 50 ) )
 		);
 	}
+	if ( function_exists( 'hpv_sales_detail' ) && ( 'lead' === $c['status'] || $c['lead_stage'] ) ) {
+		$out['sales'] = hpv_sales_detail( $c );
+	}
 	$out['portal_url'] = hpv_p_portal_url( array( 'preview_client' => $id ) );
 	$out['admin_url']  = admin_url( 'admin.php?page=hpv-crm&client=' . $id );
 

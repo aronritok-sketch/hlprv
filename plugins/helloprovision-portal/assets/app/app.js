@@ -17,6 +17,7 @@ import { Files } from './views/files.js';
 import { Content, ContentPage } from './views/content.js';
 import { Reports, ReportPage, DataSourcesModal } from './views/reports.js';
 import { ClientPage, NewClientModal, Services } from './views/client.js';
+import { Sales } from './views/sales.js';
 import { ImportPage } from './views/import.js';
 import { Invoices, InvoicePage, Subscriptions } from './views/invoices.js';
 
@@ -162,6 +163,7 @@ const NAV = [
 	{ path: '/content', label: 'Tartalom', icon: 'proposal', badge: 'approvals' },
 	{ path: '/reports', label: 'Riportok', icon: 'gantt' },
 	{ path: '/files', label: 'Fájlok', icon: 'files' },
+	{ path: '/sales', label: 'Értékesítés', icon: 'flag', badge: 'sales' },
 	{ path: '/clients', label: 'Ügyfelek', icon: 'users' },
 	{ path: '/proposals', label: 'Ajánlatok', icon: 'proposal', cap: 'proposals' },
 	{ path: '/contracts', label: 'Szerződések', icon: 'doc', cap: 'contracts' },
@@ -182,6 +184,7 @@ function Sidebar({ path }) {
 						<${Icon} name=${n.icon} /><span>${n.label}</span>
 						${n.badge === 'unread' && unread ? html`<em class="count">${unread}</em>` : null}
 						${n.badge === 'approvals' && boot.approvalsAttention ? html`<em class="count" title="Javítást kértek">${boot.approvalsAttention}</em>` : null}
+						${n.badge === 'sales' && boot.salesAttention ? html`<em class="count" title="Új érdeklődő, válaszra vár">${boot.salesAttention}</em>` : null}
 					</a>`)}
 			</nav>
 			${legacy.length || boot.me.is_admin || caps.contracts || caps.proposals ? html`<p class="nav-label">Pénzügy és admin</p>` : null}
@@ -256,6 +259,7 @@ function App() {
 	else if (path === '/clients') page = html`<${Clients} />`;
 	else if ((m = path.match(/^\/clients\/(\d+)$/))) page = html`<${ClientPage} key=${'cl-' + m[1]} id=${Number(m[1])} />`;
 	else if (path === '/services') page = html`<${Services} />`;
+	else if (path === '/sales') page = html`<${Sales} params=${params} />`;
 	else if (path === '/content') page = html`<${Content} params=${params} />`;
 	else if ((m = path.match(/^\/content\/(\d+)$/))) page = html`<${ContentPage} key=${'ct-' + m[1]} id=${Number(m[1])} />`;
 	else if (path === '/reports') page = html`<${Reports} params=${params} />`;
@@ -274,7 +278,7 @@ function App() {
 	else page = html`<${Empty} title="Az oldal nem található" />`;
 
 	return html`
-		<${AppContext.Provider} value=${{ boot, timer, setTimer, refreshTimer, unread, setUnread }}>
+		<${AppContext.Provider} value=${{ boot, setBoot, timer, setTimer, refreshTimer, unread, setUnread }}>
 			<div class="app">
 				<${Sidebar} path=${path} />
 				<div class="main">

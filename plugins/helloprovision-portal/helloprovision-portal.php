@@ -9,8 +9,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-const HPV_PORTAL_VERSION    = '0.7.0';
-const HPV_PORTAL_DB_VERSION = '8';
+const HPV_PORTAL_VERSION    = '0.8.0';
+const HPV_PORTAL_DB_VERSION = '9';
 const HPV_PORTAL_OPTION     = 'hpv_portal_settings';
 const HPV_PORTAL_FILE       = __FILE__;
 
@@ -36,6 +36,7 @@ require_once __DIR__ . '/includes/approvals.php';
 require_once __DIR__ . '/includes/reports.php';
 require_once __DIR__ . '/includes/connectors.php';
 require_once __DIR__ . '/includes/bridge.php';
+require_once __DIR__ . '/includes/sales.php';
 require_once __DIR__ . '/includes/bitrix.php';
 require_once __DIR__ . '/includes/pm.php';
 require_once __DIR__ . '/includes/ai.php';
@@ -100,6 +101,9 @@ function hpv_p_maybe_upgrade() {
 	if ( $from && $from < 6 ) {
 		hpv_recurring_migrate();
 	}
+	if ( $from && $from < 9 ) {
+		hpv_sales_migrate();
+	}
 }
 
 /**
@@ -146,6 +150,9 @@ function hpv_p_default_settings(): array {
 		'hourly_rate_usd' => '0',
 		'hourly_rate_huf' => '0',
 		'report_day'      => 3,
+		'lead_owner'      => 0,
+		'lead_sla_hours'  => 2,
+		'sales_digest'    => true,
 	);
 }
 

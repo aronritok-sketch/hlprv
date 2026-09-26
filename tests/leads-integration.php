@@ -106,6 +106,19 @@ it( 'a CRM elutasítja (rossz adat): nem kerül sorba', ! hpv_leads_send( array(
 add_filter( 'hpv_leads_capture', fn( $l ) => 'Newsletter' === ( $l['form'] ?? '' ) ? false : $l );
 it( 'szűrővel kihagyható űrlap', ! hpv_leads_send( hpv_leads_map( array( 'email' => "news_$suffix@x.test" ), 'contact', 'Newsletter' ) ) && ! $find( "news_$suffix@x.test" ) );
 
+echo "Forrásmérés (süti)\n";
+ob_start();
+hpv_leads_attribution_script();
+$js = ob_get_clean();
+it( 'a szkript kikerül az oldalra (süti: hpv_attr, 90 nap)', false !== strpos( $js, "'hpv_attr'" ) && false !== strpos( $js, 'max-age=7776000' ) && false !== strpos( $js, 'gclid' ) );
+$_COOKIE['hpv_attr'] = wp_slash( wp_json_encode( array( 'first' => array( 'utm_source' => 'google', 'utm_medium' => 'cpc', 'utm_campaign' => 'spring', 'gclid' => 'G1', 'evil' => '<b>', 'land' => '/web-design/', 'at' => time() ), 'last' => array( 'ref' => 'https://www.google.com/', 'at' => time() ) ) ) );
+$a = hpv_leads_attribution();
+it( 'a süti kiolvasva, ismeretlen kulcs nélkül', 'spring' === $a['first']['utm_campaign'] && ! isset( $a['first']['evil'] ) && 'https://www.google.com/' === $a['last']['ref'] );
+hpv_leads_send( hpv_leads_map( array( 'name' => 'Gus Ads', 'email' => "gus_$suffix@x.test" ), 'contact', 'Project Brief' ) );
+$gus = $find( "gus_$suffix@x.test" );
+it( 'a CRM-ben a csatorna és a kampány a sütiből', $gus && 'google_ads' === $gus['lead_channel'] && 'spring' === $gus['lead_campaign'] );
+unset( $_COOKIE['hpv_attr'] );
+
 echo "Túl sok kitöltés egy IP-ről\n";
 $_SERVER['REMOTE_ADDR'] = '203.0.113.' . wp_rand( 1, 250 );
 $oks = array_map( fn() => hpv_leads_ip_ok(), range( 1, 6 ) );

@@ -16,6 +16,10 @@
  * és óránként újrapróbálja (3 napig).
  *
  * Egy űrlap kihagyása: add_filter( 'hpv_leads_capture', fn( $lead ) => 'newsletter' === $lead['form'] ? false : $lead );
+ *
+ * Forrásmérés: egy kis szkript megjegyzi (hpv_attr süti, 90 nap), honnan jött a látogató — az első és az utolsó nem
+ * közvetlen látogatás UTM-paramétereit, a Google/Meta/Microsoft kattintás-azonosítót, a hivatkozó oldalt és az érkezési
+ * oldalt. Személyes adatot nem tárol. Kikapcsolás: define( 'HPV_LEADS_ATTRIBUTION', false );
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -35,6 +39,9 @@ function hpv_leads_crm_configured(): bool {
  * Egy érdeklődő elküldése. Sikertelen küldésnél sorba teszi (újrapróbálás óránként).
  */
 function hpv_leads_send( array $lead ): bool {
+	if ( empty( $lead['attribution'] ) ) {
+		$lead['attribution'] = hpv_leads_attribution(); // a kitöltés kérésében még ott a látogató sütije
+	}
 	$lead = apply_filters( 'hpv_leads_capture', $lead );
 	if ( ! $lead || ! is_email( $lead['email'] ?? '' ) || ! hpv_leads_crm_configured() ) {
 		return false;
@@ -138,6 +145,58 @@ function hpv_leads_alert( array $item, string $error ): void {
 		$text .= $k . ': ' . ( is_array( $v ) ? implode( ', ', $v ) : $v ) . "\n";
 	}
 	wp_mail( get_option( 'admin_email' ), 'CRM: érdeklődő nem ment át — ' . ( $lead['email'] ?? '' ), $text );
+}
+
+/* ─── Forrásmérés (honnan jött a látogató) ────────────────── */
+
+const HPV_LEADS_TOUCH_KEYS = array( 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'gbraid', 'wbraid', 'fbclid', 'msclkid', 'ref', 'land', 'at' );
+
+function hpv_leads_attribution_on(): bool {
+	return ! defined( 'HPV_LEADS_ATTRIBUTION' ) || HPV_LEADS_ATTRIBUTION;
+}
+
+add_action( 'wp_footer', 'hpv_leads_attribution_script', 1 );
+
+/**
+ * Böngészőben fut (gyorsítótárazott oldalon is): az első látogatás megmarad, az utolsó akkor frissül, ha a látogató
+ * kampánylinkről vagy más oldalról érkezik (a közvetlen visszatérés nem írja felül).
+ */
+function hpv_leads_attribution_script() {
+	if ( ! hpv_leads_attribution_on() || is_admin() ) {
+		return;
+	}
+	?>
+<script>(function(){try{var n='hpv_attr',k=<?php echo wp_json_encode( array_slice( HPV_LEADS_TOUCH_KEYS, 0, 10 ) ); ?>,q=new URLSearchParams(location.search),t={},p=false;
+k.forEach(function(x){var v=q.get(x);if(v){t[x]=v.slice(0,150);p=true;}});
+var r=document.referrer||'',h='';try{h=r?new URL(r).hostname:'';}catch(e){}var ext=h&&h.replace(/^www\./,'')!==location.hostname.replace(/^www\./,'');
+if(ext)t.ref=r.slice(0,200);t.land=location.pathname.slice(0,150);t.at=Math.floor(Date.now()/1000);
+var m=document.cookie.match(new RegExp('(?:^|; )'+n+'=([^;]*)')),d={};if(m){try{d=JSON.parse(decodeURIComponent(m[1]))||{};}catch(e){d={};}}
+if(!d.first)d.first=t;else if(!(p||ext))return;d.last=t;
+document.cookie=n+'='+encodeURIComponent(JSON.stringify(d))+';path=/;max-age=7776000;SameSite=Lax'+(location.protocol==='https:'?';Secure':'');}catch(e){}})();</script>
+	<?php
+}
+
+/**
+ * A süti tartalma a szerveren (ellenőrzött kulcsokkal).
+ */
+function hpv_leads_attribution(): array {
+	if ( ! hpv_leads_attribution_on() || empty( $_COOKIE['hpv_attr'] ) ) {
+		return array();
+	}
+	$data = json_decode( wp_unslash( (string) $_COOKIE['hpv_attr'] ), true ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+	$out  = array();
+	foreach ( array( 'first', 'last' ) as $which ) {
+		if ( empty( $data[ $which ] ) || ! is_array( $data[ $which ] ) ) {
+			continue;
+		}
+		foreach ( HPV_LEADS_TOUCH_KEYS as $k ) {
+			if ( isset( $data[ $which ][ $k ] ) && is_scalar( $data[ $which ][ $k ] ) && '' !== (string) $data[ $which ][ $k ] ) {
+				$out[ $which ][ $k ] = 'at' === $k ? (int) $data[ $which ][ $k ] : mb_substr( sanitize_text_field( (string) $data[ $which ][ $k ] ), 0, 200 );
+			}
+		}
+	}
+
+	return $out;
 }
 
 /* ─── Mezők felismerése ───────────────────────────────────── */

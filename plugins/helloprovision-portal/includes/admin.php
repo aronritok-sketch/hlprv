@@ -1115,6 +1115,9 @@ function hpv_p_sanitize_settings( $input ): array {
 		'hourly_rate_usd' => hpv_p_cents_to_decimal( hpv_p_to_cents( $input['hourly_rate_usd'] ?? 0 ) ),
 		'hourly_rate_huf' => hpv_p_cents_to_decimal( hpv_p_to_cents( $input['hourly_rate_huf'] ?? 0 ) ),
 		'report_day'      => min( 28, max( 1, absint( $input['report_day'] ?? 3 ) ) ),
+		'lead_owner'      => hpv_p_is_staff( absint( $input['lead_owner'] ?? 0 ) ) ? absint( $input['lead_owner'] ) : 0,
+		'lead_sla_hours'  => min( 72, absint( $input['lead_sla_hours'] ?? 2 ) ),
+		'sales_digest'    => ! empty( $input['sales_digest'] ),
 		'recurring_mode'  => in_array( $input['recurring_mode'] ?? '', array( 'off', 'draft', 'send' ), true ) ? $input['recurring_mode'] : 'draft',
 	);
 }
@@ -1198,6 +1201,14 @@ function hpv_p_admin_settings_page() {
 					<label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[review_request]" value="1" <?php checked( ! empty( $s['review_request'] ) ); ?>> Kész projekt után automatikusan (a Reviews bővítményen keresztül)</label><br>
 					a lezárás után <input type="number" min="0" max="60" id="hpv-s-review_delay_days" name="<?php echo esc_attr( $n ); ?>[review_delay_days]" value="<?php echo (int) $s['review_delay_days']; ?>" style="width:60px"> nappal, ezeknek az országoknak: <input type="text" name="<?php echo esc_attr( $n ); ?>[review_countries]" value="<?php echo esc_attr( $s['review_countries'] ); ?>" style="width:70px"> <span class="description">(US, HU)</span>
 					<p class="description">Külön telepítésnél a wp-config.php-ba: HPV_SITE_URL és HPV_BRIDGE_SECRET (a marketing oldalon is ugyanez a titok). Ugyanaz a titok viszi a Website Grader érdeklődőit is a CRM-be. <?php echo hpv_bridge_secret() ? '✔ titok beállítva' : '✘ nincs HPV_BRIDGE_SECRET'; ?></p>
+				</td></tr>
+				<tr><th><label for="hpv-s-lead_owner">Értékesítés</label></th><td>
+					Új érdeklődő felelőse: <select id="hpv-s-lead_owner" name="<?php echo esc_attr( $n ); ?>[lead_owner]"><option value="0">— senki (az értesítési címre megy) —</option>
+					<?php foreach ( get_users( array( 'capability' => 'hpv_manage_crm', 'orderby' => 'display_name' ) ) as $u ) : ?>
+						<option value="<?php echo (int) $u->ID; ?>" <?php selected( (int) $s['lead_owner'], $u->ID ); ?>><?php echo esc_html( $u->display_name ); ?></option>
+					<?php endforeach; ?></select><br>
+					Figyelmeztetés, ha egy új érdeklődő <input type="number" min="0" max="72" name="<?php echo esc_attr( $n ); ?>[lead_sla_hours]" value="<?php echo (int) $s['lead_sla_hours']; ?>" style="width:60px"> óránál tovább vár válaszra <span class="description">(0 = nincs)</span><br>
+					<label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[sales_digest]" value="1" <?php checked( ! empty( $s['sales_digest'] ) ); ?>> Reggeli összefoglaló a felelősöknek az esedékes következő lépésekről</label>
 				</td></tr>
 				<tr><th>Óradíj (munkaidő-számlázás)</th><td>
 					USD <input type="text" name="<?php echo esc_attr( $n ); ?>[hourly_rate_usd]" value="<?php echo esc_attr( $s['hourly_rate_usd'] ); ?>" style="width:90px">

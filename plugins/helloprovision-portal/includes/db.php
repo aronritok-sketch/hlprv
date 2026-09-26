@@ -179,14 +179,28 @@ function hpv_p_insert( string $entity, array $data ): int {
 	$data['created_at'] = $now;
 	$data['updated_at'] = $now;
 
-	return false === $wpdb->insert( hpv_p_table( $entity ), $data ) ? 0 : (int) $wpdb->insert_id;
+	if ( false === $wpdb->insert( hpv_p_table( $entity ), $data ) ) {
+		return 0;
+	}
+	$id = (int) $wpdb->insert_id;
+	do_action( "hpv_p_inserted_{$entity}", $id, $data );
+
+	return $id;
 }
 
 function hpv_p_update( string $entity, int $id, array $data ): bool {
 	global $wpdb;
 	$data['updated_at'] = current_time( 'mysql', true );
+	$hook               = "hpv_p_updated_{$entity}";
+	$old                = has_action( $hook ) ? hpv_p_get( $entity, $id ) : null;
+	if ( false === $wpdb->update( hpv_p_table( $entity ), $data, array( 'id' => $id ) ) ) {
+		return false;
+	}
+	if ( $old ) {
+		do_action( $hook, $id, $data, $old );
+	}
 
-	return false !== $wpdb->update( hpv_p_table( $entity ), $data, array( 'id' => $id ) );
+	return true;
 }
 
 /**

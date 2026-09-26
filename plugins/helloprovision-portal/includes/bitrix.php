@@ -397,7 +397,7 @@ function hpv_bx_step_contacts( array &$run ) {
 }
 
 function hpv_bx_step_leads( array &$run ) {
-	$page = hpv_bx_page( $run, 'crm.lead.list', array( 'order' => array( 'ID' => 'ASC' ), 'select' => array( 'ID', 'TITLE', 'NAME', 'LAST_NAME', 'COMPANY_TITLE', 'STATUS_ID', 'PHONE', 'EMAIL', 'WEB', 'COMMENTS', 'OPPORTUNITY', 'CURRENCY_ID', 'SOURCE_ID' ) ) );
+	$page = hpv_bx_page( $run, 'crm.lead.list', array( 'order' => array( 'ID' => 'ASC' ), 'select' => array( 'ID', 'TITLE', 'NAME', 'LAST_NAME', 'COMPANY_TITLE', 'STATUS_ID', 'PHONE', 'EMAIL', 'WEB', 'COMMENTS', 'OPPORTUNITY', 'CURRENCY_ID', 'SOURCE_ID', 'DATE_CREATE' ) ) );
 	if ( is_wp_error( $page ) ) {
 		return $page;
 	}
@@ -420,7 +420,10 @@ function hpv_bx_step_leads( array &$run ) {
 			hpv_bx_fill_client( $run, $local, array_merge( $data, array( 'contact_name' => $person ) ) );
 			hpv_bx_count( $run, 'matched' );
 		} else {
-			$local = hpv_bx_insert( $run, 'client', array_merge( $data, array( 'contact_name' => $person, 'status' => 'lead' ) ) );
+			$created_on = hpv_bx_date( $ld['DATE_CREATE'] ?? '' );
+			// A Bitrix24 forrása (Honnan) csatornaként megmarad, hogy a régi érdeklődők is látszódjanak a kimutatásban.
+			$channel    = array( 'ADVERTISING' => 'paid_other', 'EMAIL' => 'email', 'CALL' => 'offline', 'RECOMMENDATION' => 'offline', 'PARTNER' => 'referral', 'WEB' => 'unknown', 'WEBFORM' => 'unknown' )[ $ld['SOURCE_ID'] ?? '' ] ?? 'import';
+			$local      = hpv_bx_insert( $run, 'client', array_merge( $data, array( 'contact_name' => $person, 'status' => 'lead', 'lead_source' => 'bitrix', 'lead_channel' => $channel ), $created_on ? array( 'lead_at' => $created_on . ' 12:00:00' ) : array() ) );
 			hpv_bx_count( $run, 'created' );
 		}
 		hpv_bx_remember( $run, 'lead', $ld['ID'], $local );
