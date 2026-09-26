@@ -129,7 +129,7 @@ Az érdeklődők a **Website Grader → Érdeklődők** menüben vannak: teljes 
 - A Google sebességmérése futásonként néhány pontot ingadozhat. Ez normális, az eszköz GYIK része is elmondja.
 - Ha a szerver Cloudflare vagy más proxy mögött van, a látogatónkénti korlát a proxy IP-címét látja. Ilyenkor a `hpv_grader_client_ip` filterrel állítható be a valódi IP.
 
-## `plugins/helloprovision-portal/` – Ügyfélportál, CRM és projektkezelő (0.2)
+## `plugins/helloprovision-portal/` – Ügyfélportál, CRM, projektkezelő és videóhívás (0.3)
 
 Egy WordPress bővítmény, két bejárattal:
 
@@ -172,6 +172,17 @@ Saját, gyors felület, nem a WordPress admin. Oldalújratöltés nélkül műk�
   - ha egy látható feladat „Ügyfélre vár” lesz, az ügyfél is értesítést kap.
 - **Keresés (Ctrl+K):** projektek, feladatok és ügyfelek egy helyen.
 - **Chat:** csoportok és ügyfél-csatornák, olvasatlan-számlálóval; a projekt fejlécéből egy kattintással nyílik az ügyfél csatornája.
+- **Videóhívás (Daily.co):**
+  - indítás a Hívások oldalról vagy a projekt fejlécéből („Hívás”);
+  - a csatlakozási link bekerül az ügyfél chat-csatornájába, kérésre e-mail meghívó is megy;
+  - a hívás a CRM-be, illetve a portálba ágyazva fut, videófelvétel opcionális.
+- **Leirat és AI-összefoglaló:**
+  - a munkatárs belépésekor automatikusan indul a leirat;
+  - a hívás után elkészül az összefoglaló: döntések, teendők (kié és mikorra), belső megjegyzések;
+  - a teendők egy kattintással feladatok lesznek a projektben (az ügyfél teendője „Ügyfélre vár” státusszal);
+  - az összefoglalót egy kapcsolóval meg lehet osztani az ügyféllel; a belső megjegyzéseket és a leiratot az ügyfél nem látja;
+  - kereshető leirat, felvétel letöltése, e-mail a hívást indítónak, ha kész.
+- **Hozzájárulás a rögzítéshez:** Floridában minden fél beleegyezése kell. Az ügyfél csak a hozzájárulás bejelölése után léphet be; a rendszer naplózza, ki, mikor, milyen IP-címről fogadta el.
 
 A számla-, szerződés- és szolgáltatás-szerkesztők egyelőre a klasszikus CRM-ben vannak (WordPress admin). A webalkalmazás oldalsávja oda linkel.
 
@@ -199,6 +210,7 @@ A számla-, szerződés- és szolgáltatás-szerkesztők egyelőre a klasszikus 
 - **Overview:** egyenleg, teendők (fizetendő számla, aláírandó szerződés, „Waiting on you” feladat, olvasatlan üzenet), friss hírek.
 - **Projects:** haladás és feladattábla.
 - **Messages:** chat a csapattal.
+- **Meetings:** élő hívásba belépés (hozzájárulás után), és a megosztott hívás-összefoglalók: „Your next steps” és „What we'll do”.
 - **Invoices:** nyomtatható számlakép, „Pay now” gomb, „Download PDF” (böngészős nyomtatás).
 - **Contracts:** elolvasás és aláírás.
 - **Services, Account.**
@@ -222,11 +234,21 @@ A portál saját keretben fut, a WordPress témától függetlenül, mobilon is.
 5. **CRM → Beállítások:** cégadatok, számlaszám előtag, fizetési határidő, értesítési cím.
 6. **Levélküldés:** WP Mail SMTP, az e-mail útmutató szerint.
 7. **Munkatársak:** felhasználóként, „Munkatárs (CRM)” szerepkörrel. Ők csak a CRM-et és a profiljukat látják.
+8. **Videóhívás:**
+   - Daily.co fiók → Developers → API key;
+   - AI kulcs az összefoglalóhoz: Anthropic Console → API keys.
+   - A `wp-config.php`-ba:
+     ```php
+     define( 'HPV_DAILY_API_KEY', '…' );
+     define( 'HPV_AI_API_KEY', '…' );
+     // define( 'HPV_AI_MODEL', 'claude-sonnet-5' ); // nem kötelező
+     ```
+   - CRM → Beállítások → Videóhívás: „Kapcsolat tesztelése”, majd „Webhook regisztrálása”.
+   - Valódi cron kell (5 percenként): a leirat feldolgozása háttérben fut.
 
 ### Következő ütemek
 
-3. **Videóhívás a chatből** (pl. Daily.co), automatikus leirattal és AI-összefoglalóval, ami az ügyfélhez és a projekthez mentődik.
-4. **Pénzügy és egyebek:**
+1. **Pénzügy és egyebek:**
    - Stripe fizetés automatikus „fizetve” jelöléssel, ismétlődő számlák automatikus kiállítása;
    - fájlmegosztás, Bitrix24 átköltöztetés;
    - a számla- és szerződés-szerkesztő átköltözése a webalkalmazásba.
@@ -238,9 +260,10 @@ php tests/seo.php
 php tests/reviews.php
 php tests/grader.php
 wp eval-file tests/portal-integration.php   # valódi WordPressen, a portál bővítménnyel
+wp eval-file tests/video-integration.php    # ugyanott, videó kulcsok nélkül (a Daily-t és az AI-t a teszt helyettesíti)
 ```
 
-Az első három WordPress nélkül fut. A portál teszt valódi WordPressen és adatbázison fut, és a projektkezelő API-t is végigpróbálja: sablonmásolás, átrendezés, függőségek, stopper, jogosultságok, törlés. Az SEO teszt az élő főoldal valódi schemáját, a grader teszt a főoldal megtisztított HTML-jét használja (`tests/fixtures/`).
+Az első három WordPress nélkül fut. A portál teszt valódi WordPressen és adatbázison fut, és a projektkezelő API-t is végigpróbálja: sablonmásolás, átrendezés, függőségek, stopper, jogosultságok, törlés. A videó teszt a teljes hívás-folyamatot végigviszi: szoba, belépők, hozzájárulás, lezárás, leirat, AI-összefoglaló és hibakezelés, teendőből feladat, webhook, portál. Az SEO teszt az élő főoldal valódi schemáját, a grader teszt a főoldal megtisztított HTML-jét használja (`tests/fixtures/`).
 
 ## Amit a plugin nem tud javítani (admin felületen kell)
 

@@ -15,6 +15,11 @@ function hpv_p_render_crm_app() {
 		'adminUrl'  => admin_url( 'admin.php?page=hpv-crm' ),
 		'portalUrl' => hpv_p_portal_url(),
 		'chat'      => hpv_chat_app_config( 'hu' ),
+		'video'     => array(
+			'enabled' => hpv_video_enabled(),
+			'ai'      => '' !== hpv_video_ai_key(),
+			'daily'   => $base . 'vendor/daily.js?ver=0.92.2',
+		),
 	);
 	nocache_headers();
 	?>
@@ -33,6 +38,7 @@ function hpv_p_render_crm_app() {
 	<div id="app"></div>
 	<noscript>A CRM-hez JavaScript szükséges.</noscript>
 	<script src="<?php echo esc_url( $base . 'chat.js?ver=' . $version ); ?>"></script>
+	<script src="<?php echo esc_url( $base . 'video.js?ver=' . $version ); ?>"></script>
 	<script type="module" src="<?php echo esc_url( $base . 'app/app.js?ver=' . $version ); ?>"></script>
 </body>
 </html>

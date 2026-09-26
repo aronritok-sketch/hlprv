@@ -1,5 +1,6 @@
 import { html, useState, useEffect, useRef, useMemo, api, useApp, navigate, setParam, CFG, Icon, Avatar, PriorityFlag, Spinner, Empty, Modal, InlineText, shortDate, minutesLabel, isOverdue, todayISO, addDays, daysBetween, parseISO, MONTHS_LONG, toast } from '../ui.js';
 import { COLORS } from './projects.js';
+import { NewCallModal } from './calls.js';
 
 const VIEWS = [
 	{ key: 'board', label: 'Tábla', icon: 'board' },
@@ -370,6 +371,7 @@ export function ProjectPage({ id, params }) {
 	const [data, setData] = useState(null);
 	const [tasks, setTasks] = useState([]);
 	const [settings, setSettings] = useState(false);
+	const [calling, setCalling] = useState(false);
 	const [error, setError] = useState('');
 	const view = params.view || localStorage.getItem('hpv-project-view') || 'board';
 
@@ -417,6 +419,7 @@ export function ProjectPage({ id, params }) {
 				</div>
 				<div class="project-head__actions">
 					${p.client_id ? html`<a class="btn btn--ghost" href=${'#/chat?client=' + p.client_id}><${Icon} name="chat" /> Chat</a>` : null}
+					${p.client_id ? html`<button class="btn btn--ghost" onClick=${() => setCalling(true)}><${Icon} name="video" /> Hívás</button>` : null}
 					${p.client_id ? html`<a class="btn btn--ghost" target="_blank" rel="noopener" href=${CFG.portalUrl + (CFG.portalUrl.includes('?') ? '&' : '?') + 'preview_client=' + p.client_id + '&view=projects&id=' + p.id}>Portál előnézet</a>` : null}
 					<button class="icon-btn" onClick=${() => setSettings(true)} title="Beállítások" aria-label="Beállítások"><${Icon} name="cog" /></button>
 					<button class="btn" onClick=${addTask}><${Icon} name="plus" /> Feladat</button>
@@ -429,5 +432,6 @@ export function ProjectPage({ id, params }) {
 			${view === 'list' ? html`<${ListView} project=${p} tasks=${tasks} statuses=${statuses} reload=${load} />` : null}
 			${view === 'timeline' ? html`<${Timeline} project=${p} tasks=${tasks} reload=${load} setTasks=${setTasks} />` : null}
 			${settings ? html`<${SettingsModal} project=${p} onClose=${() => setSettings(false)} onSaved=${load} />` : null}
+			${calling ? html`<${NewCallModal} clientId=${p.client_id} projectId=${p.id} onClose=${() => setCalling(false)} />` : null}
 		</div>`;
 }

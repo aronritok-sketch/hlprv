@@ -95,6 +95,8 @@ function hpv_p_admin_notice() {
 		'required' => array( 'error', 'Hiányzó kötelező mező: ' . sanitize_text_field( wp_unslash( $_GET['fields'] ?? '' ) ) ),
 		'locked'   => array( 'error', 'Aláírt szerződés szövege nem módosítható.' ),
 		'error'    => array( 'error', sanitize_text_field( wp_unslash( $_GET['error'] ?? 'Hiba történt.' ) ) ),
+		'daily_ok' => array( 'success', 'A Daily kapcsolat működik.' ),
+		'webhook'  => array( 'success', 'A Daily webhook regisztrálva.' ),
 	);
 	$key      = sanitize_key( $_GET['hpv_msg'] ?? '' );
 	if ( isset( $messages[ $key ] ) ) {
@@ -904,6 +906,7 @@ function hpv_p_admin_settings_page() {
 	<div class="wrap hpv-crm">
 		<h1>CRM beállítások</h1>
 		<?php settings_errors(); ?>
+		<?php hpv_p_admin_notice(); ?>
 		<form method="post" action="options.php">
 			<?php settings_fields( 'hpv_portal' ); ?>
 			<h2 class="title">Cégadatok (számlán, e-mailben)</h2>
@@ -956,6 +959,7 @@ function hpv_p_admin_settings_page() {
 			</table>
 			<?php submit_button( 'Mentés' ); ?>
 		</form>
+		<?php hpv_video_admin_section(); ?>
 	</div>
 	<?php
 }

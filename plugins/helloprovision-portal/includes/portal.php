@@ -10,6 +10,7 @@ const HPV_PORTAL_VIEWS = array(
 	'overview'  => 'Overview',
 	'projects'  => 'Projects',
 	'messages'  => 'Messages',
+	'meetings'  => 'Meetings',
 	'invoices'  => 'Invoices',
 	'contracts' => 'Contracts',
 	'services'  => 'Services',
@@ -48,6 +49,7 @@ function hpv_p_portal_icon( string $name ): string {
 		'overview'  => 'M3 12l9-8 9 8M5 10v10h5v-6h4v6h5V10',
 		'projects'  => 'M4 5h16v4H4zM4 11h10v4H4zM4 17h7v3H4z',
 		'messages'  => 'M4 5h16v11H8l-4 4z',
+		'meetings'  => 'M3 7h12v10H3zM15 10l6-3v10l-6-3',
 		'invoices'  => 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6',
 		'contracts' => 'M6 3h9l3 3v15H6zM9 10h6M9 14h6M9 18h3',
 		'services'  => 'M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z',
@@ -151,6 +153,7 @@ function hpv_p_portal_app(): string {
 	}
 
 	$view = sanitize_key( $_GET['view'] ?? 'overview' );
+	$view = 'call' === $view ? 'meetings' : $view; // a meghívó linkje: ?view=call&id=
 	$view = isset( HPV_PORTAL_VIEWS[ $view ] ) ? $view : 'overview';
 	$user = wp_get_current_user();
 	$s    = hpv_p_settings();
@@ -201,6 +204,9 @@ function hpv_p_portal_app(): string {
 					break;
 				case 'messages':
 					hpv_pv_messages();
+					break;
+				case 'meetings':
+					$id ? hpv_pv_meeting( $client_id, $id ) : hpv_pv_meetings( $client_id );
 					break;
 				case 'account':
 					hpv_pv_account( $client );
@@ -288,6 +294,16 @@ function hpv_pv_overview( array $client, array $counts ) {
 	$first    = explode( ' ', trim( wp_get_current_user()->display_name ) )[0];
 
 	$todo = array();
+	foreach ( hpv_video_portal_calls( (int) $client['id'] ) as $call ) {
+		if ( 'live' === $call['status'] ) {
+			$todo[] = array(
+				'label' => 'Video call in progress: ' . $call['title'],
+				'meta'  => 'Join now',
+				'url'   => hpv_p_portal_link( 'meetings', array( 'id' => $call['id'] ) ),
+				'alert' => true,
+			);
+		}
+	}
 	foreach ( $invoices as $inv ) {
 		$todo[] = array(
 			'label' => sprintf( 'Pay invoice %s — %s', $inv['number'], hpv_p_money( $inv['total'], $s['currency'] ) ),

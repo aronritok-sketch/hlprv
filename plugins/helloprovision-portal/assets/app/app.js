@@ -8,6 +8,7 @@ import { MyTasks } from './views/mytasks.js';
 import { Projects } from './views/projects.js';
 import { ProjectPage } from './views/project.js';
 import { TaskDrawer } from './views/task.js';
+import { Calls, CallPage } from './views/calls.js';
 
 /* ── Chat (a meglévő chat komponens beágyazva) ───── */
 
@@ -56,6 +57,7 @@ function Clients() {
 								<td class="right">
 									<a class="link" href=${'#/projects?client=' + c.id}>Projektek</a>
 									<a class="link" href=${'#/chat?client=' + c.id}>Chat</a>
+									<a class="link" href=${'#/calls?client=' + c.id}>Hívások</a>
 									<a class="link" href=${CFG.adminUrl + '&client=' + c.id}>Adatlap, számlák, szerződések <${Icon} name="ext" size="13" /></a>
 								</td>
 							</tr>`)}
@@ -138,6 +140,7 @@ const NAV = [
 	{ path: '/my', label: 'Saját feladataim', icon: 'check' },
 	{ path: '/projects', label: 'Projektek', icon: 'folder' },
 	{ path: '/chat', label: 'Chat', icon: 'chat', badge: 'unread' },
+	{ path: '/calls', label: 'Hívások', icon: 'video' },
 	{ path: '/clients', label: 'Ügyfelek', icon: 'users' },
 ];
 
@@ -221,6 +224,8 @@ function App() {
 	else if (path === '/projects') page = html`<${Projects} params=${params} />`;
 	else if ((m = path.match(/^\/projects\/(\d+)$/))) page = html`<${ProjectPage} key=${m[1]} id=${Number(m[1])} params=${params} />`;
 	else if (path.startsWith('/chat')) page = html`<${ChatView} key=${'chat' + (params.channel || '') + (params.client || '')} channel=${params.channel} client=${params.client} />`;
+	else if (path === '/calls') page = html`<${Calls} params=${params} />`;
+	else if ((m = path.match(/^\/calls\/(\d+)$/))) page = html`<${CallPage} key=${'call' + m[1]} id=${Number(m[1])} params=${params} />`;
 	else if (path === '/clients') page = html`<${Clients} />`;
 	else page = html`<${Empty} title="Az oldal nem található" />`;
 
