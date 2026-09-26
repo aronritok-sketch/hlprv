@@ -129,7 +129,7 @@ Az érdeklődők a **Website Grader → Érdeklődők** menüben vannak: teljes 
 - A Google sebességmérése futásonként néhány pontot ingadozhat. Ez normális, az eszköz GYIK része is elmondja.
 - Ha a szerver Cloudflare vagy más proxy mögött van, a látogatónkénti korlát a proxy IP-címét látja. Ilyenkor a `hpv_grader_client_ip` filterrel állítható be a valódi IP.
 
-## `plugins/helloprovision-portal/` – Ügyfélportál, CRM, projektkezelő, videóhívás, számlázás, ajánlatok és szerződések (0.6)
+## `plugins/helloprovision-portal/` – Ügyfélportál, CRM, projektkezelő, videóhívás, számlázás, ajánlatok, szerződések, marketing és SEO ügyfelek (0.7)
 
 Egy WordPress bővítmény, két bejárattal:
 
@@ -215,8 +215,55 @@ Saját, gyors felület, nem a WordPress admin. Oldalújratöltés nélkül műk�
 - **Előfizetések:** a következő 30 nap esedékes számlái, „Esedékesek elkészítése most”, szüneteltetés és a következő számla dátuma soron belül, új előfizetés a szolgáltatás-katalógusból.
 - **Ismétlődő számlák:** az aktív előfizetésekből a „Következő számla” napján reggel 7-kor ügyfelenként egy számla készül, az időszak megnevezésével („Karbantartás — 2026. október”). Beállítás: piszkozat (ti nézitek át és külditek ki, ez az alapértelmezés), automatikus kiküldés vagy kikapcsolva. A csapat összefoglaló e-mailt kap.
 - **Import (Bitrix24)** (csak az adminisztrátor): cégek, kapcsolatok, érdeklődők, üzletek, munkacsoportok és feladatok átköltöztetése, lásd lent.
+- **Ügyfelek és ügyfél-adatlap:**
+  - új ügyfél egy ablakban (név, ország, státusz, kapcsolattartó);
+  - adatlap: alapadatok, számlázási adatok és óradíj (csak számlázási joggal), riport-adatforrások;
+  - belső jegyzetek és a teljes idővonal;
+  - portál-hozzáférés: meghívás, visszavonás, utolsó belépés;
+  - pénzügy (kintlévőség, havi díjak, utolsó számlák, előfizetések), projektek, fájlok, tartalom, riportok, szerződések;
+  - amerikai ügyfélnél „Google értékelés kérése” gomb.
+- **Szolgáltatás-katalógus** (számlázási joggal): név, leírás, alapár, számlázási gyakoriság, hány aktív előfizetés használja; archiválható.
 
-A szolgáltatás-katalógus és az ügyfél-adatlap szerkesztése egyelőre a klasszikus CRM-ben van (WordPress admin). A webalkalmazás oldalsávja oda linkel.
+**Marketing és SEO ügyfelek (0.7):**
+
+- **Projekt típusa:** weboldal, SEO, helyi SEO, tartalom, hirdetés, közösségi média, audit, egyéb. A típus a projektlistán és a riportnál számít.
+- **Havi csomagok (retainer):**
+  - a projekthez sablon rendelhető „havi csomagként”, és egy nap (1–28);
+  - minden hónapban azon a napon a sablon feladatai bekerülnek a projektbe, a hónap jelölésével („2026-10”);
+  - a projektben hónapra lehet szűrni, és a „+ hónap” gombbal kézzel is hozzáadható egy hónap csomagja;
+  - a portálon az ügyfél hónapról hónapra lapoz.
+- **Tartalom jóváhagyása:**
+  - a Tartalom menüben naptár és lista: blogcikk, közösségi poszt, Google Business Profile poszt, hirdetés, hírlevél, oldal, dokumentum;
+  - egy tétel: cím, szöveg, csatorna, link, csatolt fájlok, megjelenés napja, határidő;
+  - kiküldés után az ügyfél a portálon jóváhagyja, vagy javítást kér megjegyzéssel;
+  - a jóváhagyott szöveg zárolt; 3 nap után egy emlékeztető megy, ha az ügyfél nem válaszolt;
+  - a „Megjelent” jelölés bekerül a havi riportba.
+  - Az SEO OS ugyanezt a felületet használja (`docs/integrations/seo-os.md`).
+- **Havi riport:**
+  - minden hónap beállított napján (alap: 3.) piszkozat készül azoknak az ügyfeleknek, akiknek havi csomagjuk vagy nem weboldal-projektjük van;
+  - tartalma:
+    - mutatók az előző hónaphoz képest, 6 havi grafikonnal;
+    - elvégzett munka (kész látható feladatok és megjelent tartalmak) és a jövő havi terv;
+    - AI-összefoglaló, amely csak a megadott számokból dolgozik;
+  - szerkeszthető, újraépíthető, csak ellenőrzés után küldhető ki (üres vagy `[[TODO]]`-s összefoglalóval nem);
+  - a portálon grafikonokkal jelenik meg, nyomtatható (PDF), az ügyfél e-mailt kap róla.
+- **Adatforrások:**
+  - Google Search Console (kattintás, megjelenés, CTR, átlagos pozíció);
+  - Google Analytics 4 (felhasználók, munkamenetek, konverziók, csatornánként);
+  - Google Ads és Meta Ads (költés a hirdetési fiók pénznemében, kattintás, konverzió, CPA);
+  - ügyfelenként az adatlapon vagy az Ügyfelek lista „Riport adatok” gombjával, legördülőből választva.
+- **Fizetési emlékeztetők:**
+  - lejárt számláról a 3., 7. és 14. napon (állítható) e-mail az ügyfélnek, a nyelvén, fizetési linkkel;
+  - az utolsó „végső emlékeztető”; egy futásban számlánként legfeljebb egy levél;
+  - a csapat összefoglalót kap.
+- **Munkaidő a számlára:**
+  - a számla szerkesztőjében „Rögzített munkaidő hozzáadása”: a még nem számlázott idő időszakra szűrve, projektenként vagy feladatonként egy tétellel;
+  - óradíj: az ügyfél adatlapjáról, különben a beállításokból (USD és HUF külön);
+  - a kiszámlázott idő nem kerülhet kétszer számlára; a piszkozat törlése vagy a számla érvénytelenítése felszabadítja.
+- **Website Grader → CRM:** aki a Graderen kitölti a riportot, „Érdeklődő” ügyfélként bekerül, a pontszámmal és a hibákkal belső jegyzetként. Ugyanarra az e-mailre nem lesz dupla ügyfél. A csapat e-mailt kap, a válasz közvetlenül az érdeklődőnek megy.
+- **Google értékelés kérése a kész projekt után:**
+  - a „Kész” státuszú, ügyfél által látható projekt után (alap: 3 nap múlva) a Reviews bővítmény értékelést kér;
+  - csak a beállított országoknak (alap: USA, mert a Google-profil a floridai cégé), projektenként egyszer, és a Reviews szabálya szerint ügyfelenként 90 naponta egyszer.
 
 **Számlázás és fizetés országonként** (az ügyfél adatlapján az „Ország” mező dönt):
 
@@ -263,6 +310,8 @@ A nyelv az ügyfél országától függ: a magyar ügyfél a portált, a levelek
 - **Meetings:** élő hívásba belépés (hozzájárulás után), és a megosztott hívás-összefoglalók: „Your next steps” és „What we'll do”.
 - **Invoices:** nyomtatható számlakép, „Pay now” gomb, „Download PDF” (böngészős nyomtatás).
 - **Contracts:** elolvasás és aláírás.
+- **Approvals (Jóváhagyások):** a jóváhagyásra váró tartalmak, jóváhagyás vagy javításkérés megjegyzéssel, hozzászólások.
+- **Reports (Riportok):** havi riportok grafikonokkal, nyomtatható.
 - **Files:** a megosztott fájlok, feltöltés (projekthez is), a saját feltöltés törölhető.
 - **Services, Account.**
 
@@ -307,7 +356,23 @@ A portál saját keretben fut, a WordPress témától függetlenül, mobilon is.
    - CRM → Beállítások → Videóhívás: „Kapcsolat tesztelése”, majd „Webhook regisztrálása”.
    - Valódi cron kell (5 percenként): a leirat feldolgozása háttérben fut.
 10. **Ismétlődő számlák:** CRM → Beállítások → „Ismétlődő számlák” (alapból piszkozat). **Frissítéskor** a múltbeli „Következő számla” dátumok a következő jövőbeli napra lépnek, így semmi nem számlázódik utólag.
-11. **Fájlok:** a feltöltési korlát a PHP `upload_max_filesize` és `post_max_size` beállításától függ (legfeljebb 100 MB). nginx alatt a `wp-content/uploads/hpv-private/` mappát tiltani kell (lásd a fejlesztői dokumentációt).
+11. **Riport-adatforrások** (a lépések a fejlesztői dokumentációban):
+    ```php
+    define( 'HPV_GOOGLE_CLIENT_ID', '…' );                   // Google Cloud → OAuth kliens (webalkalmazás)
+    define( 'HPV_GOOGLE_CLIENT_SECRET', '…' );
+    define( 'HPV_GOOGLE_ADS_DEVELOPER_TOKEN', '…' );         // csak Google Ads-hez, jóváhagyás kell
+    define( 'HPV_GOOGLE_ADS_LOGIN_CUSTOMER_ID', '1234567890' ); // a kezelői (MCC) fiók, kötőjel nélkül
+    define( 'HPV_META_ACCESS_TOKEN', '…' );                  // Business Manager rendszerfelhasználó, ads_read
+    ```
+    Az OAuth kliens átirányítási címe: `https://crm.helloprovision.com/wp-admin/admin-post.php?action=hpv_google_callback`. Utána: CRM → Beállítások → „Google összekapcsolása” az ügynökség Google fiókjával (amelyik hozzáfér az ügyfelek Search Console-, GA4- és Ads-fiókjaihoz).
+12. **Híd a marketing weboldalhoz** (Grader → CRM, CRM → Reviews): mindkét WordPress `wp-config.php`-jába ugyanaz a titok, legalább 16 karakter:
+    ```php
+    define( 'HPV_BRIDGE_SECRET', '…' );
+    // a CRM-be:          define( 'HPV_SITE_URL', 'https://helloprovision.com' );
+    // a weboldalra:      define( 'HPV_CRM_URL', 'https://crm.helloprovision.com' );
+    ```
+13. **Automatizmusok:** CRM → Beállítások: havi riport napja, fizetési emlékeztetők napjai, óradíjak (USD, HUF), értékeléskérés (késleltetés, országok). Mind naponta reggel fut, valódi cronnal.
+14. **Fájlok:** a feltöltési korlát a PHP `upload_max_filesize` és `post_max_size` beállításától függ (legfeljebb 100 MB). nginx alatt a `wp-content/uploads/hpv-private/` mappát tiltani kell (lásd a fejlesztői dokumentációt).
 
 ### Átköltözés a Bitrix24-ből
 
@@ -333,7 +398,10 @@ Többször is futtatható: ami már átjött, nem lesz dupla; a már meglévő (
 ### Következő ütemek
 
 1. **Teya API** (automatikus magyar kártyás fizetés): a fejlesztő feladata, a lépések a fejlesztői dokumentációban.
-2. **Ügyfél-adatlap és szolgáltatás-katalógus** átköltözése a webalkalmazásba (most még a klasszikus CRM-ben).
+2. **Élő próba** a valódi fiókokkal: Google (Search Console, GA4, Ads), Meta, Grader → CRM és CRM → Reviews híd. Az API-hívásokat most helyettesített válaszokkal teszteltük; a lépések a fejlesztői dokumentációban.
+3. **Biztonság:** kétlépcsős belépés a csapatnak, audit napló, rendszeres adatbázis- és fájlmentés.
+4. **GDPR:** ügyféladatok exportja és törlése kérésre.
+5. **Időpontfoglalás:** naptár, amelyből az ügyfél hívást foglalhat.
 
 ## Tesztek
 
@@ -349,6 +417,11 @@ wp eval-file tests/recurring-integration.php     # ismétlődő számlák
 wp eval-file tests/files-integration.php         # fájlmegosztás
 wp eval-file tests/bitrix-integration.php        # Bitrix24 import (a Bitrix24-et a teszt helyettesíti)
 wp eval-file tests/invoices-api-integration.php  # számlák a CRM appban (Számlázz.hu helyettesítve)
+wp eval-file tests/retainer-integration.php      # havi csomagok
+wp eval-file tests/approvals-integration.php     # tartalom jóváhagyása
+wp eval-file tests/reports-integration.php       # havi riport (Google, Meta és AI helyettesítve)
+wp eval-file tests/automation-integration.php    # emlékeztetők, munkaidő, Grader és Reviews híd
+wp eval-file tests/clients-integration.php       # ügyfél-adatlap és szolgáltatás-katalógus
 php tests/i18n.php                               # minden magyar fordítás megvan-e
 ```
 
