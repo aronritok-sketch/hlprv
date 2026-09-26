@@ -1,15 +1,6 @@
-# Átadás: SEO OS, crawler, levelezés, frissítő (2026. szeptember 26.)
+# Állapotjegyzet: SEO OS, crawler, levelezés, frissítő (2026. szeptember 26.)
 
-Az SEO OS munkamenet (ág: `claude/great-gauss-jba4b5`) átadja a munkáját a CRM munkamenetnek (`claude/laughing-wozniak-dpwf28`).
-Az átadáskor a két ág ugyanazon a commiton áll (a CRM 0.8.3 is benne van), **félkész, nem commitolt munka nincs**.
-
-## 0. Az első teendő az átadás után: a Render ága
-
-**A Render az `seo-os-api` szolgáltatást a `claude/great-gauss-jba4b5` ágról telepíti.** Ha ezután csak a `claude/laughing-wozniak-dpwf28` ágon folyik a munka, az SEO OS szerver (és a levelezés szerver oldala) nem frissül.
-
-- Megoldás: Render → seo-os-api → Settings → Build & Deploy → **Branch: `claude/laughing-wozniak-dpwf28`**. Az adatbázis (seo-os-db) nem ághoz kötött, nem kell hozzányúlni. A Blueprint (Render → Blueprints → hlprv) ágát is érdemes átállítani, hogy a `render.yaml` változásai is átjöjjenek.
-- Ezt Áronnak kell megcsinálnia (Render fiók); a „Holnapi teendők” listában már ez szerepel.
-- A `.github/workflows/plugin-releases.yml` mindkét ágra figyel; ha a `great-gauss` ág megszűnik, onnan kivehető.
+> **Frissítés:** az átadás elmaradt. Áron döntése szerint ez a chat (ág: `claude/great-gauss-jba4b5`) maradt az egyetlen, és átvette a CRM területét is (`docs/HANDOFF-crm.md`). A Render továbbra is erről az ágról élesít, ez így marad; a `claude/laughing-wozniak-dpwf28` alapértelmezett ág tükör (lásd `CLAUDE.md`). A jegyzet többi része állapotleírásként érvényes.
 
 ## 1. Állapot területenként
 
@@ -51,8 +42,6 @@ Az átadáskor a két ág ugyanazon a commiton áll (a CRM 0.8.3 is benne van), 
 | Levelező szolgáltató | a tárhely webmailje marad (Áron válasza) | IMAP/SMTP postafiókonként, a postafiók jelszavával; semmi fejlesztés nem kell. |
 | | később Google Workspace | alkalmazásjelszóval azonnal megy; OAuth (szolgáltatásfiók, domain-szintű delegálás) fejlesztés lenne. |
 | | később Microsoft 365 | az IMAP/SMTP hitelesítést az admin központban engedélyezni kell, vagy Graph API / OAuth fejlesztés. |
-| Render ág átállítása | megcsinálja | a szerver a CRM chat ágáról frissül. |
-| | nem | az SEO OS szerver a régi ágon ragad (lásd 0.). |
 | API-kulcsok (Anthropic, OpenAI, DataForSEO, Ahrefs) | megadja | valódi elemzés és dokumentumok. |
 | | nem | az SEO OS csak demó/sablon szinten használható. |
 | Screaming Frog gép | melyik gépen fusson, legyen-e mindig bekapcsolva | az ügynök csak akkor dolgozik, ha a gép fut. |
@@ -101,7 +90,7 @@ Az átadáskor a két ág ugyanazon a commiton áll (a CRM 0.8.3 is benne van), 
 
 ## 6. Javasolt következő lépések
 
-1. Render ág átállítása a CRM chat ágára (0.) – Áron teendője, a listában benne van.
+1. A Render ága maradhat (`claude/great-gauss-jba4b5`); csak az Auto-Deploy legyen „On Commit”.
 2. Áron holnapi listája: zipek, GitHub token, cron, WP Mail SMTP, API-kulcsok, postafiókok (webmail IMAP/SMTP), aláírás, csapattagok, SF ügynök, Bitrix24 import, biztonsági takarítás. `SEO_OS_MAIL_KEY` a postafiókok előtt.
 3. Élesben végigpróbálni: egy SEO projekt a demó helyett valódi adatokkal, ügyfél-jóváhagyás a portálon, havi riport-mutatók, egy crawl az SF ügynökkel, levél küldése / fogadása / feladat levélből.
 4. Levelezés v2: „Levelek” fül az ügyfél adatlapján, olvasottság / törlés visszaszinkron a szerverről, piszkozat, címzett-kiegészítés a CRM kapcsolattartókból, levélsablonok, a feltöltés-takarító ütemezése.
