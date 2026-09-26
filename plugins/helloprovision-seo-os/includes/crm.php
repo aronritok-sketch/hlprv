@@ -86,24 +86,29 @@ function hpv_seo_crm_push_tasks( WP_REST_Request $request ) {
 	}
 
 	$crm_project = hpv_seo_crm_project( $crm_client, (string) $project['name'] );
+	$crm_row     = hpv_p_get( 'project', $crm_project );
+	$retainer    = $crm_row && ! empty( $crm_row['package_id'] ) && hpv_seo_crm_has_field( 'task', 'period' );
 	$pushed      = array();
 	foreach ( $tasks as $task ) {
 		$assignee = (int) ( $task['assignee_wp_id'] ?? 0 );
-		$id       = hpv_p_insert(
-			'task',
-			array(
-				'project_id'  => $crm_project,
-				'title'       => mb_substr( '[' . $task['role_label'] . '] ' . $task['title'], 0, 250 ),
-				'description' => hpv_seo_crm_task_description( $task ),
-				'status'      => 'todo',
-				'priority'    => in_array( $task['priority'], array( 'P1', 'XL' ), true ) ? 'high' : 'normal',
-				'visible'     => 0,
-				'due_date'    => $task['due_date'] ?? null,
-				'assignee_id' => $assignee ?: null,
-				'created_by'  => get_current_user_id(),
-				'sort'        => function_exists( 'hpv_pm_next_sort' ) ? hpv_pm_next_sort( $crm_project, 'todo' ) : 0,
-			)
+		$row      = array(
+			'project_id'  => $crm_project,
+			'title'       => mb_substr( '[' . $task['role_label'] . '] ' . $task['title'], 0, 250 ),
+			'description' => hpv_seo_crm_task_description( $task ),
+			'status'      => 'todo',
+			'priority'    => in_array( $task['priority'], array( 'P1', 'XL' ), true ) ? 'high' : 'normal',
+			'visible'     => 0,
+			'due_date'    => $task['due_date'] ?? null,
+			// A CRM hivatkozás-mezői NOT NULL DEFAULT 0 oszlopok: üres értéknél 0, nem null (MySQL strict mód).
+			'assignee_id' => $assignee ?: 0,
+			'created_by'  => get_current_user_id(),
+			'sort'        => function_exists( 'hpv_pm_next_sort' ) ? hpv_pm_next_sort( $crm_project, 'todo' ) : 0,
 		);
+		if ( $retainer ) {
+			// Havidíjas projekt: a feladat hónapja (a projekt hónapszűrőjéhez és a havi riporthoz).
+			$row['period'] = substr( (string) ( $task['due_date'] ?? '' ), 0, 7 ) ?: gmdate( 'Y-m' );
+		}
+		$id = hpv_p_insert( 'task', $row );
 		if ( $id ) {
 			$pushed[] = array( 'id' => (int) $task['id'], 'crm_task_id' => $id );
 		}
@@ -132,16 +137,30 @@ function hpv_seo_crm_project( int $client_id, string $name ): int {
 		}
 	}
 
-	return hpv_p_insert(
-		'project',
-		array(
-			'client_id' => $client_id,
-			'name'      => $title,
-			'status'    => 'in_progress',
-			'visible'   => 0,
-			'owner_id'  => get_current_user_id(),
-		)
+	$data = array(
+		'client_id' => $client_id,
+		'name'      => $title,
+		'status'    => 'in_progress',
+		'visible'   => 0,
+		'owner_id'  => get_current_user_id(),
 	);
+	if ( hpv_seo_crm_has_field( 'project', 'kind' ) ) {
+		$data['kind'] = 'seo';
+	}
+
+	return hpv_p_insert( 'project', $data );
+}
+
+/** Van-e ilyen mező a CRM adott entitásában (a portál verziójától függ). */
+function hpv_seo_crm_has_field( string $entity, string $field ): bool {
+	if ( ! function_exists( 'hpv_p_entity' ) ) {
+		return false;
+	}
+	try {
+		return isset( hpv_p_entity( $entity )['fields'][ $field ] );
+	} catch ( Throwable $e ) {
+		return false;
+	}
 }
 
 function hpv_seo_crm_task_description( array $task ): string {
@@ -173,6 +192,15 @@ function hpv_seo_crm_client_review( WP_REST_Request $request ) {
 	$email  = sanitize_email( (string) $request->get_param( 'email' ) );
 	$msg    = sanitize_textarea_field( (string) $request->get_param( 'message' ) );
 	$lang   = 'en' === $request->get_param( 'language' ) ? 'en' : ( 'hu' === $request->get_param( 'language' ) ? 'hu' : null );
+	if ( null === $lang && function_exists( 'hpv_doc_client_language' ) ) {
+		$project = hpv_seo_api_json( 'GET', 'documents/' . $doc_id );
+		$crm_id  = 0;
+		if ( ! is_wp_error( $project ) ) {
+			$p      = hpv_seo_api_json( 'GET', 'projects/' . (int) $project['project_id'] );
+			$crm_id = is_wp_error( $p ) ? 0 : (int) ( $p['client']['crm_client_id'] ?? 0 );
+		}
+		$lang = $crm_id ? hpv_doc_client_language( $crm_id ) : null;
+	}
 	$chat   = (bool) $request->get_param( 'chat' );
 
 	$review = hpv_seo_api_json( 'POST', 'documents/' . $doc_id . '/client-review', array_filter( array( 'email' => $email, 'message' => $msg, 'language' => $lang ) ) );
@@ -189,7 +217,35 @@ function hpv_seo_crm_client_review( WP_REST_Request $request ) {
 	$crm_client = (int) ( $review['crm_client_id'] ?? 0 );
 	$emailed    = false;
 	$chatted    = false;
-	if ( $crm_client && function_exists( 'hpv_p_notify_client' ) && hpv_p_get( 'client', $crm_client ) ) {
+	$portal_id  = 0;
+	$crm_ok     = $crm_client && function_exists( 'hpv_p_get' ) && hpv_p_get( 'client', $crm_client );
+
+	// 1) Ügyfélportál 0.7+: a portál „Jóváhagyás” menüje (az ügyfél ott dönt, a portál küldi a levelet az ügyfél nyelvén).
+	if ( $crm_ok && function_exists( 'hpv_approval_upsert' ) && function_exists( 'hpv_approval_send' ) ) {
+		$approval = hpv_approval_upsert(
+			array(
+				'client_id'    => $crm_client,
+				'type'         => 'document',
+				'title'        => (string) $review['title'] . ' — ' . (string) $review['domain'],
+				'body'         => $body,
+				'link'         => hpv_seo_review_url( (string) $review['token'], 'pdf' ),
+				'source'       => 'seo-os',
+				'external_ref' => 'document-' . $doc_id,
+			),
+			0,
+			get_current_user_id()
+		);
+		if ( is_wp_error( $approval ) ) {
+			return $approval;
+		}
+		$sent = hpv_approval_send( (int) $approval['id'], get_current_user_id() );
+		if ( is_wp_error( $sent ) ) {
+			return $sent;
+		}
+		$portal_id = (int) $approval['id'];
+		$emailed   = true;
+	} elseif ( $crm_ok && function_exists( 'hpv_p_notify_client' ) ) {
+		// 2) Régebbi portál: e-mail az ügyfél portál-felhasználóinak és üzenet a chatbe, a jóváhagyó oldal linkjével.
 		$emailed = hpv_p_notify_client( $crm_client, $subject, (string) $review['title'], $body, $cta, $url );
 		if ( $chat && function_exists( 'hpv_chat_client_channel' ) && function_exists( 'hpv_chat_post' ) ) {
 			$channel = hpv_chat_client_channel( $crm_client );
@@ -206,9 +262,11 @@ function hpv_seo_crm_client_review( WP_REST_Request $request ) {
 
 	return rest_ensure_response(
 		array(
-			'url'      => $url,
-			'emailed'  => (bool) $emailed,
-			'chat'     => $chatted,
+			'url'       => $portal_id ? '' : $url,
+			'emailed'   => (bool) $emailed,
+			'chat'      => $chatted,
+			'portal_id' => $portal_id,
+			'portal'    => $portal_id && function_exists( 'hpv_p_crm_app_url' ) ? hpv_p_crm_app_url( '/content/' . $portal_id ) : '',
 			'approval' => $review,
 		)
 	);

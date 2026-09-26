@@ -2,14 +2,14 @@
 /**
  * Plugin Name: HelloProVision SEO OS
  * Description: Belső SEO projektgyártó rendszer (kutatás, kulcsszavak, struktúra, tartalomstratégia, wireframe-ek, dokumentumok). A felület a seo.helloprovision.com címen fut; az adatokat a FastAPI szolgáltatás kezeli.
- * Version:     0.1.0
+ * Version:     0.2.0
  * Author:      HelloProVision
  * Requires PHP: 7.4
  */
 
 defined( 'ABSPATH' ) || exit;
 
-const HPV_SEO_VERSION = '0.1.0';
+const HPV_SEO_VERSION = '0.2.0';
 const HPV_SEO_OPTION  = 'hpv_seo_os_settings';
 const HPV_SEO_FILE    = __FILE__;
 const HPV_SEO_META    = 'hpv_seo_role';
@@ -22,6 +22,7 @@ require_once __DIR__ . '/includes/crm.php';
 require_once __DIR__ . '/includes/notify.php';
 require_once __DIR__ . '/includes/review.php';
 require_once __DIR__ . '/includes/status.php';
+require_once __DIR__ . '/includes/portal-bridge.php';
 require_once __DIR__ . '/includes/app.php';
 
 if ( is_admin() ) {

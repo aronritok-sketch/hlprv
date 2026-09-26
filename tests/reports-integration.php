@@ -125,6 +125,7 @@ $ap = hpv_p_insert( 'approval', array( 'client_id' => $hu, 'title' => 'Őszi akc
 $GLOBALS['hpv_it_mail'] = array();
 
 echo "Adatforrások\n";
+$GLOBALS['http'] = array(); // más bővítmények (pl. SEO OS felhasználó-szinkron) hívásai ne tolják el a sorszámokat
 $gsc = hpv_gsc_metrics( 'sc-domain:kovacskert.test', '2026-10' );
 $by  = array_column( $gsc, null, 'key' );
 it( 'Search Console: kattintás, megjelenés, CTR, helyezés havonta', 300.0 === $by['gsc_clicks']['value'] && 200.0 === $by['gsc_clicks']['prev'] && 5000.0 === $by['gsc_impressions']['value'] && abs( $by['gsc_ctr']['value'] - 6.0 ) < 0.01 && abs( $by['gsc_position']['value'] - 8.0 ) < 0.01 && 'down' === $by['gsc_position']['better'] );

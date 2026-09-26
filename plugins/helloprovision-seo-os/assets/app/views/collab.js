@@ -98,7 +98,8 @@ function ClientReviewModal({ doc, project, onClose, onSent }) {
 		setBusy(true);
 		try {
 			const r = await api('/crm/client-review', { method: 'POST', body: { document_id: doc.id, ...form } });
-			toast(r.emailed || r.chat ? 'Elküldve az ügyfélnek' + (r.chat ? ' (e-mail + portál üzenet).' : ' (e-mail).') : 'A jóváhagyó link elkészült – nem ment ki értesítés (nincs CRM ügyfél / e-mail).', r.emailed || r.chat ? 'ok' : 'error');
+			if (r.portal_id) toast('Elküldve az ügyfélportálra jóváhagyásra (az ügyfél értesítést kap, a döntése ide visszaér).', 'ok');
+			else toast(r.emailed || r.chat ? 'Elküldve az ügyfélnek' + (r.chat ? ' (e-mail + portál üzenet).' : ' (e-mail).') : 'A jóváhagyó link elkészült – nem ment ki értesítés (nincs CRM ügyfél / e-mail).', r.emailed || r.chat ? 'ok' : 'error');
 			onSent(r);
 		} catch (e) { toast(errorText(e), 'error'); }
 		setBusy(false);
@@ -106,7 +107,7 @@ function ClientReviewModal({ doc, project, onClose, onSent }) {
 	return html`<${Modal} title="Küldés ügyfél-jóváhagyásra" onClose=${onClose}
 		footer=${html`<button class="btn btn--ghost" onClick=${onClose}>Mégse</button><button class="btn" disabled=${busy} onClick=${send}>${busy ? 'Küldés…' : 'Küldés'}</button>`}>
 		<div class="stack-sm">
-			<p class="muted small">Az ügyfél titkos linket kap (${project.client.crm_client_id ? 'az ügyfélportál e-mailjében és chatjében' : 'e-mailben'}); a linken letöltheti a dokumentumot, kérdezhet, jóváhagyhatja vagy módosítást kérhet. A döntésről értesítést kapsz.</p>
+			<p class="muted small">Az ügyfél titkos linket kap (${project.client.crm_client_id ? 'az ügyfélportálon, a Jóváhagyás menüben (e-mail értesítéssel)' : 'e-mailben'}); a linken letöltheti a dokumentumot, kérdezhet, jóváhagyhatja vagy módosítást kérhet. A döntésről értesítést kapsz.</p>
 			${!project.client.crm_client_id ? html`<p class="alert alert--info small"><span>A projekt ügyfele nincs összekötve CRM ügyféllel – add meg az e-mail címet.</span></p>` : ''}
 			<${Field} label=${'E-mail cím' + (project.client.crm_client_id ? ' (opcionális, a portál-felhasználókon felül)' : '')}><${Input} type="email" value=${form.email} onInput=${(v) => setForm({ ...form, email: v })} /></${Field}>
 			<${Field} label="Kísérő üzenet"><${Textarea} rows="3" value=${form.message} onInput=${(v) => setForm({ ...form, message: v })} /></${Field}>
@@ -147,7 +148,7 @@ export function ApprovalPanel({ subject, id, doc, project, onChanged }) {
 			<span class="muted small">${client.decided_at ? client.decided_by + ' · ' + fmt.datetime(client.decided_at) : client.viewed_at ? 'megnyitotta ' + fmt.ago(client.viewed_at) : 'elküldve ' + fmt.ago(client.created_at)}</span>
 			${client.decision_note ? html`<span class="small">„${client.decision_note}”</span>` : ''}
 		</div>` : ''}
-		${link ? html`<div class="approval__row small"><span class="muted">Jóváhagyó link:</span> <a class="link url" href=${link} target="_blank" rel="noopener">${link}</a></div>` : ''}
-		${modal ? html`<${ClientReviewModal} doc=${doc} project=${project} onClose=${() => setModal(false)} onSent=${(r) => { setModal(false); setLink(r.url); done(); }} />` : ''}
+		${link ? html`<div class="approval__row small"><span class="muted">${link.includes('/review/') ? 'Jóváhagyó link:' : 'A portálon:'}</span> <a class="link url" href=${link} target="_blank" rel="noopener">${link}</a></div>` : ''}
+		${modal ? html`<${ClientReviewModal} doc=${doc} project=${project} onClose=${() => setModal(false)} onSent=${(r) => { setModal(false); setLink(r.url || r.portal || ''); done(); }} />` : ''}
 	</div>`;
 }

@@ -119,7 +119,8 @@ def test_outbox_and_daily(client, as_role, db):
     assert client.patch(f"/projects/{pid}", json={"start_date": start.isoformat()}).json()["upsell_reminder_at"] <= date.today().isoformat()
     res = sysc.post("/system/daily").json()
     assert res["overdue"] == 1 and res["upsell"] == 1
-    assert sysc.post("/system/daily").json() == {"upsell": 0, "overdue": 0}  # csak egyszer szól
+    again = sysc.post("/system/daily").json()
+    assert again["upsell"] == 0 and again["overdue"] == 0 and again["snapshots"] >= 1  # csak egyszer szól
     assert any(i["kind"] == "task_overdue" for i in notes(dev)["items"])
     assert any(i["kind"] == "upsell" for i in notes(client)["items"])
 
@@ -138,3 +139,50 @@ def test_monthly_report(client):
     titles = [s["title"] for s in d["content"]["sections"]]
     assert "Keresési teljesítmény" in titles and "Elvégzett munka" in titles
     assert client.post(f"/projects/{pid}/documents/generate", json={"doc_type": "monthly_report", "period": "2026/9"}).status_code == 422
+
+
+def test_portal_bridge_decision_and_report_metrics(client, as_role, db):
+    """Ügyfélportál (helloprovision-portal 0.7+): döntés a portál Jóváhagyás menüjéből, havi riport mutatók."""
+    from app.models import AuditFinding, Client, Project, RankingSnapshot
+
+    pid = full_project(client)
+    proj = db.get(Project, pid)
+    db.get(Client, proj.client_id).crm_client_id = 77
+    db.commit()
+    doc_id = run(client, f"/projects/{pid}/documents/generate", {"doc_type": "seo_strategy"})["document_id"]
+    client.patch(f"/documents/{doc_id}", json={"status": "approved"})
+    client.post(f"/documents/{doc_id}/client-review", json={})
+    sysc = system()
+    assert client.post("/system/client-decision", json={"document_id": doc_id, "decision": "approved"}).status_code == 403
+    r = sysc.post("/system/client-decision", json={"document_id": doc_id, "decision": "changes_requested", "name": "Kovács Anna", "note": "A 3. táblát bővítsük."})
+    assert r.json()["status"] == "changes_requested"
+    # új kör a portálon → jóváhagyás felülírja
+    assert sysc.post("/system/client-decision", json={"document_id": doc_id, "decision": "approved", "name": "Kovács Anna"}).json()["status"] == "approved"
+    appr = next(a for a in client.get(f"/approvals?subject_type=document&subject_id={doc_id}").json() if a["stage"] == "client")
+    assert appr["decided_by"] == "Kovács Anna (ügyfél)"
+    assert any("3. táblát" in c["body"] for c in client.get(f"/comments?subject_type=document&subject_id={doc_id}").json())
+
+    # Havi riport: saját helyezés beállítása, előző havi pillanatkép → változás
+    kw = client.get(f"/projects/{pid}/keywords").json()["keywords"]
+    from app.models import CompetitorRanking, Keyword
+
+    objs = [db.get(Keyword, k["id"]) for k in kw[:4]]
+    for i, obj in enumerate(objs):
+        obj.rankings.append(CompetitorRanking(domain="imperialkitchens.com", is_own=True, position=[2, 5, 9, 25][i], source="manual"))
+    db.commit()
+    from datetime import date
+
+    period = date.today().strftime("%Y-%m")
+    from app.services.crm_bridge import prev_period
+
+    db.add(RankingSnapshot(project_id=pid, period=prev_period(period), tracked=3, top3=0, top10=1, avg_position=20))
+    db.add(AuditFinding(project_id=pid, topic="http_status", issue_key="status_4xx", count=2, status="open"))
+    db.commit()
+    m = {x["key"]: x for x in sysc.get(f"/system/report-metrics?crm_client_id=77&period={period}&lang=en").json()["metrics"]}
+    assert m["seo_os_top10"]["value"] == 3 and m["seo_os_top10"]["prev"] == 1 and m["seo_os_top10"]["label"] == "Keywords in the top 10"
+    assert m["seo_os_top3"]["value"] == 1 and m["seo_os_avg_position"]["better"] == "down"
+    assert m["seo_os_top10"]["history"] == [1, 3]
+    assert m["seo_os_open_issues"]["value"] == 1
+    hu = sysc.get(f"/system/report-metrics?crm_client_id=77&period={period}&lang=hu").json()["metrics"]
+    assert hu[0]["label"].startswith("Kulcsszavak") and hu[0]["section"].startswith("SEO")
+    assert sysc.get(f"/system/report-metrics?crm_client_id=999&period={period}").json()["metrics"] == []

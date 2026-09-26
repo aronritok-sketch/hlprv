@@ -4,7 +4,7 @@ valamint a WordPress rendszerhívásai (e-mail outbox, napi emlékeztetők)."""
 from datetime import timedelta
 from typing import Any, Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -27,7 +27,7 @@ from ..models import (
     User,
 )
 from ..permissions import can_view_doc, has
-from ..services import collab, storage
+from ..services import collab, crm_bridge, storage
 from ..services.activity import log
 from ..services.system import heartbeat
 from ..services.files import file_response
@@ -304,6 +304,49 @@ def review_get(token: str, db: Session = Depends(get_db)):
     }
 
 
+def _apply_client(db: Session, a: Approval, d: Document, p: Project, decision: str, name: str, note: str) -> None:
+    """Az ügyfél döntése / kérdése (saját jóváhagyó oldalról vagy az ügyfélportálról)."""
+    name, note = name.strip(), note.strip()
+    info = collab.subject_info(db, "document", d.id)
+    if note:
+        prefix = {"approved": "✓ Jóváhagyva. ", "changes_requested": "↺ Módosítást kér: ", "comment": ""}[decision]
+        c = Comment(project_id=p.id, subject_type="document", subject_id=d.id, author_name=f"{name} (ügyfél)", is_client=True, body=prefix + note)
+        db.add(c)
+        db.flush()
+        if decision == "comment":
+            collab.comment_notify(db, c, info, None)
+    if decision != "comment":
+        a.status, a.decided_at, a.decided_by_name, a.decision_note = decision, utcnow(), f"{name} (ügyfél)", note
+        collab.notify(db, [a.requested_by, p.owner_id], "approval_decision",
+                      f"Ügyfél {'jóváhagyta' if decision == 'approved' else 'módosítást kért'}: {a.title} – {p.name}",
+                      body=note, link=info["link"], project_id=p.id)
+        log(db, p.id, None, "approval", a.id, "client_" + decision, f"{a.title} – {name}")
+
+
+class PortalDecision(BaseModel):
+    document_id: int
+    decision: Literal["approved", "changes_requested"]
+    name: str = Field(default="Ügyfél", max_length=255)
+    note: str = Field(default="", max_length=5000)
+    portal_approval_id: Optional[int] = None
+
+
+@router.post("/system/client-decision", dependencies=[Depends(current_system)])
+def portal_decision(body: PortalDecision, db: Session = Depends(get_db)):
+    """Az ügyfélportálon (helloprovision-portal „Jóváhagyás”) született döntés. A portál köröket kezel, ezért egy
+    újabb döntés felülírja az előzőt."""
+    d = db.get(Document, body.document_id)
+    if d is None:
+        raise HTTPException(404, "A dokumentum nem található.")
+    a = db.scalar(select(Approval).where(Approval.subject_type == "document", Approval.subject_id == d.id, Approval.stage == "client",
+                                         Approval.status != "cancelled").order_by(Approval.id.desc()))
+    if a is None:
+        raise HTTPException(404, "Ehhez a dokumentumhoz nincs ügyfél-jóváhagyás.")
+    _apply_client(db, a, d, db.get(Project, d.project_id), body.decision, body.name or "Ügyfél", body.note)
+    db.commit()
+    return {"ok": True, "status": a.status}
+
+
 @router.get("/review/{token}/file/{fmt}", dependencies=[Depends(current_system)])
 def review_file(token: str, fmt: str, db: Session = Depends(get_db)):
     a, d, p = _review(db, token)
@@ -327,20 +370,7 @@ def review_post(token: str, body: ClientDecision, db: Session = Depends(get_db))
         raise HTTPException(409, "Ebben már döntöttél – köszönjük!")
     if body.decision in ("changes_requested", "comment") and not body.note.strip():
         raise HTTPException(422, "Írd le, mit szeretnél módosítani.")
-    info = collab.subject_info(db, "document", d.id)
-    if body.note.strip():
-        prefix = {"approved": "✓ Jóváhagyva. ", "changes_requested": "↺ Módosítást kér: ", "comment": ""}[body.decision]
-        c = Comment(project_id=p.id, subject_type="document", subject_id=d.id, author_name=f"{body.name.strip()} (ügyfél)", is_client=True, body=prefix + body.note.strip())
-        db.add(c)
-        db.flush()
-        if body.decision == "comment":
-            collab.comment_notify(db, c, info, None)
-    if body.decision != "comment":
-        a.status, a.decided_at, a.decided_by_name, a.decision_note = body.decision, utcnow(), f"{body.name.strip()} (ügyfél)", body.note.strip()
-        collab.notify(db, [a.requested_by, p.owner_id], "approval_decision",
-                      f"Ügyfél {'jóváhagyta' if body.decision == 'approved' else 'módosítást kért'}: {a.title} – {p.name}",
-                      body=body.note.strip(), link=info["link"], project_id=p.id)
-        log(db, p.id, None, "approval", a.id, "client_" + body.decision, f"{a.title} – {body.name.strip()}")
+    _apply_client(db, a, d, p, body.decision, body.name, body.note)
     db.commit()
     return {"ok": True, "status": a.status}
 
@@ -415,9 +445,18 @@ def outbox_ack(body: AckIn, db: Session = Depends(get_db)):
     return {"ok": True}
 
 
+@router.get("/system/report-metrics", dependencies=[Depends(current_system)])
+def report_metrics(crm_client_id: int, period: str = Query(pattern=r"^\d{4}-\d{2}$"), lang: str = "hu", db: Session = Depends(get_db)):
+    """A CRM havi riportjába (helloprovision-portal `hpv_report_metrics`): az ügyfél SEO OS projektjeinek mutatói."""
+    metrics = crm_bridge.report_metrics(db, crm_client_id, period, lang)
+    db.commit()
+    return {"metrics": metrics}
+
+
 @router.post("/system/daily", dependencies=[Depends(current_system)])
 def system_daily(db: Session = Depends(get_db)):
     res = collab.daily(db)
+    res["snapshots"] = crm_bridge.snapshot_all(db)
     heartbeat("wp_daily", res, db)
     db.commit()
     return res
