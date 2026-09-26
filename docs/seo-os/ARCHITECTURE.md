@@ -1,347 +1,347 @@
-# HELLOPROVISION SEO OS — Architecture & Phase 1 Plan
+# HELLOPROVISION SEO OS – Architektúra és az 1. ütem terve
 
-Status: **proposal, awaiting approval**. No application code has been written yet.
+Állapot: **javaslat, jóváhagyásra vár**. Alkalmazáskód még nem készült.
 
-This document is based on the full `seotool.zip` package: 26 top-level files and 7 nested archives, about 60 unique documents. It covers five parts:
+A dokumentum a teljes `seotool.zip` csomagra épül: 26 fájl a gyökérben, 7 beágyazott archívum, összesen kb. 60 egyedi dokumentum. Öt részből áll:
 
-1. The HelloProVision SEO methodology as it is practiced today, extracted from the documents.
-2. The system architecture.
-3. The database schema.
-4. The UI structure.
-5. The development roadmap and the Phase 1 implementation plan.
-
----
-
-## 0. Source inventory (what was analyzed)
-
-| Group | Documents | What they define |
-|---|---|---|
-| **Process** | `SEO lépések - projektmenedzser_sales.docx`, `SEO árak.xlsx` (schedule + prices + service contents) | The service catalogue, intake checklist, approval gates, who does what, upsell rule |
-| **Research inputs** | `Kiindulás.xlsx` (core keywords, locations, competitors, keyword collection), 4× Google Keyword Planner exports (Naples, Fort Myers, Cape Coral, Florida), Ahrefs *matching terms* and *content gap* exports | What raw data comes in and in which shape |
-| **Keyword research deliverable** | `Kulcsszókutatás - helloprovision.com.xlsx` | Keyword × location rows, KD, parent topic, per-competitor position/URL/traffic |
-| **Structure deliverable** | `Wireframe - főoldal.docx`, `Wireframe - aloldalak.docx`, `Főoldal wireframe - szövegírónak.docx`, `Aloldalak wireframe - szövegírónak.docx`, `Belső linkelési struktúra - főoldal.docx`, `helloprovision.com struktúra rajz.png`, change logs | Site structure, URL/title/H1 matrix, page models, internal linking plan |
-| **Content strategy deliverable** | `tartalomstratégia 2026-2027 helloprovision.com_.xlsx` (6 sheets) | Summary, keyword clusters, 6-month roadmap, measurement plan, PPC/Meta plan, parked topics |
-| **Content wireframes** | `01–04 HelloProVision wireframe - *.docx` | The per-article / case-study wireframe format |
-| **Internal briefs** | `gulyastamas.hu SEO fejlesztői módosítások.docx` (developer), `gulyastamas.hu SEO szövegírás.docx` (writer keyword mapping), `artmirror.hu … belső kivitelezési feladatlista.docx` (color-coded SEO/writer/dev task list), `SEO alapok - grafikus.docx` (designer), `SEO alapok - szövegíró.docx`, `Technikai SEO alapok - fejlesztői.docx`, `FEJLESZTŐI BETANÍTÁSI KÉZIKÖNYV - SABLON.docx` | Role-specific briefs and standing rules |
-| **Client templates** | `Stílusbeli irányelvek szövegíráshoz - sablon.docx`, `Technikai SEO audit - összefoglaló sablon.docx` + a filled audit, TimeHeist proposal PDF | Client-facing formats and branding |
-| **Technical audit data** | 9 Screaming Frog exports (missing canonicals, noindex, duplicate H1/title/meta, long titles/metas, 4xx, images >100 KB) | Audit input shape |
-| **Finished content** | 2 articles + 2 Facebook posts | Quality bar for the writer output |
+1. A HelloProVision SEO-módszertana, ahogy ma működik, a dokumentumokból kiolvasva.
+2. A rendszer architektúrája.
+3. Az adatbázisséma.
+4. A felhasználói felület felépítése.
+5. A fejlesztési ütemterv és az 1. ütem megvalósítási terve.
 
 ---
 
-## 1. The HelloProVision methodology (extracted)
+## 0. A feldolgozott anyagok
 
-### 1.1 Services sold (these determine what a project contains)
-
-From `SEO árak.xlsx` and the process document. A project is a **bundle of these deliverables**, not a single fixed pipeline:
-
-| Service | Type | Main output |
+| Csoport | Dokumentumok | Mit határoznak meg? |
 |---|---|---|
-| Technical SEO audit (+ optional implementation) | one-off | Audit summary document (XL/M/S priority), developer tickets |
-| Technical SEO foundations (new site) | one-off | Developer requirements |
-| Keyword research | one-off | Keyword research spreadsheet. The client can comment on it but not edit it. |
-| Site structure proposal | one-off | Structure spreadsheet → Figma, sent to the client |
-| Content strategy (usually 6 months) | one-off | 6-sheet strategy workbook |
-| Content management (monthly: 2–8 pieces/month) | monthly | Wireframe → text → QA → client approval → upload |
-| Wireframe-only content management | monthly | Wireframes only. The client writes the text; developers train the client once. |
-| Link building / link profile audit | one-off / monthly | Link strategy |
-| Monitoring report | monthly | Monthly report, starting after month 1 |
+| **Folyamat** | `SEO lépések - projektmenedzser_sales.docx`, `SEO árak.xlsx` (ütemezés, árak, szolgáltatások tartalma) | A szolgáltatáskatalógus, a bekérendő anyagok, a jóváhagyási pontok, ki mit csinál, az upsell szabály |
+| **Kutatási bemenetek** | `Kiindulás.xlsx` (core kulcsszavak, lokációk, versenytársak, kulcsszógyűjtés), 4 db Google Keyword Planner export (Naples, Fort Myers, Cape Coral, Florida), Ahrefs *matching terms* és *content gap* exportok | Milyen nyers adat érkezik, és milyen formában |
+| **Kulcsszókutatás (leadandó)** | `Kulcsszókutatás - helloprovision.com.xlsx` | Kulcsszó × lokáció sorok, KD, parent topic, versenytársanként pozíció / URL / forgalom |
+| **Struktúra (leadandó)** | `Wireframe - főoldal.docx`, `Wireframe - aloldalak.docx`, `Főoldal wireframe - szövegírónak.docx`, `Aloldalak wireframe - szövegírónak.docx`, `Belső linkelési struktúra - főoldal.docx`, `helloprovision.com struktúra rajz.png`, változásnaplók | Oldalstruktúra, URL / title / H1 mátrix, oldalmodellek, belső linkelési terv |
+| **Tartalomstratégia (leadandó)** | `tartalomstratégia 2026-2027 helloprovision.com_.xlsx` (6 munkalap) | Összefoglaló, kulcsszóklaszterek, 6 havi roadmap, mérési terv, PPC/Meta terv, félretett témák |
+| **Tartalmi wireframe-ek** | `01–04 HelloProVision wireframe - *.docx` | A cikkenkénti és case study wireframe formátuma |
+| **Belső briefek** | `gulyastamas.hu SEO fejlesztői módosítások.docx` (fejlesztő), `gulyastamas.hu SEO szövegírás.docx` (szövegírói kulcsszó-mapping), `artmirror.hu … belső kivitelezési feladatlista.docx` (SEO / szövegíró / fejlesztő szerint színkódolt feladatlista), `SEO alapok - grafikus.docx` (grafikus), `SEO alapok - szövegíró.docx`, `Technikai SEO alapok - fejlesztői.docx`, `FEJLESZTŐI BETANÍTÁSI KÉZIKÖNYV - SABLON.docx` | Szerepkörönkénti briefek és állandó szabályok |
+| **Ügyfélsablonok** | `Stílusbeli irányelvek szövegíráshoz - sablon.docx`, `Technikai SEO audit - összefoglaló sablon.docx` + egy kitöltött audit, a TimeHeist ajánlat PDF | Ügyfélnek szóló formátumok és arculat |
+| **Technikai audit adatok** | 9 db Screaming Frog export (hiányzó canonical, noindex, duplikált H1 / title / meta, túl hosszú title / meta, 4xx, 100 KB feletti képek) | Az audit bemenetének formája |
+| **Kész tartalmak** | 2 cikk + 2 Facebook-poszt | A szövegírói munka minőségi szintje |
 
-**Business rule:** at the start of month 5, remind sales/PM to upsell. The two options are a free strategy for the next 6 months (with a contract renewal), or a new, discounted research and strategy package.
+---
 
-### 1.2 Workflow, gates and owners (as practiced)
+## 1. A HelloProVision módszertana (kiolvasva)
+
+### 1.1 Eladott szolgáltatások (ezek határozzák meg, mit tartalmaz egy projekt)
+
+A `SEO árak.xlsx` és a folyamatleírás alapján egy projekt **ezeknek a leadandóknak a csomagja**, nem egyetlen rögzített folyamat:
+
+| Szolgáltatás | Típus | Fő kimenet |
+|---|---|---|
+| Technikai SEO audit (+ opcionális kivitelezés) | egyszeri | Audit összefoglaló (XL / M / S prioritás), fejlesztői hibajegyek |
+| Technikai SEO alapok (új weboldal) | egyszeri | Fejlesztői követelmények |
+| Kulcsszókutatás | egyszeri | Kulcsszókutatás táblázat. Az ügyfél megjegyzést írhat hozzá, de nem szerkesztheti. |
+| Oldalstruktúra javaslat | egyszeri | Struktúra táblázat → grafikus → Figma, ezt kapja az ügyfél |
+| Tartalomstratégia (általában 6 hónap) | egyszeri | 6 munkalapos stratégiai táblázat |
+| Tartalommenedzsment (havi 2–8 tartalom) | havidíjas | Wireframe → szöveg → ellenőrzés → ügyfél-jóváhagyás → feltöltés |
+| Csak wireframe-es tartalommenedzsment | havidíjas | Csak wireframe. A szöveget az ügyfél írja; a fejlesztő egyszer betanítja. |
+| Linképítés / linkprofil audit | egyszeri / havi | Linképítési stratégia |
+| Monitoring riport | havi | Havi riport, az első hónap után |
+
+**Üzleti szabály:** az 5. hónap elején emlékeztetni kell a salest / projektmenedzsert az upsellre. Két lehetőség van: ajándékba készített stratégia a következő 6 hónapra (szerződéshosszabbítással), vagy új, kedvezményes kutatás és stratégia.
+
+### 1.2 Folyamat, jóváhagyási pontok és felelősök (ahogy ma működik)
 
 ```
-Sales/proposal ─► Contract ─► INTAKE (client checklist)
+Sales / ajánlat ─► Szerződés ─► BEKÉRÉS (ügyfél-checklist)
                                  │
           ┌──────────────────────┼──────────────────────────┐
           ▼                      ▼                          ▼
-  Technical audit        Keyword research            (new site: tech foundations)
-  (SF crawl → audit)     (Ahrefs + GKP + competitors)
-          │                      │  ◄── GATE: client comments / approves (mandatory)
+  Technikai audit        Kulcsszókutatás           (új oldal: technikai SEO alapok)
+  (SF crawl → audit)     (Ahrefs + GKP + versenytársak)
+          │                      │  ◄── JÓVÁHAGYÁS: az ügyfél megjegyzéseket ír / jóváhagy (kötelező)
           │                      ▼
-          │              Site structure proposal (Excel → designer → Figma)
-          │                      │  ◄── GATE: client review/meeting
+          │              Oldalstruktúra javaslat (Excel → grafikus → Figma)
+          │                      │  ◄── JÓVÁHAGYÁS: ügyfél átnézi / meeting
           │                      ▼
-          │              Content strategy (6-month roadmap)
-          │                      │  ◄── GATE: client approval (+ client supplies own images)
+          │              Tartalomstratégia (6 havi roadmap)
+          │                      │  ◄── JÓVÁHAGYÁS: ügyfél jóváhagyja (+ saját képeket küld)
           │                      ▼
-          │              Style guidelines doc filled by client
+          │              Az ügyfél kitölti a Stílusbeli irányelveket
           │                      ▼
-          │              Monthly: wireframe (SEO) → text (writer) → QA (PM/SEO)
-          │                      │  ◄── GATE: client checks accuracy, brand voice, business facts.
-          │                      │          SEO manager judges any change that affects SEO.
+          │              Havonta: wireframe (SEO) → szöveg (szövegíró) → ellenőrzés (PM/SEO)
+          │                      │  ◄── JÓVÁHAGYÁS: az ügyfél a szakmai pontosságot, márkanyelvet,
+          │                      │          üzleti infókat nézi; SEO-t érintő módosítást az SEO-s értékel.
           ▼                      ▼
-  Dev implementation      Upload/publish → indexing request → monthly monitoring report
+  Fejlesztői kivitelezés   Feltöltés / publikálás → indexelés kérése → havi monitoring riport
 ```
 
-The people named in the documents map to the requested roles:
+A dokumentumokban szereplő emberek és a kért szerepkörök megfeleltetése:
 
-| Person in the documents | Role in SEO OS |
+| Személy a dokumentumokban | Szerepkör az SEO OS-ben |
 |---|---|
 | Áron | Admin |
-| Olívia (research, structure, strategy, wireframes) | SEO Manager |
-| Zsolti (PM, QA of content) | Content Manager |
-| Anni (writer) | Content Manager |
-| Laci, Máté (developers) | Developer |
-| Graphic designer | Designer |
+| Olívia (kutatás, struktúra, stratégia, wireframe-ek) | SEO manager |
+| Zsolti (PM, tartalmak ellenőrzése) | Content manager |
+| Anni (szövegíró) | Content manager |
+| Laci, Máté (fejlesztők) | Fejlesztő |
+| Grafikus | Designer |
 
-### 1.3 Client intake checklist (becomes a structured form)
+### 1.3 Bekérendő anyagok az ügyféltől (strukturált űrlap lesz belőle)
 
-**Always:**
-- The domain to analyze.
-- Earlier SEO research, if there is any.
-- Google Search Console access. Specific team emails need Owner or Full permission. If the client has no GSC, the agency creates it, which requires domain-registrar access. Credentials are shared through 1Password.
+**Minden esetben:**
+- A vizsgált domain.
+- Korábbi SEO-kutatások, ha vannak.
+- Google Search Console hozzáférés. Megadott csapattagoknak Tulajdonos vagy Teljes jogosultság kell. Ha nincs GSC, mi hozzuk létre, ehhez a domainszolgáltató belépési adatai kellenek. A belépési adatokat 1Passwordön keresztül kérjük.
 
-**For technical implementation:** WordPress admin access, unless HelloProVision built the site.
+**Technikai kivitelezéshez:** WordPress admin jogosultság, ha nem mi fejlesztettük az oldalt.
 
-**For keyword research:**
-- 15–25 seed keywords, tagged by kind:
-  - main services and products;
-  - the terms customers actually use;
-  - towns and service area;
-  - high-margin services;
-  - excluded services or keywords;
-  - the current product list (webshops).
-- 4–5 competitor domains, chosen by organic position.
-- Conversion goals.
+**Kulcsszókutatáshoz:**
+- 15–25 kiinduló kulcsszó, típus szerint jelölve:
+  - fő szolgáltatások és termékek;
+  - az ügyfelek által használt elnevezések;
+  - települések és szolgáltatási terület;
+  - üzletileg fontos, magas árrésű szolgáltatások;
+  - kizárt szolgáltatások vagy kulcsszavak;
+  - webshopnál az aktuális terméklista.
+- 4–5 versenytárs domain organikus pozíció alapján.
+- Konverziós célok.
 
-**For content management:** the client-approved strategy and the filled style guideline document. The document title must contain the client's domain, and the highlighted brand name must be replaced before sending.
+**Tartalommenedzsmenthez:** az ügyfél által jóváhagyott stratégia és a kitöltött Stílusbeli irányelvek. A dokumentum címében szerepeljen az ügyfél domainje, a kiemelt márkanevet pedig kiküldés előtt át kell írni.
 
-### 1.4 Decision rules found in the documents (the system must enforce or encode these)
+### 1.4 A dokumentumokban talált döntési szabályok (a rendszer ezeket betartatja vagy beépíti)
 
-**Keyword prioritization**
+**Kulcsszó-priorizálás**
 
-1. **The primary keyword is not always the highest-volume term.** On service pages, search intent comes first. Example from the documents: *önismereti tanácsadás* (30/mo, service intent) beats *önismeret* (880/mo, informational) as the primary keyword. This matches the requested priority order: intent → business value → commercial opportunity → competition → volume.
-2. **Intent labels used:** Informational, Commercial, Commercial investigation ("információs/kereskedelmi vizsgálódó"), Problem-aware ("problématudatos"), Navigational, Transactional, Mixed.
-3. **Location is a separate dimension, not an intent.** The research sheets store one row per keyword × location, and KD differs by city.
-4. **Priority scale:**
-   - **P1:** strong business intent, plus a direct internal link to the strongest service or city pages.
-   - **P2:** a supporting or broader topic that builds proof and topical authority, often with higher KD.
-   - **Parked:** carried to the next period, with a reason and a recommended handling, for example "wait for GSC data" or "handle through the city landing page".
-5. **Alternative market language is not a service primary.** Example: *párterápia* is not how the client names the service, so it goes into comparison articles only.
+1. **Az elsődleges kulcsszó nem mindig a legnagyobb volumenű kifejezés.** Szolgáltatási oldalnál a keresési szándék az első. Példa a dokumentumokból: az *önismereti tanácsadás* (30/hó, szolgáltatáskereső szándék) megelőzi az *önismeret* kifejezést (880/hó, információs). Ez egyezik a kért sorrenddel: szándék → üzleti érték → kereskedelmi lehetőség → verseny → volumen.
+2. **Használt szándékkategóriák:** információs, kereskedelmi, információs / kereskedelmi vizsgálódó, problématudatos, navigációs, tranzakciós, vegyes.
+3. **A lokáció külön dimenzió, nem szándék.** A kutatási táblák kulcsszó × lokáció soronként tárolják az adatot, és a KD városonként eltér.
+4. **Prioritási skála:**
+   - **P1:** erős üzleti szándék, plusz közvetlen belső link a legerősebb szolgáltatási vagy városi oldalakra.
+   - **P2:** támogató vagy tágabb téma, amely proofot és topical authorityt épít, gyakran magasabb KD-vel.
+   - **Félretett:** a következő időszakra kerül, indoklással és javasolt kezeléssel, például „GSC-adat alapján” vagy „a városi landing kezeli”.
+5. **Az alternatív piaci nyelv nem szolgáltatási primary.** Példa: a *párterápia* nem az ügyfél szolgáltatásának neve, ezért csak összehasonlító cikkben szerepel.
 
-**Cannibalization and page mapping**
+**Kannibalizáció és oldal-hozzárendelés**
 
-6. **One primary commercial keyword maps to exactly one URL.** Close variants are handled on the same page, so there is no separate page for each word order.
-7. **One page serves one intent.** The homepage does not target a keyword that belongs to a service page.
-8. **City + service commercial keywords go to dedicated landing pages.** Articles may use a location only as supporting context.
-9. **Articles answer an informational or decision question, then route to the service page.** They must not copy the landing page. Every roadmap row carries a *cannibalization rule*.
-10. **A city hub is not a service page.** The hub routes to the city's service pages.
-11. **Every city gets the same services, with unique local copy.** The problems, industries, FAQ and proof differ per city. Pages are never city-name swaps.
-12. **Don't create a page the research doesn't justify.** helloprovision.com, for example, has no PPC, e-commerce, branding, "near me" or separate web-development landing pages.
+6. **Egy elsődleges kereskedelmi kulcsszó pontosan egy URL-hez tartozik.** A közeli változatokat ugyanaz az oldal kezeli, nem készül külön oldal minden szórendre.
+7. **Egy oldal = egy szándék.** A főoldal nem céloz olyan kulcsszót, amely egy szolgáltatási oldalé.
+8. **A város + szolgáltatás kereskedelmi kulcsszavak saját landingre kerülnek.** Cikkekben a lokáció csak támogató kontextus lehet.
+9. **A cikk információs vagy döntési kérdést válaszol meg, majd a szolgáltatási oldalra vezet.** Nem másolhatja a landinget. Minden roadmap-sorhoz tartozik *kannibalizációs szabály*.
+10. **A városi hub nem szolgáltatási oldal.** A hub a város szolgáltatási oldalaira irányít.
+11. **Minden város ugyanazokat a szolgáltatásokat kapja, egyedi helyi szöveggel.** A problémák, iparágak, FAQ és proof városonként eltér. Az oldalak soha nem városnév-cserés másolatok.
+12. **Ne készüljön olyan oldal, amit a kutatás nem indokol.** A helloprovision.com-on például nincs PPC, e-commerce, branding, „near me” vagy külön web development landing.
 
-**Content and linking**
+**Tartalom és linkelés**
 
-13. **Minimum before a page goes live:**
-    - a unique title and H1;
-    - local copy;
+13. **Publikálási minimum:**
+    - egyedi title és H1;
+    - helyi szöveg;
     - proof;
-    - 5 or more genuine FAQs;
-    - internal links;
-    - a CTA.
-14. **Proof rules:**
-    - use only verified proof;
-    - never invent clients or results, and never promise rankings;
-    - leave out any case-study module whose work was not part of the project.
-15. **Link labels must read naturally for visitors.**
-    - Don't auto-link exact-match keywords, and don't use sitewide keyword links.
-    - Link placement types: MENU, BUTTON, CARD, TEXT LINK, NO LINK.
-16. **Keep the measurement expectations phased:**
-    - 0–30 days: indexing;
-    - 31–60 days: query discovery;
-    - 61–90 days: clicks and CTR;
-    - month 4: assisted paths;
-    - month 5: lead quality;
-    - month 6: decide the next 6 months.
-17. **SEO and paid work share one content system.** Articles become Meta/Facebook creatives. High-intent Google Search traffic goes to service or city landing pages, never to the blog.
+    - legalább 5 valódi FAQ;
+    - belső linkek;
+    - CTA.
+14. **Proof-szabályok:**
+    - csak ellenőrzött proof használható;
+    - nem találunk ki ügyfelet vagy eredményt, és nem ígérünk helyezést;
+    - a case study-ból kimarad minden modul, ami nem volt része a projektnek.
+15. **A linkszöveg a látogatónak legyen érthető.**
+    - Ne linkeljük automatikusan az exact-match kulcsszavakat, és ne legyen sitewide kulcsszavas link.
+    - Linktípusok: MENÜ, GOMB, KÁRTYA, SZÖVEGLINK, NINCS LINK.
+16. **A mérési elvárások szakaszosak:**
+    - 0–30 nap: indexelés;
+    - 31–60 nap: query discovery;
+    - 61–90 nap: kattintások és CTR;
+    - 4. hónap: assisted path;
+    - 5. hónap: leadminőség;
+    - 6. hónap: döntés a következő 6 hónapról.
+17. **Az SEO és a fizetett kampány egy tartalmi rendszer.** A cikkekből Meta/Facebook kreatív készül. A magas szándékú Google Search forgalom a szolgáltatási vagy városi landingre megy, soha nem a blogra.
 
-**Technical audit and tasks**
+**Technikai audit és feladatok**
 
-18. **Technical audit priorities use t-shirt sizes (XL/M/S).** Developer tasks carry a source, an action, a target and a *"done when"* check.
-19. **Internal task lists are color-coded by role:** SEO = green, writer = blue, developer = orange.
+18. **A technikai audit prioritása pólóméret szerinti (XL / M / S).** A fejlesztői feladatnak van forrása, művelete, célja és *„késznek akkor tekinthető”* ellenőrzése.
+19. **A belső feladatlisták szerepkör szerint színkódoltak:** SEO = zöld, szövegíró = kék, fejlesztő = narancs.
 
-### 1.5 Document structures to reproduce (field-level)
+### 1.5 Leképezendő dokumentumszerkezetek (mezőszinten)
 
-**Keyword research sheet** — one row per keyword × location:
+**Kulcsszókutatás tábla** – soronként egy kulcsszó × lokáció:
 
-`Keyword | Local long-tail modifier | Parent topic | Volume | KD | Location | {competitor}: Position | {competitor}: URL | {competitor}: Traffic … | (Magyar translation) | Traffic potential | Current position | Current URL | Category`
+`Keyword | Local long-tail | Parent topic | Volume | KD | Location | {versenytárs}: Position | {versenytárs}: URL | {versenytárs}: Traffic … | (Magyar fordítás) | Traffic potential | Current position | Current URL | Category`
 
-**Content strategy workbook** — 6 sheets:
+**Tartalomstratégia munkafüzet** – 6 munkalap:
 
-1. **Summary:** strategy essence, pillars with article counts, cadence, priority logic, core SEO principles.
-2. **Keyword clusters:** `Primary keyword | Volume | KD | Intent | Pillar | Related keywords | Cluster volume | Target URL | Content type | Priority | Cannibalization rule`
-3. **6-month roadmap:** `Month | Priority | Primary keyword | Pillar | Related keywords | Volume | Location context | URL | Page type | H1/title | Content direction/main blocks | Main CTA | Internal links | Boost/social hook | Status`
-4. **Measurement plan:** `Period | Focus | What to check | Where | Success signal | Decision | Content scope | Owner | Status | Note`
-5. **PPC/Meta:** `Month | Content/hook | SEO role | Location | Meta creative | Paid role | Google Search target | Remarketing next step | KPI`
-6. **Parked topics:** `Keyword | Volume | KD | Pillar | Why not now | Recommended handling`
+1. **Összefoglaló:** a stratégia lényege, pillarok cikkszámmal, havi ritmus, prioritási logika, fő SEO-elvek.
+2. **Kulcsszóklaszterek:** `Elsődleges kulcsszó | Volume | KD | Keresési szándék | Pillar | Kapcsolódó kulcsszavak | Klaszter havi keresése | Céloldal | Javasolt tartalomtípus | Prioritás | Kannibalizációs szabály`
+3. **6 havi roadmap:** `Hónap | Prioritás | Elsődleges kulcsszó | Pillar | Kapcsolódó kulcsszavak | Havi keresés | Lokáció | Javasolt URL | Oldaltípus | H1/cím | Tartalmi irány / fő blokkok | Fő CTA | Belső linkelés | Boost / social hook | Státusz`
+4. **Mérési terv:** `Időszak | Fő fókusz | Mit nézzünk? | Hol mérjük? | Sikerjel | Döntés | Tartalmi bontás | Tulajdonos | Státusz | Megjegyzés`
+5. **PPC / Meta:** `Hónap | Tartalom / hook | SEO-szerep | Lokáció | Meta kreatív | Paid szerep | Google Search cél | Remarketing következő lépés | KPI`
+6. **Félretett témák:** `Kulcsszó | Volume | KD | Pillar | Miért nincs most a roadmapben? | Javasolt kezelés`
 
-Every sheet ends with a column-explanation block written for the client.
+Minden munkalap végén van egy oszlopmagyarázat az ügyfélnek.
 
-**Site structure / page wireframe** (service and city pages):
-- URL / SEO title / H1 matrix.
-- Page models: regional home, city hub, service × city.
-- Per model: purpose, then `# | H2/block | Task`, followed by PROOF / LINKS / LOCAL VARIATION.
-- Per block: benchmark competitor URLs.
-- The homepage content-ratio guide and the publishing minimum.
+**Oldalstruktúra / oldal-wireframe** (szolgáltatási és városi oldalak):
+- URL / SEO title / H1 mátrix.
+- Oldalmodellek: regionális főoldal, városi hub, szolgáltatás × város.
+- Modellenként: oldal célja, majd `# | H2 / blokk | Feladat`, utána PROOF / LINKS / HELYI ELTÉRÉS.
+- Blokkonként: benchmark versenytárs URL-ek.
+- A főoldal tartalmi arányai és a publikálási minimum.
 
-**Article / case-study wireframe:**
-- **Header:** URL, H1, primary keyword, volume/KD, related keywords, pillar, word count range, main CTA, and for case studies also the schema and page type.
-- **"Essence" box:** the brief in 2–4 sentences, including the language instruction (for example "research in English, US English").
-- **Flow line:** block → block → …
-- **Section table:** `# | H2 | Goal | What to write | SEO/keyword use | Internal link/CTA | Length`
-- **Internal link table:** `Where | Anchor | Target | Implementation note`
-- **Proof/input box:** stating who sources the proof.
-- **Checklists:** "Must have before delivery" and "Forbidden".
-- **Visual sequence and required inputs** (case studies).
+**Cikk / case study wireframe:**
+- **Fejléc:** URL, H1, elsődleges kulcsszó, volume/KD, kapcsolódó kulcsszavak, pillar, terjedelem, fő CTA, case studynál schema és oldaltípus is.
+- **„A lényeg” doboz:** a brief 2–4 mondatban, a nyelvi utasítással együtt (pl. „angolul kutass, amerikai angol”).
+- **Folyamatsor:** blokk → blokk → …
+- **Blokktábla:** `# | H2 | A blokk célja | Mit írjon bele? | SEO / kulcsszóhasználat | Belső link / CTA | Terjedelem`
+- **Belső linkelés tábla:** `Hol legyen? | Anchor | Cél | Kivitelezési megjegyzés`
+- **Bizonyíték / input doboz:** ki szerzi be a proofot.
+- **Checklisták:** „Kötelező a leadás előtt” és „Tilos / kerülendő”.
+- **Vizuális sorrend és kötelező inputok** (case study).
 
-**Developer brief:**
-- The decision basis.
-- Change tables: `Change | Exact task | SEO reason`.
-- The URL structure: `Page | URL | SEO role`.
-- Navigation.
-- Existing anchors → target URLs.
-- Redirect tables: `Source URL | Action (301/noindex/canonical) | Target | Verification / done-when`.
+**Fejlesztői brief:**
+- A döntési alap.
+- Módosítási táblák: `Módosítás | Pontos teendő | SEO-indok`.
+- URL-struktúra: `Oldal | URL | SEO-szerep`.
+- Navigáció.
+- Meglévő anchorok → cél URL-ek.
+- Átirányítási táblák: `Forrás URL | Művelet (301 / noindex / canonical) | Cél | Ellenőrzés / késznek akkor tekinthető`.
 
-**Writer brief (keyword mapping):**
-- General writing rules.
-- The mapping table: `Page | URL | Primary | Secondary | Intent | H1`.
-- Per-page "use / avoid".
-- Keywords explicitly *not* targeted.
-- Cannibalization rules.
-- The service-page template.
+**Szövegírói brief (kulcsszó-mapping):**
+- Általános szövegírói szabályok.
+- Mapping tábla: `Oldal | URL | Primary | Secondary | Intent | H1`.
+- Oldalanként „mit használjunk / mit ne”.
+- Kifejezetten *nem* célzott kulcsszavak.
+- Kannibalizációs szabályok.
+- Szolgáltatási aloldal-sablon.
 
-**Designer brief:**
-- The designer's responsibility boundary.
-- A required-inputs checklist.
-- Filename rules.
-- Formats per content type.
-- Export sizes, responsive crops and handoff.
+**Grafikusi brief:**
+- A grafikus felelősségének határa.
+- Kötelező inputok listája.
+- Fájlelnevezési szabályok.
+- Formátum tartalomtípusonként.
+- Exportméretek, reszponzív vágás, fejlesztői átadás.
 
-**Client proposal / PDF style** (TimeHeist): dark background, bordered cards, an accent label chip on each page, a page-number footer, short sentences.
+**Ügyfélajánlat / PDF-stílus** (TimeHeist): sötét háttér, keretezett kártyák, oldalanként színes címke, oldalszámos lábléc, rövid mondatok.
 
-### 1.6 Two things the brief should account for (recommendations)
+### 1.6 Két dolog, amivel a briefet érdemes kiegészíteni (javaslat)
 
-- **Spreadsheets are real deliverables, not just intermediates.** The keyword research is sent as a sheet the client can comment on but not edit. The strategy is a 6-sheet workbook. Exports must therefore include XLSX (and later Google Sheets) in the house layout, next to the PDFs.
-- **Work happens in two languages.** The internal team writes briefs in Hungarian, and client output is Hungarian (ideastyle.hu clients) or US English (helloprovision.com clients). Each project gets two settings:
-  - a **content language**, used for keywords, H1s, titles and client documents;
-  - a **working language**, used for internal briefs, defaulting to Hungarian.
+- **A táblázatok valódi leadandók, nem csak köztes anyagok.** A kulcsszókutatást olyan táblaként kapja az ügyfél, amelyhez megjegyzést írhat, de nem szerkesztheti. A stratégia 6 munkalapos munkafüzet. Az exportok között ezért a PDF mellett a saját elrendezésű XLSX is kell (később Google Sheets is).
+- **Két nyelven folyik a munka.** A belső csapat magyarul írja a briefeket; az ügyfélnek szóló anyag magyar (ideastyle.hu ügyfelek) vagy amerikai angol (helloprovision.com ügyfelek). Minden projekt két beállítást kap:
+  - **tartalmi nyelv:** kulcsszavak, H1-ek, címek és ügyféldokumentumok nyelve;
+  - **munkanyelv:** a belső briefek nyelve, alapból magyar.
 
 ---
 
-## 2. System architecture
+## 2. A rendszer architektúrája
 
-### 2.1 Overview
+### 2.1 Áttekintés
 
 ```
- Browser (team: Admin / SEO Mgr / Content Mgr / Designer / Developer)
-   │   same-origin, WP login cookie + REST nonce
+ Böngésző (csapat: Admin / SEO manager / Content manager / Designer / Fejlesztő)
+   │   azonos domain, WordPress login süti + REST nonce
    ▼
- WordPress  ── plugin: helloprovision-seo-os ──────────────────────────────
-   • Auth, users, roles/capabilities (WordPress is the identity provider)
-   • Serves the SPA shell at /seo-os/ (or seo.helloprovision.com, like the CRM)
-   • REST proxy  /wp-json/hpv-seo/v1/*  → FastAPI, adds signed user context
-   • Links to existing CRM clients and the client portal (reuse, not rebuild)
-   │   server-to-server HTTPS, HMAC-SHA256 signed headers
+ WordPress  ── bővítmény: helloprovision-seo-os ─────────────────────────
+   • Belépés, felhasználók, szerepkörök (a WordPress az identitásforrás)
+   • Kiszolgálja az alkalmazást a /seo-os/ címen (vagy seo.helloprovision.com, mint a CRM)
+   • REST proxy  /wp-json/hpv-seo/v1/*  → FastAPI, aláírt felhasználói adatokkal
+   • Kapcsolódik a meglévő CRM ügyfelekhez és az ügyfélportálhoz (újrahasznosítás, nem újraépítés)
+   │   szerver–szerver HTTPS, HMAC-SHA256 aláírt fejlécek
    ▼
- FastAPI service  (Python 3.12, private network only)
-   • Domain API: projects, research, keywords, clusters, pages, roadmap,
-     wireframes, documents, approvals
-   • Job runner (Postgres-backed queue) for imports, AI and document rendering
-   • Integrations: OpenAI (analysis), Anthropic Claude (documents),
-     DataForSEO, Ahrefs, later Google Search Console
-   • Renderers: HTML→PDF (WeasyPrint), DOCX (python-docx), XLSX (openpyxl)
+ FastAPI szolgáltatás  (Python 3.12, csak belső hálózaton)
+   • Szakmai API: projektek, kutatás, kulcsszavak, klaszterek, oldalak, roadmap,
+     wireframe-ek, dokumentumok, jóváhagyások
+   • Háttérfeladat-futtató (Postgres alapú sor) importhoz, AI-hoz, dokumentumgeneráláshoz
+   • Integrációk: OpenAI (elemzés), Anthropic Claude (dokumentumok),
+     DataForSEO, Ahrefs, később Google Search Console
+   • Renderelők: HTML→PDF (WeasyPrint), DOCX (python-docx), XLSX (openpyxl)
    │
    ▼
- PostgreSQL 16   (system of record)   +   file storage (local volume / S3)
+ PostgreSQL 16   (az adatok egyetlen forrása)   +   fájltár (helyi kötet / S3)
 ```
 
-### 2.2 Key decisions and why
+### 2.2 Fő döntések és indoklásuk
 
-| Decision | Choice | Reason |
+| Döntés | Választás | Indok |
 |---|---|---|
-| Where the data lives | **PostgreSQL via FastAPI only.** WordPress stores only users, roles and plugin settings. | One source of truth. WordPress stays thin, so the data can outlive the frontend. |
-| Browser → backend | **Through a WordPress REST proxy.** FastAPI is not exposed publicly. | Same origin, no CORS, and the WordPress login cookie is reused. FastAPI trusts only signed calls from WordPress. |
-| Service auth | **HMAC-SHA256 over `method + path + timestamp + body-hash + user-id`** with a shared secret and a 5-minute clock window | Simple and replay-resistant. FastAPI re-checks permissions from the role in the signed header and also keeps its own `users` mirror. |
-| Long operations | **Async jobs** in a `jobs` table (`SELECT … FOR UPDATE SKIP LOCKED`), polled by the UI | A PHP proxy must not wait minutes. No Redis or Celery is needed at this scale. |
-| Frontend tech | **Preact + htm, no build step,** the same stack as the existing CRM app (`plugins/helloprovision-portal/assets/app`) | Matches the codebase, has no toolchain to maintain, and is fast. The existing `preact-htm.js` vendor file is reused. |
-| AI split | **OpenAI** for classification, clustering, mapping and planning, with strict JSON-schema outputs. **Claude** for all narrative and document text. | As requested. Both sit behind one `llm` adapter with prompt versioning, caching and cost logging. |
-| AI vs. humans | **AI never writes final values directly.** Every AI result is stored as a *suggestion* with its reason, and a person accepts or overrides it. Approved artifacts are versioned and locked. | Automates the repetitive work while keeping the strategic decisions human. |
-| Priority | **A deterministic, explainable score** in the requested order, computed in Python from AI-classified inputs | Reproducible, auditable, and the team can tune it. The model only classifies; the code ranks. |
-| Cannibalization | **Enforced in the database:** a keyword can be *primary* on only one page (unique partial index) | Rule 6 in §1.4 becomes a hard guarantee, not a checklist item. |
-| Reuse | Link projects to the **CRM clients** table, push production tasks to **CRM tasks**, run client review through the **existing client portal** | Avoids building a second client portal and task system. |
+| Hol élnek az adatok? | **Csak PostgreSQL-ben, a FastAPI-n keresztül.** A WordPress csak a felhasználókat, szerepköröket és a bővítmény beállításait tárolja. | Egy igazságforrás. A WordPress vékony marad, az adatok túlélhetik a frontendet. |
+| Böngésző → backend | **WordPress REST proxyn keresztül.** A FastAPI nem érhető el nyilvánosan. | Azonos domain, nincs CORS, a WordPress belépés újrahasznosítható. A FastAPI csak a WordPress aláírt hívásait fogadja el. |
+| Szerverek közti hitelesítés | **HMAC-SHA256 a `metódus + útvonal + időbélyeg + törzs-hash + felhasználó-azonosító` adatokon**, közös titokkal és 5 perces időablakkal | Egyszerű, és véd a visszajátszás ellen. A FastAPI az aláírt fejlécben lévő szerepkör alapján újra ellenőrzi a jogosultságot, és saját `users` tükörtáblát is vezet. |
+| Hosszú műveletek | **Háttérfeladatok** egy `jobs` táblában (`SELECT … FOR UPDATE SKIP LOCKED`), a felület lekérdezi az állapotukat | Egy PHP proxy nem várhat perceket. Ekkora terhelésnél nem kell Redis vagy Celery. |
+| Frontend technológia | **Preact + htm, build lépés nélkül,** ugyanaz, mint a meglévő CRM alkalmazásé (`plugins/helloprovision-portal/assets/app`) | Illeszkedik a kódbázishoz, nincs karbantartandó eszközlánc, gyors. A meglévő `preact-htm.js` fájlt újrahasznosítjuk. |
+| AI munkamegosztás | **OpenAI:** osztályozás, klaszterezés, hozzárendelés, tervezés, szigorú JSON-séma kimenettel. **Claude:** minden szöveges és dokumentumtartalom. | Ahogy a brief kéri. Mindkettő egy közös `llm` adapter mögött van, prompt-verziózással, cache-sel és költségnaplóval. |
+| AI kontra ember | **Az AI soha nem ír közvetlenül végleges értéket.** Minden AI-eredmény *javaslatként* tárolódik, indoklással, és egy ember elfogadja vagy felülírja. A jóváhagyott anyagok verziózottak és zároltak. | Az ismétlődő munkát automatizálja, a stratégiai döntés emberi marad. |
+| Prioritás | **Determinisztikus, megmagyarázható pontszám** a kért sorrendben, Pythonban számolva az AI által osztályozott bemenetekből | Megismételhető, ellenőrizhető, a csapat hangolhatja. A modell csak osztályoz, a rangsort a kód adja. |
+| Kannibalizáció | **Az adatbázis kényszeríti ki:** egy kulcsszó csak egy oldalon lehet *primary* (egyedi részleges index) | Az 1.4 / 6. szabály kemény garancia lesz, nem csak checklist-pont. |
+| Újrahasznosítás | A projektek a **CRM ügyféltáblához** kapcsolódnak, a gyártási feladatok **CRM feladatokként** mennek tovább, az ügyfél-jóváhagyás a **meglévő ügyfélportálon** fut | Nem építünk második ügyfélportált és feladatkezelőt. |
 
-### 2.3 FastAPI service layout
+### 2.3 A FastAPI szolgáltatás felépítése
 
 ```
 services/seo-os-api/
   app/
-    main.py              app factory, routers, error handlers
-    config.py            pydantic-settings (DB URL, HMAC secret, API keys)
-    db.py                SQLAlchemy 2.0 engine/session
-    auth.py              HMAC verification, CurrentUser dependency, permission checks
-    permissions.py       role → capability matrix (mirrors WordPress)
-    models/              ORM models, one module per domain
-    schemas/             Pydantic request/response models
+    main.py              alkalmazás, routerek, hibakezelés
+    config.py            pydantic-settings (DB URL, HMAC titok, API kulcsok)
+    db.py                SQLAlchemy 2.0 engine / session
+    auth.py              HMAC ellenőrzés, CurrentUser függőség, jogosultságellenőrzés
+    permissions.py       szerepkör → jogosultság mátrix (a WordPress tükre)
+    models/              ORM modellek, szakterületenként egy modul
+    schemas/             Pydantic kérés/válasz modellek
     routers/             projects, dashboard, users, research, keywords, clusters,
                          pages, roadmap, wireframes, documents, approvals, jobs
     services/
-      workflow.py        project state machine + gates
-      scoring.py         priority score (deterministic)
-      importers/         ahrefs_*, gkp, screaming_frog, generic (column auto-map)
-      llm/               adapter, prompts/ (versioned), openai_client, claude_client
+      workflow.py        projekt állapotgép + jóváhagyási pontok
+      scoring.py         prioritási pontszám (determinisztikus)
+      importers/         ahrefs_*, gkp, screaming_frog, generic (automatikus oszlop-hozzárendelés)
+      llm/               adapter, prompts/ (verziózott), openai_client, claude_client
       integrations/      dataforseo, ahrefs, gsc
       renderers/         pdf (Jinja2 + WeasyPrint), docx, xlsx
-    jobs/                worker loop, job handlers
-  alembic/               migrations
-  tests/                 pytest (against a real Postgres)
+    jobs/                worker ciklus, feladatkezelők
+  alembic/               migrációk
+  tests/                 pytest (valódi Postgres ellen)
   Dockerfile, docker-compose.yml, .env.example, pyproject.toml
 ```
 
-### 2.4 AI pipeline design (Phase 3+)
+### 2.4 Az AI-folyamat (3. ütemtől)
 
-1. **Normalize.** Deterministic code merges duplicates, lowercases, strips location tokens into a `location` field, and flags "near me", "best", "vs", "cost" and similar modifiers.
-2. **Classify intent** with OpenAI, using batches of about 100 keywords and a JSON schema. The prompt includes the project business profile, the service list and the excluded topics. Results are cached by `(term, market, language, prompt_version)`, so re-runs are free.
-3. **Assess business value** (1–5) against the client's services, margins and exclusions. The output includes a one-line reason.
-4. **Cluster.** Embeddings go through agglomerative clustering, and an LLM names each cluster and picks the pillar. Each cluster is split into the five requested buckets: Commercial, Informational, Problem, Comparison, Local.
-5. **Score (code):**
+1. **Normalizálás.** Determinisztikus kód: duplikátumok összevonása, kisbetűsítés, a lokációs szavak külön `location` mezőbe, a „near me”, „best”, „vs”, „cost” és hasonló módosítók jelölése.
+2. **Szándék-osztályozás** OpenAI-jal, kb. 100 kulcsszavas csomagokban, JSON-sémával. A prompt tartalmazza a projekt üzleti profilját, a szolgáltatáslistát és a kizárt témákat. Az eredmény `(kifejezés, piac, nyelv, prompt_verzió)` szerint cache-elődik, így az újrafuttatás ingyenes.
+3. **Üzleti érték** (1–5) az ügyfél szolgáltatásai, árrései és kizárásai alapján, egysoros indoklással.
+4. **Klaszterezés.** Embeddingekből agglomeratív klaszterezés; a klasztert és a pillart az LLM nevezi el. Minden klaszter a kért öt csoportra bomlik: kereskedelmi, információs, probléma, összehasonlító, lokális.
+5. **Pontozás (kód):**
    ```
-   score = 0.35·intent_fit + 0.25·business_value + 0.20·commercial_opportunity
-         + 0.12·ease(KD) + 0.08·log_volume
+   pontszám = 0,35·szándék_illeszkedés + 0,25·üzleti_érték + 0,20·kereskedelmi_lehetőség
+            + 0,12·könnyűség(KD) + 0,08·log_volumen
    ```
-   The weights are editable per agency. Hard overrides:
-   - excluded → Parked;
-   - alternative market language → article-only.
+   A súlyok ügynökségi szinten állíthatók. Kemény felülírások:
+   - kizárt → Félretett;
+   - alternatív piaci nyelv → csak cikk.
 
-   The P1/P2/Parked thresholds are configurable.
-6. **Map.** The LLM proposes the page type and URL. Code then enforces the rules:
-   - one primary per URL;
-   - city + commercial → city landing page;
-   - informational → article linking to the service page.
+   A P1 / P2 / Félretett határértékek állíthatók.
+6. **Hozzárendelés.** Az LLM oldaltípust és URL-t javasol, a kód pedig betartatja a szabályokat:
+   - URL-enként egy primary;
+   - város + kereskedelmi → városi landing;
+   - információs → cikk, ami a szolgáltatási oldalra linkel.
 
-   The system writes a cannibalization rule for each mapping.
-7. **Plan.** The system generates the site structure, then the 6-month roadmap (at the project's cadence), then the wireframes.
-8. **Write documents** with Claude. It receives the *approved* structured data plus 1–2 reference documents from the uploaded examples, which act as style anchors. It returns section JSON, and the renderers turn that into branded PDF, DOCX or XLSX.
+   A rendszer minden hozzárendeléshez kannibalizációs szabályt ír.
+7. **Tervezés.** A rendszer elkészíti az oldalstruktúrát, majd a 6 havi roadmapet (a projekt havi ritmusával), végül a wireframe-eket.
+8. **Dokumentumírás** Claude-dal. A *jóváhagyott* strukturált adatot kapja, plusz 1–2 referenciadokumentumot a feltöltött mintákból stílus-horgonyként. Szakaszonkénti JSON-t ad vissza, amiből a renderelők márkázott PDF-et, DOCX-et vagy XLSX-et készítenek.
 
-Every call is logged in `api_logs` with tokens, cost, latency and the prompt version.
+Minden hívás bekerül az `api_logs` táblába: tokenek, költség, időtartam, prompt-verzió.
 
 ---
 
-## 3. Database schema (PostgreSQL, schema `seo`)
+## 3. Adatbázisséma (PostgreSQL, `seo` séma)
 
-Conventions:
-- `id bigserial` primary keys and `created_at`/`updated_at timestamptz`.
-- Soft-archive via `archived_at`.
-- Enumerations are `text` with `CHECK` constraints, which are easier to migrate than native enums.
-- The **Phase** column shows when each table is introduced.
+Konvenciók:
+- `id bigserial` elsődleges kulcsok és `created_at` / `updated_at timestamptz`.
+- Archiválás `archived_at` mezővel (nem törlés).
+- A felsorolások `text` típusúak `CHECK` megkötéssel, mert ezeket könnyebb migrálni, mint a natív enumokat.
+- Az **Ütem** oszlop mutatja, melyik ütemben jelenik meg a tábla.
 
-### 3.1 Identity, projects, workflow
+### 3.1 Felhasználók, projektek, munkafolyamat
 
-| Table | Key columns | Phase |
+| Tábla | Fő oszlopok | Ütem |
 |---|---|---|
-| `users` | `wp_user_id` (unique), `email`, `display_name`, `role` (admin / seo_manager / content_manager / designer / developer), `is_active`, `last_seen_at` | 1 |
-| `clients` | `name`, `crm_client_id` (nullable → CRM `hpv_clients.id`), `primary_domain`, `notes` | 1 |
-| `projects` | `client_id`, `name`, `domain`, `industry`, `market` (country code), `locations text[]`, `content_language`, `working_language`, `business_services jsonb` (name, margin: high/normal, is_priority), `target_audience`, `business_goals`, `conversion_goals`, `excluded_topics text[]`, `scope text[]` (tech_audit, tech_foundations, keyword_research, structure, content_strategy, content_mgmt, wireframes_only, link_building, monitoring), `status`, `owner_id`, `start_date`, `strategy_months` (default 6), `content_per_month`, `upsell_reminder_at`, `archived_at` | 1 |
+| `users` | `wp_user_id` (egyedi), `email`, `display_name`, `role` (admin / seo_manager / content_manager / designer / developer), `is_active`, `last_seen_at` | 1 |
+| `clients` | `name`, `crm_client_id` (lehet üres → CRM `hpv_clients.id`), `primary_domain`, `notes` | 1 |
+| `projects` | `client_id`, `name`, `domain`, `industry`, `market` (országkód), `locations text[]`, `content_language`, `working_language`, `business_services jsonb` (név, árrés: magas/normál, kiemelt-e), `target_audience`, `business_goals`, `conversion_goals`, `excluded_topics text[]`, `scope text[]` (tech_audit, tech_foundations, keyword_research, structure, content_strategy, content_mgmt, wireframes_only, link_building, monitoring), `status`, `owner_id`, `start_date`, `strategy_months` (alapból 6), `content_per_month`, `upsell_reminder_at`, `archived_at` | 1 |
 | `project_members` | `project_id`, `user_id`, `project_role` | 1 |
 | `project_competitors` | `project_id`, `domain`, `source` (client / seo / ahrefs), `is_active`, `notes` | 1 |
 | `seed_keywords` | `project_id`, `keyword`, `kind` (service / customer_term / location / high_margin / excluded / product) | 1 |
@@ -349,77 +349,77 @@ Conventions:
 | `status_history` | `project_id`, `from_status`, `to_status`, `user_id`, `note`, `at` | 1 |
 | `activity_log` | `project_id`, `user_id`, `entity`, `entity_id`, `action`, `diff jsonb`, `at` | 1 |
 | `business_profiles` | `project_id`, `version`, `positioning`, `services jsonb`, `audiences jsonb`, `differentiators`, `proof_assets jsonb`, `source` (ai / manual), `approved_by`, `approved_at` | 3 |
-| `style_guides` | `project_id`, `answers jsonb` (the 11 questions of the style-guide template), `received_at` | 2 |
+| `style_guides` | `project_id`, `answers jsonb` (a Stílusbeli irányelvek sablon 11 kérdése), `received_at` | 2 |
 
-**Project status** (as requested):
+**Projektstátusz** (ahogy a brief kéri):
 
-`draft → researching → ai_analysis_complete → seo_review → client_review → approved → production → completed`
+`draft (vázlat) → researching (kutatás) → ai_analysis_complete (AI-elemzés kész) → seo_review (SEO-ellenőrzés) → client_review (ügyfél-ellenőrzés) → approved (jóváhagyva) → production (gyártás) → completed (kész)`
 
-The state machine allows going back from `client_review` to `seo_review` when the client requests changes. It also has an `on_hold` flag that does not count as a status.
+Az állapotgép engedi a visszalépést `client_review`-ból `seo_review`-ba, ha az ügyfél módosítást kér. Van egy `on_hold` (szünetel) jelző is, ami nem számít külön státusznak.
 
-Real projects have **several client gates** (keyword research, structure, strategy, content). These live in `approvals` (§3.5), and the project status advances when the gates for its scope pass. The status stays a readable summary, while the gates hold the detail.
+A valós projekteknek **több ügyfél-jóváhagyási pontjuk** van (kulcsszókutatás, struktúra, stratégia, tartalom). Ezek az `approvals` táblában élnek (3.5), és a projektstátusz akkor lép tovább, ha a projekt terjedelméhez tartozó jóváhagyások megvannak. A státusz olvasható összefoglaló marad, a részleteket a jóváhagyások tárolják.
 
-### 3.2 Research
+### 3.2 Kutatás
 
-| Table | Key columns | Phase |
+| Tábla | Fő oszlopok | Ütem |
 |---|---|---|
 | `files` | `project_id`, `kind` (import / reference_doc / export), `filename`, `mime`, `size`, `storage_key`, `sha256`, `uploaded_by` | 2 |
 | `imports` | `project_id`, `file_id`, `source` (ahrefs_keywords / ahrefs_organic / ahrefs_content_gap / ahrefs_matching_terms / gkp / screaming_frog / manual), `sheet`, `location`, `column_map jsonb`, `row_count`, `status`, `error` | 2 |
-| `keywords` | `project_id`, `term`, `term_normalized` (unique per project), `translation`, `parent_topic`, `category`, `is_excluded`, `exclusion_reason`, `first_import_id` | 2 |
-| `keyword_metrics` | `keyword_id`, `location` (null = national), `volume`, `kd`, `cpc`, `traffic_potential`, `source`, `fetched_at`; unique `(keyword_id, location, source)` | 2 |
+| `keywords` | `project_id`, `term`, `term_normalized` (projekten belül egyedi), `translation`, `parent_topic`, `category`, `is_excluded`, `exclusion_reason`, `first_import_id` | 2 |
+| `keyword_metrics` | `keyword_id`, `location` (üres = országos), `volume`, `kd`, `cpc`, `traffic_potential`, `source`, `fetched_at`; egyedi `(keyword_id, location, source)` | 2 |
 | `competitor_rankings` | `keyword_id`, `competitor_id`, `location`, `position`, `url`, `traffic`, `source`, `fetched_at` | 2 |
 | `own_rankings` | `keyword_id`, `location`, `position`, `url`, `source` (ahrefs / gsc), `fetched_at` | 2 |
 | `serp_snapshots` | `keyword_id`, `location`, `serp jsonb`, `features text[]`, `fetched_at` | 5 |
-| `audit_issues` *(optional module)* | `project_id`, `import_id`, `issue_type`, `url`, `detail jsonb`, `size` (XL / M / S) | 5+ |
+| `audit_issues` *(opcionális modul)* | `project_id`, `import_id`, `issue_type`, `url`, `detail jsonb`, `size` (XL / M / S) | 5+ |
 
-### 3.3 Keyword intelligence
+### 3.3 Kulcsszó-intelligencia
 
-| Table | Key columns | Phase |
+| Tábla | Fő oszlopok | Ütem |
 |---|---|---|
 | `keyword_analysis` | `keyword_id` (PK), `intent` (informational / commercial_investigation / commercial / transactional / navigational / problem / mixed), `modifiers text[]`, `is_local`, `business_value` 1–5, `commercial_opportunity` 1–5, `priority` (P1 / P2 / parked), `priority_score numeric`, `cluster_id`, `role` (primary / secondary / supporting), `reason`, `notes`, `status` (suggested / accepted / overridden), `reviewed_by`, `reviewed_at` | 3 |
 | `ai_suggestions` | `project_id`, `entity`, `entity_id`, `field`, `value jsonb`, `reason`, `model`, `prompt_version`, `job_id`, `status` (pending / accepted / rejected) | 3 |
 | `clusters` | `project_id`, `name`, `pillar`, `bucket` (commercial / informational / problem / comparison / local), `intent`, `total_volume`, `priority`, `target_page_id`, `cannibalization_rule`, `notes` | 3 |
 | `parked_topics` | `project_id`, `keyword_id`, `reason`, `recommended_handling`, `revisit_after` | 3 |
 
-### 3.4 Structure, strategy, wireframes
+### 3.4 Struktúra, stratégia, wireframe-ek
 
-| Table | Key columns | Phase |
+| Tábla | Fő oszlopok | Ütem |
 |---|---|---|
 | `pages` | `project_id`, `url`, `page_type` (home / city_hub / service / city_service / article / case_study / pillar_hub / category / product / support), `parent_page_id`, `location`, `h1`, `seo_title`, `meta_description`, `intent`, `seo_goal`, `cta_label`, `cta_url`, `priority` (P1 / P2 / hub / support), `lifecycle` (existing / new / redirect / merge / remove), `schema_types text[]`, `word_count_min`, `word_count_max`, `notes`, `version` | 3 |
-| `page_keywords` | `page_id`, `keyword_id`, `role` (primary / secondary / supporting); **unique `(keyword_id)` where `role='primary'`** | 3 |
-| `internal_links` | `project_id`, `from_page_id`, `to_page_id` or `to_url`, `anchor`, `placement`, `link_type` (menu / button / card / text), `wireframe_section_id`, `note` | 3 |
+| `page_keywords` | `page_id`, `keyword_id`, `role` (primary / secondary / supporting); **egyedi `(keyword_id)`, ahol `role='primary'`** | 3 |
+| `internal_links` | `project_id`, `from_page_id`, `to_page_id` vagy `to_url`, `anchor`, `placement`, `link_type` (menu / button / card / text), `wireframe_section_id`, `note` | 3 |
 | `roadmap_items` | `project_id`, `month date`, `priority`, `page_id`, `cluster_id`, `content_type` (article / case_study / service / pillar / category), `title`, `content_direction`, `location_context`, `cta`, `social_hook`, `client_input`, `status` (planned / wireframe / writing / qa / client / published), `assignee_id`, `due_date` | 3 |
 | `measurement_plan` | `project_id`, `period`, `focus`, `what`, `where_measured`, `success_signal`, `decision`, `content_scope`, `owner`, `status`, `note` | 3 |
 | `paid_plan_items` | `project_id`, `roadmap_item_id`, `seo_role`, `meta_creative`, `paid_role`, `search_target`, `remarketing_next`, `kpi` | 3 |
 | `wireframes` | `page_id`, `version`, `essence`, `flow text[]`, `language_note`, `proof_requirements`, `must_have text[]`, `forbidden text[]`, `visual_sequence`, `status`, `approved_by`, `approved_at` | 3 |
 | `wireframe_sections` | `wireframe_id`, `position`, `h2`, `goal`, `what_to_write`, `seo_usage`, `link_cta`, `length_min`, `length_max`, `benchmark_urls text[]`, `local_variation` | 3 |
 | `wireframe_inputs` | `wireframe_id`, `item`, `description`, `provided` | 3 |
-| `production_tasks` | `project_id`, `page_id`, `role` (seo / writer / developer / designer), `priority` (P1 / P2 / P3 or XL / M / S), `title`, `source_url`, `action`, `target_url`, `done_when`, `status`, `crm_task_id` | 4 |
+| `production_tasks` | `project_id`, `page_id`, `role` (seo / writer / developer / designer), `priority` (P1 / P2 / P3 vagy XL / M / S), `title`, `source_url`, `action`, `target_url`, `done_when`, `status`, `crm_task_id` | 4 |
 
-### 3.5 Documents, approvals, logs
+### 3.5 Dokumentumok, jóváhagyások, naplók
 
-| Table | Key columns | Phase |
+| Tábla | Fő oszlopok | Ütem |
 |---|---|---|
-| `documents` | `project_id`, `doc_type` (seo_strategy / content_strategy / roadmap / wireframe_deck / keyword_research / structure / dev_brief / writer_brief / designer_brief / seo_checklist), `audience` (client / internal), `language`, `version`, `status` (draft / review / approved / sent), `title`, `content jsonb` (sections), `source_hash` (hash of the data it was built from, to detect stale documents), `model`, `prompt_version`, `created_by` | 4 |
+| `documents` | `project_id`, `doc_type` (seo_strategy / content_strategy / roadmap / wireframe_deck / keyword_research / structure / dev_brief / writer_brief / designer_brief / seo_checklist), `audience` (client / internal), `language`, `version`, `status` (draft / review / approved / sent), `title`, `content jsonb` (szakaszok), `source_hash` (annak az adatnak a hash-e, amiből készült; ebből látszik, ha elavult), `model`, `prompt_version`, `created_by` | 4 |
 | `document_files` | `document_id`, `format` (pdf / docx / xlsx), `file_id` | 4 |
-| `reference_docs` | `doc_type`, `language`, `file_id`, `extracted_text`, `is_active`. These are the uploaded house examples, used as style anchors for Claude. | 4 |
+| `reference_docs` | `doc_type`, `language`, `file_id`, `extracted_text`, `is_active`. A feltöltött saját minták, Claude ezekből veszi a stílust. | 4 |
 | `prompt_templates` | `key`, `version`, `provider`, `model`, `body`, `json_schema`, `is_active` | 3 |
-| `approvals` | `project_id`, `subject_type` (keyword_research / structure / content_strategy / wireframe / document / content), `subject_id`, `subject_version`, `stage` (internal / client), `status` (pending / approved / changes_requested), `requested_by`, `decided_by`, `decided_at`, `comment` | 6 (minimal version in 4) |
+| `approvals` | `project_id`, `subject_type` (keyword_research / structure / content_strategy / wireframe / document / content), `subject_id`, `subject_version`, `stage` (internal / client), `status` (pending / approved / changes_requested), `requested_by`, `decided_by`, `decided_at`, `comment` | 6 (egyszerű változat a 4.-ben) |
 | `comments` | `project_id`, `subject_type`, `subject_id`, `author_id`, `is_client`, `body`, `resolved_at` | 6 |
 | `notifications` | `user_id`, `project_id`, `kind`, `payload`, `read_at`, `emailed_at` | 6 |
 | `jobs` | `project_id`, `type`, `payload jsonb`, `status` (queued / running / done / failed), `progress`, `attempts`, `result jsonb`, `error`, `created_by`, `started_at`, `finished_at` | 2 |
-| `api_logs` | `project_id`, `job_id`, `provider` (openai / anthropic / ahrefs / dataforseo / gsc), `endpoint`, `model`, `request_hash`, `status_code`, `tokens_in`, `tokens_out`, `units`, `cost_usd`, `duration_ms`, `error`, `created_at` | 1 (table only), used from 3 |
+| `api_logs` | `project_id`, `job_id`, `provider` (openai / anthropic / ahrefs / dataforseo / gsc), `endpoint`, `model`, `request_hash`, `status_code`, `tokens_in`, `tokens_out`, `units`, `cost_usd`, `duration_ms`, `error`, `created_at` | 1 (csak a tábla), használat a 3.-tól |
 
 ---
 
-## 4. UI structure
+## 4. A felület felépítése
 
-### 4.1 Shell and design system
+### 4.1 Keret és design rendszer
 
-- **Layout:** a left sidebar (collapsible, icons plus labels), a top bar (project switcher, ⌘K search, job indicator, user menu), and the content area. At phone width the sidebar becomes a bottom sheet.
-- **Theme tokens** (dark, khaki/olive accent; final values are tuned at build time):
+- **Elrendezés:** bal oldali sáv (összecsukható, ikon + felirat), felső sáv (projektváltó, ⌘K keresés, háttérfeladat-jelző, felhasználói menü), tartalomterület. Mobilon az oldalsáv alulról felcsúszó panel lesz.
+- **Színek** (sötét, khaki/olíva kiemelőszín; a végleges értékek fejlesztés közben finomodnak):
 
-  | Token | Value |
+  | Token | Érték |
   |---|---|
   | `--bg` | `#0b0b0a` |
   | `--surface` | `#131311` |
@@ -428,194 +428,194 @@ Real projects have **several client gates** (keyword research, structure, strate
   | `--ink` | `#ecebe4` |
   | `--muted` | `#9a998d` |
   | `--accent` | `#b3b07a` (khaki) |
-  | `--accent-strong` | `#8f8f4e` (olive) |
+  | `--accent-strong` | `#8f8f4e` (olíva) |
   | `--accent-ink` | `#16160f` |
   | `--ok` | `#8fbf6a` |
   | `--warn` | `#d9b35c` |
   | `--danger` | `#d9695c` |
 
-- **Typography:** Inter or Satoshi, 14px base, tabular numerals in data tables.
-- **Components:**
-  - status pill and 8-step workflow stepper;
-  - data table with column filters and saved views;
-  - side panel editor;
-  - suggestion chip with accept/override (for AI values);
-  - approval banner;
-  - empty states that say what unlocks the tab.
-- **Role colors** match the house convention: SEO = green, writer = blue, developer = orange, designer = violet. They appear on task chips.
+- **Tipográfia:** Inter vagy Satoshi, 14 px alapméret, táblázatokban azonos szélességű számjegyek.
+- **Komponensek:**
+  - státuszcímke és 8 lépéses munkafolyamat-jelző;
+  - adattábla oszlopszűrőkkel és mentett nézetekkel;
+  - oldalpaneles szerkesztő;
+  - javaslat-címke elfogadás / felülírás gombbal (AI-értékekhez);
+  - jóváhagyási sáv;
+  - üres állapotok, amelyek megmondják, mi nyitja meg az adott fület.
+- **Szerepkör-színek** a meglévő belső konvenció szerint: SEO = zöld, szövegíró = kék, fejlesztő = narancs, designer = lila. A feladatcímkéken jelennek meg.
 
-### 4.2 Screens
+### 4.2 Képernyők
 
-| Screen | Contents | Phase |
+| Képernyő | Tartalom | Ütem |
 |---|---|---|
-| **Dashboard** | Active projects (client, status stepper, next gate, owner). My pending approvals and reviews. Recently generated documents. This month's roadmap items due. Intake items still missing. Upsell reminders (month 5). | 1 (docs and roadmap widgets fill in later) |
-| **Projects** | Table and board by status. Filters: status, owner, scope, market. | 1 |
-| **New project** | A 3-step form: 1) client and domain (with a CRM client picker); 2) business (industry, market, locations, services with high-margin flag, audience, goals, exclusions); 3) scope (the sold services), competitors, seed keywords by kind. | 1 |
-| **Project → Overview** | Business profile, scope, team, intake checklist (§1.3), workflow stepper with transition buttons, status history, activity. | 1 |
-| **Project → Research** | File uploads (Ahrefs / GKP / SF) with column mapping preview, import history, competitor list, API fetch buttons (Phase 5). | 2 |
-| **Project → Keywords** | A keyword × location grid. Columns: volume, KD, intent, cluster, priority, primary/secondary, recommended URL, notes, and competitor positions (toggle). Supports bulk actions, exclusions, "accept all suggestions in view", and cluster and bucket views. | 2 → 3 |
-| **Project → Structure** | Sitemap tree plus the URL / title / H1 matrix. Page panel: type, primary and secondary keywords, intent, SEO goal, H1, CTA. Also the internal-link map and cannibalization warnings. | 3 |
-| **Project → Content Strategy** | The 6-month roadmap (month columns or table), clusters, measurement plan, paid/Meta plan, parked topics. | 3 |
-| **Project → Wireframes** | A list per page, and an editor that mirrors the house wireframe format (§1.5). | 3 |
-| **Project → Documents** | Client and internal documents with generate / regenerate, a "stale" badge when the data changed, versions, and an approval state. | 4 |
-| **Project → Exports** | PDF / DOCX / XLSX downloads in the house layouts, a Google Sheets link (later), and a push of tasks to the CRM. | 4 |
-| **My work** | A role-filtered task and wireframe list across projects. It is the landing page for Designer and Developer. | 3–4 |
-| **Settings** (admin) | Team and roles, API keys (stored server-side and shown masked), scoring weights, prompt templates, reference documents, branding. | 1 (team), later the rest |
+| **Vezérlőpult** | Aktív projektek (ügyfél, státuszjelző, következő jóváhagyás, felelős). Rám váró jóváhagyások és ellenőrzések. Friss dokumentumok. E havi esedékes roadmap-tételek. Hiányzó bekérendő anyagok. Upsell-emlékeztetők (5. hónap). | 1 (a dokumentum- és roadmap-dobozok később telnek meg) |
+| **Projektek** | Tábla és státusz szerinti tábla-nézet. Szűrők: státusz, felelős, terjedelem, piac. | 1 |
+| **Új projekt** | 3 lépéses űrlap: 1) ügyfél és domain (CRM ügyfélválasztóval); 2) üzlet (iparág, piac, lokációk, szolgáltatások magas árrés jelöléssel, célközönség, célok, kizárások); 3) terjedelem (eladott szolgáltatások), versenytársak, kiinduló kulcsszavak típus szerint. | 1 |
+| **Projekt → Áttekintés** | Üzleti profil, terjedelem, csapat, bekérési checklist (1.3), munkafolyamat-jelző státuszváltó gombokkal, státusztörténet, tevékenység. | 1 |
+| **Projekt → Kutatás** | Fájlfeltöltés (Ahrefs / GKP / SF) oszlop-hozzárendelési előnézettel, importtörténet, versenytárslista, API-lekérés gombok (5. ütem). | 2 |
+| **Projekt → Kulcsszavak** | Kulcsszó × lokáció tábla. Oszlopok: volume, KD, szándék, klaszter, prioritás, primary / secondary, javasolt URL, megjegyzés, versenytárs-pozíciók (kapcsolható). Tömeges műveletek, kizárás, „a nézet összes javaslatának elfogadása”, klaszter- és csoportnézet. | 2 → 3 |
+| **Projekt → Struktúra** | Oldaltérkép-fa plus URL / title / H1 mátrix. Oldalpanel: típus, primary és secondary kulcsszavak, szándék, SEO-cél, H1, CTA. Belső linktérkép és kannibalizációs figyelmeztetések. | 3 |
+| **Projekt → Tartalomstratégia** | 6 havi roadmap (havi oszlopok vagy tábla), klaszterek, mérési terv, paid / Meta terv, félretett témák. | 3 |
+| **Projekt → Wireframe-ek** | Oldalankénti lista és szerkesztő, amely a saját wireframe-formátumot követi (1.5). | 3 |
+| **Projekt → Dokumentumok** | Ügyfél- és belső dokumentumok generálás / újragenerálás gombbal, „elavult” jelzéssel, ha az adat változott, verziókkal és jóváhagyási állapottal. | 4 |
+| **Projekt → Exportok** | PDF / DOCX / XLSX letöltés a saját elrendezésekben, Google Sheets link (később), feladatok küldése a CRM-be. | 4 |
+| **Saját munkáim** | Szerepkör szerint szűrt feladat- és wireframe-lista az összes projektből. A Designer és a Fejlesztő ezzel a képernyővel indul. | 3–4 |
+| **Beállítások** (admin) | Csapat és szerepkörök, API kulcsok (a szerveren tárolva, maszkolva megjelenítve), pontozási súlyok, prompt sablonok, referenciadokumentumok, arculat. | 1 (csapat), a többi később |
 
-### 4.3 Role visibility
+### 4.3 Láthatóság szerepkörönként
 
-| Capability | Admin | SEO Manager | Content Manager | Designer | Developer |
+| Jogosultság | Admin | SEO manager | Content manager | Designer | Fejlesztő |
 |---|:-:|:-:|:-:|:-:|:-:|
-| Create / edit projects, intake | ✓ | ✓ | – | – | – |
-| Change project status | ✓ | ✓ | only `production → completed` | – | – |
-| Research, keywords, clusters, structure (edit) | ✓ | ✓ | view | view (structure) | view (structure) |
-| Approve strategy / structure (internal gate) | ✓ | ✓ | – | – | – |
-| Content strategy, roadmap | ✓ | ✓ | ✓ edit status/assignee | – | – |
-| Wireframes | ✓ | ✓ | ✓ | view | view |
-| Writer briefs / content QA | ✓ | ✓ | ✓ | – | – |
-| Designer brief | ✓ | ✓ | ✓ | view | – |
-| Developer brief, technical tasks | ✓ | ✓ | view | – | view + update task status |
-| Generate documents | ✓ | ✓ | writer briefs only | – | – |
-| Settings, API keys, team | ✓ | – | – | – | – |
+| Projektek és bekérés létrehozása / szerkesztése | ✓ | ✓ | – | – | – |
+| Projektstátusz váltása | ✓ | ✓ | csak `production → completed` | – | – |
+| Kutatás, kulcsszavak, klaszterek, struktúra (szerkesztés) | ✓ | ✓ | megtekintés | megtekintés (struktúra) | megtekintés (struktúra) |
+| Stratégia / struktúra jóváhagyása (belső) | ✓ | ✓ | – | – | – |
+| Tartalomstratégia, roadmap | ✓ | ✓ | ✓ státusz / felelős szerkesztése | – | – |
+| Wireframe-ek | ✓ | ✓ | ✓ | megtekintés | megtekintés |
+| Szövegírói briefek / tartalom ellenőrzése | ✓ | ✓ | ✓ | – | – |
+| Grafikusi brief | ✓ | ✓ | ✓ | megtekintés | – |
+| Fejlesztői brief, technikai feladatok | ✓ | ✓ | megtekintés | – | megtekintés + feladatstátusz frissítése |
+| Dokumentumgenerálás | ✓ | ✓ | csak szövegírói briefek | – | – |
+| Beállítások, API kulcsok, csapat | ✓ | – | – | – | – |
 
 ---
 
-## 5. Development roadmap
+## 5. Fejlesztési ütemterv
 
-The phase order follows the brief. Phase 3 is split into 3a and 3b because the planning work is a large, separate step.
+Az ütemek sorrendje a briefet követi. A 3. ütem két részre (3a, 3b) bomlik, mert a tervezés külön nagy lépés.
 
-| Phase | Scope | Main result for the team |
+| Ütem | Tartalom | Mit nyer vele a csapat? |
 |---|---|---|
-| **1. Foundation** | WordPress plugin (roles, SPA shell, REST proxy, settings). FastAPI + Postgres skeleton with migrations. Users sync, clients (linked to CRM), projects with intake, competitors, seed keywords, and scope. Workflow state machine with history. Dashboard and project Overview. Dark design system. | Projects and intake move out of email and Excel. Everyone sees status and next steps. |
-| **2. Research system** | File storage and upload. Import parsers for Ahrefs (keywords, organic, matching terms, content gap), Google Keyword Planner and Screaming Frog, with a generic column auto-map and preview. Keyword database with keyword × location metrics, competitor rankings, dedupe/merge, exclusions and translation. Keywords grid. **XLSX export in the house "Kulcsszókutatás" layout.** Style-guide questionnaire. Jobs table and worker. | Assembling the keyword research sheet goes from hours to minutes. |
-| **3a. AI keyword intelligence** | LLM adapter with prompt versioning, caching and cost logs. Business profile (from a site crawl plus the intake). Intent classification, business value, clustering into 5 buckets, deterministic priority score, and the suggestion/accept UI. | First-pass classification, clustering and prioritization, which the SEO manager reviews rather than builds. |
-| **3b. AI planning** | URL mapping with DB-enforced cannibalization rules, site structure generator (page models, URL / title / H1 matrix, internal links), 6-month roadmap generator (cadence-aware, with parked topics, measurement and paid plan), and wireframe generator in the house format. | Structure, strategy and wireframes arrive pre-drafted and follow the house rules. |
-| **4. Claude document engine** | Reference-document library, Claude section generation, renderers: PDF (branded HTML → WeasyPrint), DOCX (wireframe, dev, writer and designer briefs as house-style tables), XLSX (the 6-sheet strategy workbook). Stale-document detection, versions, a minimal internal approval step, production tasks, and a push to CRM tasks. | Client and internal documents are generated from approved data. |
-| **5. API integrations** | DataForSEO (volumes per location to replace the manual GKP exports, SERP data, related keywords). Ahrefs API v3 (competitor organic keywords, content gap, backlinks, traffic). Per-project budget caps and response caching. Optionally, a Screaming Frog import → technical audit summary. | No more manual exports. Research refreshes with one click. |
-| **6. Advanced workflow** | Full approvals (internal and client). Client review in the **existing client portal**: comment-only keyword view and approve/request changes. Notifications (email and CRM chat). Upsell reminder. Monthly report scaffolding. Later: Google Search Console integration for the measurement plan. | Closes the loop from proposal to monitoring. |
+| **1. Alapok** | WordPress bővítmény (szerepkörök, alkalmazáskeret, REST proxy, beállítások). FastAPI + Postgres alap migrációkkal. Felhasználó-szinkron, ügyfelek (CRM-hez kötve), projektek bekéréssel, versenytársakkal, kiinduló kulcsszavakkal és terjedelemmel. Munkafolyamat-állapotgép előzményekkel. Vezérlőpult és projekt-áttekintés. Sötét design rendszer. | A projektek és a bekérés kikerül az e-mailből és az Excelből. Mindenki látja a státuszt és a következő lépést. |
+| **2. Kutatási rendszer** | Fájltár és feltöltés. Import Ahrefs (keywords, organic, matching terms, content gap), Google Keyword Planner és Screaming Frog fájlokból, általános automatikus oszlop-hozzárendeléssel és előnézettel. Kulcsszó-adatbázis kulcsszó × lokáció mérőszámokkal, versenytárs-pozíciókkal, összevonással, kizárással és fordítással. Kulcsszótábla. **XLSX export a saját „Kulcsszókutatás” elrendezésben.** Stílusbeli irányelvek kérdőív. Jobs tábla és worker. | A kulcsszókutatás táblázat összerakása órák helyett percekig tart. |
+| **3a. AI kulcsszó-intelligencia** | LLM adapter prompt-verziózással, cache-sel és költségnaplóval. Üzleti profil (oldal-crawl + bekérés alapján). Szándék-osztályozás, üzleti érték, klaszterezés 5 csoportba, determinisztikus prioritási pontszám, javaslat / elfogadás felület. | Az első körös osztályozást, klaszterezést és priorizálást az SEO manager átnézi, nem nulláról építi. |
+| **3b. AI tervezés** | URL-hozzárendelés adatbázisszinten kikényszerített kannibalizációs szabályokkal, oldalstruktúra-generátor (oldalmodellek, URL / title / H1 mátrix, belső linkek), 6 havi roadmap-generátor (havi ritmussal, félretett témákkal, mérési és paid tervvel), wireframe-generátor a saját formátumban. | A struktúra, a stratégia és a wireframe-ek előre megírt vázlatként érkeznek, a saját szabályok szerint. |
+| **4. Claude dokumentummotor** | Referenciadokumentum-könyvtár, Claude szakaszgenerálás, renderelők: PDF (márkázott HTML → WeasyPrint), DOCX (wireframe, fejlesztői, szövegírói és grafikusi brief a saját táblázatos stílusban), XLSX (6 munkalapos stratégiai munkafüzet). Elavult dokumentum jelzése, verziók, egyszerű belső jóváhagyás, gyártási feladatok, küldés CRM feladatokba. | Az ügyfél- és belső dokumentumok jóváhagyott adatból készülnek. |
+| **5. API integrációk** | DataForSEO (lokációnkénti volumen a kézi GKP exportok helyett, SERP adatok, kapcsolódó kulcsszavak). Ahrefs API v3 (versenytársak organikus kulcsszavai, content gap, backlinkek, forgalom). Projektenkénti költségkeret és válasz-cache. Opcionálisan: Screaming Frog import → technikai audit összefoglaló. | Nincs több kézi export. A kutatás egy kattintással frissül. |
+| **6. Haladó munkafolyamat** | Teljes jóváhagyási rendszer (belső és ügyfél). Ügyfél-jóváhagyás a **meglévő ügyfélportálon**: csak megjegyzésre jogosító kulcsszónézet, jóváhagyás / módosításkérés. Értesítések (e-mail és CRM chat). Upsell-emlékeztető. Havi riport alap. Később Google Search Console integráció a mérési tervhez. | Bezárul a kör az ajánlattól a monitoringig. |
 
 ---
 
-## 6. Phase 1 implementation plan
+## 6. Az 1. ütem megvalósítási terve
 
-### 6.1 Architecture of Phase 1
+### 6.1 Az 1. ütem felépítése
 
 ```
-plugins/helloprovision-seo-os/             WordPress plugin
-  helloprovision-seo-os.php                bootstrap, constants, activation (roles/caps)
-  includes/roles.php                       5 roles + capability map, admin gets all
-  includes/settings.php                    API base URL, shared secret, route/subdomain
-  includes/signing.php                     HMAC request signing (pure PHP, unit-tested)
+plugins/helloprovision-seo-os/             WordPress bővítmény
+  helloprovision-seo-os.php                betöltés, konstansok, aktiválás (szerepkörök / jogosultságok)
+  includes/roles.php                       5 szerepkör + jogosultságtérkép, az admin mindent kap
+  includes/settings.php                    API alap-URL, közös titok, útvonal / aldomain
+  includes/signing.php                     HMAC kérés-aláírás (tiszta PHP, unit tesztelt)
   includes/proxy.php                       /wp-json/hpv-seo/v1/{path} → FastAPI (GET/POST/PATCH/DELETE)
-  includes/app.php                         renders the SPA shell at /seo-os/ (noindex, logged-in only)
-  includes/users.php                       pushes user/role changes to FastAPI (profile_update, set_user_role)
-  assets/app/app.js                        router, API client, layout
-  assets/app/ui.js                         shared components (table, pill, stepper, panel, form)
+  includes/app.php                         az alkalmazáskeret a /seo-os/ címen (noindex, csak belépve)
+  includes/users.php                       felhasználó- és szerepkör-változások küldése a FastAPI-nak
+  assets/app/app.js                        útválasztó, API kliens, elrendezés
+  assets/app/ui.js                         közös komponensek (tábla, címke, lépésjelző, panel, űrlap)
   assets/app/views/dashboard.js
-  assets/app/views/projects.js             list + board
-  assets/app/views/project-new.js          3-step form
-  assets/app/views/project.js              header + tabs; Overview live, other tabs show "unlocks in Phase N"
-  assets/app/views/settings.js             team & roles (read-only list from WP + role)
-  assets/app/app.css                       dark design tokens + components
-  assets/app/vendor/preact-htm.js          same vendor file as the CRM
+  assets/app/views/projects.js             lista + tábla-nézet
+  assets/app/views/project-new.js          3 lépéses űrlap
+  assets/app/views/project.js              fejléc + fülek; az Áttekintés működik, a többi fül „az N. ütemben nyílik”
+  assets/app/views/settings.js             csapat és szerepkörök (csak olvasható lista a WP-ből)
+  assets/app/app.css                       sötét design tokenek + komponensek
+  assets/app/vendor/preact-htm.js          ugyanaz a fájl, mint a CRM-ben
 
-services/seo-os-api/                       FastAPI service
+services/seo-os-api/                       FastAPI szolgáltatás
   app/{main,config,db,auth,permissions}.py
   app/models/{user,client,project,workflow,log}.py
   app/schemas/{user,client,project,dashboard}.py
   app/routers/{health,users,clients,projects,workflow,dashboard}.py
-  app/services/workflow.py                 state machine, allowed transitions per role, history
+  app/services/workflow.py                 állapotgép, szerepkörönként engedett váltások, előzmények
   alembic/versions/0001_foundation.py
   tests/{conftest,test_auth,test_projects,test_workflow,test_dashboard}.py
   Dockerfile, docker-compose.yml (api + postgres), .env.example, pyproject.toml
 
-tests/seo-os.php                           PHP tests (no WordPress): signing, capability map, proxy path whitelist
-docs/seo-os/ARCHITECTURE.md                this document
-README.md                                  new section: install, configure, run
+tests/seo-os.php                           PHP tesztek (WordPress nélkül): aláírás, jogosultságtérkép, proxy útvonal-fehérlista
+docs/seo-os/ARCHITECTURE.md                ez a dokumentum
+README.md                                  új szakasz: telepítés, beállítás, futtatás
 ```
 
-### 6.2 Database changes (migration `0001_foundation`)
+### 6.2 Adatbázis-változások (`0001_foundation` migráció)
 
-- **Tables:** `users`, `clients`, `projects`, `project_members`, `project_competitors`, `seed_keywords`, `intake_items`, `status_history`, `activity_log`, `api_logs` (empty, ready for later phases).
-- **Constraints:**
-  - `CHECK` on status and roles;
-  - unique `users.wp_user_id`;
-  - unique `(project_id, lower(domain))` on competitors;
-  - unique `(project_id, lower(keyword))` on seed keywords.
-- **Indexes:** `projects(status)`, `projects(owner_id)`, `status_history(project_id, at)`, `activity_log(project_id, at)`.
-- **Seed data:** new projects automatically get the 8 intake items (§1.3). Items that don't apply to the scope start as `n_a`.
+- **Táblák:** `users`, `clients`, `projects`, `project_members`, `project_competitors`, `seed_keywords`, `intake_items`, `status_history`, `activity_log`, `api_logs` (üres, a későbbi ütemekhez előkészítve).
+- **Megkötések:**
+  - `CHECK` a státuszokon és szerepkörökön;
+  - egyedi `users.wp_user_id`;
+  - egyedi `(project_id, lower(domain))` a versenytársaknál;
+  - egyedi `(project_id, lower(keyword))` a kiinduló kulcsszavaknál.
+- **Indexek:** `projects(status)`, `projects(owner_id)`, `status_history(project_id, at)`, `activity_log(project_id, at)`.
+- **Alapadatok:** új projekt létrehozásakor automatikusan létrejön a 8 bekérési tétel (1.3). A terjedelemhez nem tartozó tételek `n_a` állapotban indulnak.
 
-WordPress stores only its plugin option (`hpv_seo_os_settings`) and the roles. It creates **no WordPress database tables.**
+A WordPress csak a bővítmény beállítását (`hpv_seo_os_settings`) és a szerepköröket tárolja. **Nem hoz létre WordPress adatbázistáblát.**
 
-### 6.3 API endpoints (Phase 1)
+### 6.3 API végpontok (1. ütem)
 
 ```
 GET    /health
-GET    /me                                   current user + capabilities
-GET    /users                                team list (admin)
-PUT    /users/{wp_user_id}                   upsert from WordPress (called by the plugin)
+GET    /me                                   aktuális felhasználó + jogosultságok
+GET    /users                                csapatlista (admin)
+PUT    /users/{wp_user_id}                   frissítés a WordPressből (a bővítmény hívja)
 GET    /clients?search=  POST /clients  PATCH /clients/{id}
 GET    /projects?status=&owner=&q=
-POST   /projects                             create (+ intake items, competitors, seeds)
-GET    /projects/{id}                        full overview payload
+POST   /projects                             létrehozás (+ bekérési tételek, versenytársak, kiinduló kulcsszavak)
+GET    /projects/{id}                        teljes áttekintő adat
 PATCH  /projects/{id}
 POST   /projects/{id}/archive
-PUT    /projects/{id}/competitors            replace list
-PUT    /projects/{id}/seed-keywords          replace list
+PUT    /projects/{id}/competitors            lista cseréje
+PUT    /projects/{id}/seed-keywords          lista cseréje
 PATCH  /projects/{id}/intake/{key}
-POST   /projects/{id}/transition             {to, note} → validated by workflow.py + role
-GET    /projects/{id}/history                status history + activity
-GET    /dashboard                            active projects, my pending items, missing intake
+POST   /projects/{id}/transition             {to, note} → workflow.py + szerepkör ellenőrzi
+GET    /projects/{id}/history                státusztörténet + tevékenység
+GET    /dashboard                            aktív projektek, rám váró tételek, hiányzó bekérések
 ```
 
-### 6.4 Implementation steps
+### 6.4 Megvalósítási lépések
 
-1. **Backend skeleton:** config, database, HMAC auth dependency, capability matrix, health endpoint, docker-compose with Postgres 16, Alembic migration `0001`.
-2. **Models and schemas** for users, clients, projects and their child lists, with validation (domains normalized, locations trimmed, scope values checked against the service catalogue).
-3. **Workflow service:**
-   - It knows the allowed transitions: forward one step, back from `client_review` to `seo_review`, and admin override with a required note.
-   - Each transition has role guards and writes to `status_history` and `activity_log`.
-   - Phase 1 has no data gates yet. Gates are added as later phases bring their data.
-4. **Routers and pytest suite** against a real Postgres, covering:
-   - authentication: valid, expired and tampered signatures;
-   - CRUD;
-   - intake seeding;
-   - each allowed and forbidden transition for each role;
-   - the dashboard aggregation.
-5. **WordPress plugin:**
-   - roles and capabilities on activation;
-   - the settings page, with a connection test button;
-   - signing and the proxy, with a path whitelist, forwarding of the signed user, a 30s timeout and clean error mapping;
-   - user sync hooks;
-   - the SPA shell at `/seo-os/`, redirecting to login if the user is not logged in.
-6. **SPA:**
-   - layout and design tokens;
-   - Dashboard, Projects list/board, New project wizard, and Project Overview (intake checklist, stepper, transitions, history);
-   - tab placeholders;
-   - Settings → Team.
-7. **Tests and docs:**
-   - `php tests/seo-os.php` (no WordPress);
+1. **Backend alap:** konfiguráció, adatbázis, HMAC hitelesítés, jogosultságmátrix, health végpont, docker-compose Postgres 16-tal, `0001` Alembic migráció.
+2. **Modellek és sémák** a felhasználókhoz, ügyfelekhez, projektekhez és a hozzájuk tartozó listákhoz, validációval (domain normalizálása, lokációk tisztítása, a terjedelem értékei a szolgáltatáskatalógus alapján).
+3. **Munkafolyamat szolgáltatás:**
+   - Ismeri az engedett váltásokat: előre egy lépés, vissza `client_review`-ból `seo_review`-ba, admin felülírás kötelező megjegyzéssel.
+   - Minden váltásnak szerepkör-ellenőrzése van, és bekerül a `status_history` és az `activity_log` táblába.
+   - Az 1. ütemben még nincs adatfeltételhez kötött jóváhagyás. Ezek a későbbi ütemekkel, az adatokkal együtt jönnek.
+4. **Routerek és pytest tesztcsomag** valódi Postgres ellen, ezekkel:
+   - hitelesítés: érvényes, lejárt és manipulált aláírás;
+   - CRUD műveletek;
+   - bekérési tételek létrehozása;
+   - minden engedett és tiltott váltás minden szerepkörrel;
+   - a vezérlőpult összesítése.
+5. **WordPress bővítmény:**
+   - szerepkörök és jogosultságok aktiváláskor;
+   - beállítási oldal kapcsolatteszt gombbal;
+   - aláírás és proxy útvonal-fehérlistával, az aláírt felhasználó továbbításával, 30 mp-es időkorláttal és tiszta hibaüzenetekkel;
+   - felhasználó-szinkron hookok;
+   - az alkalmazáskeret a `/seo-os/` címen, belépés nélkül átirányít a bejelentkezésre.
+6. **Alkalmazás (SPA):**
+   - elrendezés és design tokenek;
+   - Vezérlőpult, Projektek lista / tábla-nézet, Új projekt varázsló, Projekt-áttekintés (bekérési checklist, lépésjelző, státuszváltás, előzmények);
+   - a többi fül helye;
+   - Beállítások → Csapat.
+7. **Tesztek és dokumentáció:**
+   - `php tests/seo-os.php` (WordPress nélkül);
    - pytest;
-   - a manual smoke test on a local WordPress with the plugin talking to the dockerized API;
-   - a README section in Hungarian, matching the existing README.
+   - kézi próba helyi WordPressen, a bővítmény a dockerizált API-val beszél;
+   - magyar nyelvű README szakasz, a meglévő README-hez illeszkedve.
 
-### 6.5 Phase 1 acceptance criteria
+### 6.5 Az 1. ütem átvételi feltételei
 
-- An Admin creates a project for "Imperial Kitchens / Kitchen Remodeling / Naples, FL". It has competitors, seed keywords by kind, and a scope, and it appears on the dashboard with the missing intake items.
-- An SEO Manager can move the project through `draft → researching → … → approved`. A Designer or Developer sees the project read-only and cannot change status; the API returns 403, not just a hidden button.
-- Every status change appears in the history with the user, the time and the note.
-- FastAPI rejects any request without a valid WordPress signature, and it is reachable only from the WordPress host.
-- The UI is dark, usable at 375px width, and never shows the WordPress admin chrome.
-- The PHP and Python test suites pass.
+- Egy Admin létrehoz egy projektet „Imperial Kitchens / Kitchen Remodeling / Naples, FL” adatokkal. Van versenytársa, típus szerinti kiinduló kulcsszavai és terjedelme, és megjelenik a vezérlőpulton a hiányzó bekérési tételekkel.
+- Egy SEO manager végig tudja léptetni a projektet: `draft → researching → … → approved`. A Designer és a Fejlesztő csak olvasni látja a projektet, és nem válthat státuszt: az API 403-at ad, nem csak a gomb rejtett.
+- Minden státuszváltás megjelenik az előzményekben felhasználóval, időponttal és megjegyzéssel.
+- A FastAPI elutasít minden kérést érvényes WordPress-aláírás nélkül, és csak a WordPress szerverről érhető el.
+- A felület sötét, 375 px szélességen is használható, és sehol nem látszik a WordPress admin keret.
+- A PHP és a Python tesztcsomag hibátlanul lefut.
 
 ---
 
-## 7. Decisions needed before Phase 1 coding
+## 7. Döntések, amelyek az 1. ütem kódolása előtt kellenek
 
-1. **Hosting for FastAPI + PostgreSQL.** WordPress can stay where it is, but the API and database need a server: a small VPS or a managed container host plus managed Postgres. Is there an existing server, or should Phase 1 include Docker deployment files for a VPS?
-2. **UI language.** The internal CRM is Hungarian, while this brief is in English. Recommendation: a Hungarian team UI, with the per-project content language driving all client output.
-3. **Entry point.** Should the app live at `crm.helloprovision.com/seo-os/` (inside the CRM subdomain, shared login) or at its own `seo.helloprovision.com`? Recommendation: its own subdomain, using the same domain-routing pattern the CRM already uses.
-4. **Roles vs. existing CRM staff.** Should SEO OS roles be added *alongside* the existing `hpv_staff` role? Recommendation: yes. A user can hold both, and SEO OS never grants WordPress admin access.
-5. **Scope confirmations:**
-   - XLSX exports in the house layouts in Phase 2 and 4, in addition to PDFs (recommended, see §1.6);
-   - the optional technical-audit module (Screaming Frog import) in Phase 5.
+1. **Hol fusson a FastAPI + PostgreSQL?** A WordPress maradhat a mostani helyén, de az API-nak és az adatbázisnak szerver kell: kis VPS, vagy menedzselt konténeres hoszting plus menedzselt Postgres. Van már szerver, vagy az 1. ütem tartalmazza a VPS-re szánt Docker telepítőfájlokat is?
+2. **A felület nyelve.** A belső CRM magyar, ez a brief angol. Javaslat: magyar csapatfelület; az ügyfélnek szóló anyagok nyelvét a projekt tartalmi nyelve határozza meg.
+3. **Belépési cím.** `crm.helloprovision.com/seo-os/` (a CRM aldomainen belül, közös belépéssel) vagy külön `seo.helloprovision.com`? Javaslat: külön aldomain, ugyanazzal a domain-kezeléssel, amit a CRM már használ.
+4. **Szerepkörök a meglévő CRM munkatárs mellett.** Az SEO OS szerepkörök a meglévő `hpv_staff` szerepkör *mellé* kerüljenek? Javaslat: igen. Egy felhasználónak lehet mindkettő, és az SEO OS soha nem ad WordPress admin hozzáférést.
+5. **Terjedelem megerősítése:**
+   - XLSX exportok a saját elrendezésekben a 2. és 4. ütemben, a PDF-ek mellett (javasolt, lásd 1.6);
+   - az opcionális technikai audit modul (Screaming Frog import) az 5. ütemben.
