@@ -566,6 +566,26 @@ function hpv_p_entities(): array {
 			),
 		),
 
+		// Megosztott fájl (ügyfél vagy projekt). A tartalom a privát mappában van, csak jogosultsággal tölthető le.
+		'file'         => array(
+			'table'    => 'files',
+			'label'    => 'Fájlok',
+			'singular' => 'Fájl',
+			'parent'   => 'client',
+			'fields'   => array(
+				'client_id'   => array( 'type' => 'ref', 'ref' => 'client', 'label' => 'Ügyfél', 'required' => true ),
+				'project_id'  => array( 'type' => 'ref', 'ref' => 'project', 'label' => 'Projekt' ),
+				'name'        => array( 'type' => 'text', 'label' => 'Fájlnév', 'readonly' => true ),
+				'storage_key' => array( 'type' => 'text', 'label' => 'Tárolt útvonal', 'readonly' => true ),
+				'mime'        => array( 'type' => 'text', 'label' => 'Típus', 'readonly' => true ),
+				'size'        => array( 'type' => 'int', 'label' => 'Méret (bájt)', 'readonly' => true ),
+				'note'        => array( 'type' => 'text', 'label' => 'Megjegyzés' ),
+				'visible'     => array( 'type' => 'bool', 'label' => 'Látja az ügyfél', 'default' => 1 ),
+				'source'      => array( 'type' => 'text', 'label' => 'Feltöltötte (staff/client)', 'readonly' => true ),
+				'uploaded_by' => array( 'type' => 'int', 'label' => 'Feltöltő', 'readonly' => true ),
+			),
+		),
+
 		// Videóhívás (Daily.co): szoba, résztvevők hozzájárulása, leirat, AI-összefoglaló.
 		'call'         => array(
 			'table'    => 'calls',

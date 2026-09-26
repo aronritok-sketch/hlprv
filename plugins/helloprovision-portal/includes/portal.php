@@ -11,6 +11,7 @@ const HPV_PORTAL_VIEWS = array(
 	'projects'  => 'Projects',
 	'messages'  => 'Messages',
 	'meetings'  => 'Meetings',
+	'files'     => 'Files',
 	'proposals' => 'Proposals',
 	'invoices'  => 'Invoices',
 	'contracts' => 'Contracts',
@@ -51,6 +52,7 @@ function hpv_p_portal_icon( string $name ): string {
 		'projects'  => 'M4 5h16v4H4zM4 11h10v4H4zM4 17h7v3H4z',
 		'messages'  => 'M4 5h16v11H8l-4 4z',
 		'meetings'  => 'M3 7h12v10H3zM15 10l6-3v10l-6-3',
+		'files'     => 'M3 6h6l2 2h10v11H3zM3 10h18',
 		'proposals' => 'M5 3h10l4 4v14H5zM14 3v5h5M9 13l2 2 4-4',
 		'invoices'  => 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6',
 		'contracts' => 'M6 3h9l3 3v15H6zM9 10h6M9 14h6M9 18h3',
@@ -67,6 +69,19 @@ function hpv_p_portal_badge( string $entity, string $field, string $value, strin
 
 function hpv_p_portal_date( ?string $date ): string {
 	return $date ? esc_html( hpv_date( $date ) ) : '—';
+}
+
+/**
+ * Keresztnév a köszönéshez: a profilban megadott, különben a teljes névből (magyarul a vezetéknév áll elöl).
+ */
+function hpv_p_first_name( WP_User $user ): string {
+	$first = trim( (string) $user->first_name );
+	if ( '' !== $first && $first !== $user->display_name ) {
+		return $first;
+	}
+	$parts = preg_split( '/\s+/', trim( $user->display_name ) );
+
+	return (string) ( 'hu' === hpv_lang() ? end( $parts ) : $parts[0] );
 }
 
 /**
@@ -231,6 +246,9 @@ function hpv_p_portal_app(): string {
 				case 'meetings':
 					$id ? hpv_pv_meeting( $client_id, $id ) : hpv_pv_meetings( $client_id );
 					break;
+				case 'files':
+					hpv_pv_files( $client_id );
+					break;
 				case 'proposals':
 					hpv_pv_proposals( $client_id );
 					break;
@@ -320,7 +338,7 @@ function hpv_pv_overview( array $client, array $counts ) {
 	$projects = hpv_p_portal_projects( (int) $client['id'] );
 	$active   = array_filter( $projects, fn( $p ) => in_array( $p['status'], array( 'planning', 'in_progress', 'review' ), true ) );
 	$subs     = array_filter( hpv_p_portal_subscriptions( (int) $client['id'] ), fn( $x ) => 'active' === $x['status'] );
-	$first    = explode( ' ', trim( wp_get_current_user()->display_name ) )[0];
+	$first    = hpv_p_first_name( wp_get_current_user() );
 
 	$todo = array();
 	foreach ( hpv_video_portal_calls( (int) $client['id'] ) as $call ) {
@@ -339,6 +357,17 @@ function hpv_pv_overview( array $client, array $counts ) {
 				'label' => hpv_t( 'Review proposal: %s', $prop['title'] ),
 				'meta'  => $prop['valid_until'] ? hpv_t( 'Valid until %s', hpv_date( $prop['valid_until'], 'short' ) ) : '',
 				'url'   => hpv_prop_public_url( $prop ),
+				'alert' => false,
+			);
+		}
+	}
+	$week = gmdate( 'Y-m-d H:i:s', time() - 7 * DAY_IN_SECONDS );
+	foreach ( hpv_files_portal_list( (int) $client['id'] ) as $f ) {
+		if ( 'staff' === $f['source'] && $f['created_at'] >= $week ) {
+			$todo[] = array(
+				'label' => hpv_t( 'New file: %s', $f['name'] ),
+				'meta'  => hpv_date( $f['created_at'], 'short', true ),
+				'url'   => hpv_p_portal_link( 'files' ),
 				'alert' => false,
 			);
 		}

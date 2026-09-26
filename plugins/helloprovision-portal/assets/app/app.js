@@ -13,6 +13,7 @@ import { Team } from './views/team.js';
 import { Contracts, ContractPage } from './views/contracts.js';
 import { Proposals, ProposalPage } from './views/proposals.js';
 import { Templates } from './views/templates.js';
+import { Files } from './views/files.js';
 
 /* ── Chat (a meglévő chat komponens beágyazva) ───── */
 
@@ -63,6 +64,7 @@ function Clients() {
 									<a class="link" href=${'#/projects?client=' + c.id}>Projektek</a>
 									<a class="link" href=${'#/chat?client=' + c.id}>Chat</a>
 									<a class="link" href=${'#/calls?client=' + c.id}>Hívások</a>
+									<a class="link" href=${'#/files?client=' + c.id}>Fájlok</a>
 									<a class="link" href=${CFG.adminUrl + '&client=' + c.id}>Adatlap${boot.me.caps && boot.me.caps.invoices ? ', számlák' : ''} <${Icon} name="ext" size="13" /></a>
 								</td>
 							</tr>`)}
@@ -146,6 +148,7 @@ const NAV = [
 	{ path: '/projects', label: 'Projektek', icon: 'folder' },
 	{ path: '/chat', label: 'Chat', icon: 'chat', badge: 'unread' },
 	{ path: '/calls', label: 'Hívások', icon: 'video' },
+	{ path: '/files', label: 'Fájlok', icon: 'files' },
 	{ path: '/clients', label: 'Ügyfelek', icon: 'users' },
 	{ path: '/proposals', label: 'Ajánlatok', icon: 'proposal', cap: 'proposals' },
 	{ path: '/contracts', label: 'Szerződések', icon: 'doc', cap: 'contracts' },
@@ -235,6 +238,7 @@ function App() {
 	else if (path === '/calls') page = html`<${Calls} params=${params} />`;
 	else if ((m = path.match(/^\/calls\/(\d+)$/))) page = html`<${CallPage} key=${'call' + m[1]} id=${Number(m[1])} params=${params} />`;
 	else if (path === '/clients') page = html`<${Clients} />`;
+	else if (path === '/files') page = html`<${Files} key=${'files' + (params.client || '')} params=${params} />`;
 	else if (path === '/team') page = html`<${Team} />`;
 	else if (path === '/proposals') page = html`<${Proposals} params=${params} />`;
 	else if ((m = path.match(/^\/proposals\/(\d+)$/))) page = html`<${ProposalPage} key=${'prop' + m[1]} id=${Number(m[1])} />`;

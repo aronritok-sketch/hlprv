@@ -32,6 +32,27 @@ export async function api(path, opts = {}) {
 	return data;
 }
 
+/**
+ * Fájlfeltöltés (multipart). A fetch nem ad haladást, ezért XHR: onProgress(0..1).
+ */
+export function upload(path, formData, onProgress) {
+	return new Promise((resolve, reject) => {
+		const xhr = new XMLHttpRequest();
+		xhr.open('POST', CFG.rest + path);
+		xhr.withCredentials = true;
+		xhr.setRequestHeader('X-WP-Nonce', CFG.nonce);
+		if (onProgress) xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(e.loaded / e.total);
+		xhr.onload = () => {
+			let data = null;
+			try { data = JSON.parse(xhr.responseText); } catch (e) { data = null; }
+			if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+			else reject(new Error((data && data.message) || (xhr.status === 413 ? 'A fájl túl nagy a szervernek.' : 'A feltöltés nem sikerült.')));
+		};
+		xhr.onerror = () => reject(new Error('A feltöltés nem sikerült (hálózati hiba).'));
+		xhr.send(formData);
+	});
+}
+
 /* ── Útválasztás (#/utvonal?param=ertek) ─────────── */
 
 export function parseHash() {
@@ -178,6 +199,7 @@ const ICONS = {
 	up: 'M6 14l6-6 6 6',
 	down: 'M6 10l6 6 6-6',
 	eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6z',
+	files: 'M8 3h8l4 4v12H8zM16 3v4h4M4 7v14h12',
 };
 
 export function Icon({ name, size = 18 }) {

@@ -1,11 +1,13 @@
 import { html, useState, useEffect, useRef, useMemo, api, useApp, navigate, setParam, CFG, Icon, Avatar, PriorityFlag, Spinner, Empty, Modal, InlineText, shortDate, minutesLabel, isOverdue, todayISO, addDays, daysBetween, parseISO, MONTHS_LONG, toast } from '../ui.js';
 import { COLORS } from './projects.js';
 import { NewCallModal } from './calls.js';
+import { FilesPanel } from './files.js';
 
 const VIEWS = [
 	{ key: 'board', label: 'Tábla', icon: 'board' },
 	{ key: 'list', label: 'Lista', icon: 'list' },
 	{ key: 'timeline', label: 'Idővonal', icon: 'gantt' },
+	{ key: 'files', label: 'Fájlok', icon: 'files' },
 ];
 
 /* ── Feladatkártya (tábla) ───────────────────────── */
@@ -426,11 +428,12 @@ export function ProjectPage({ id, params }) {
 				</div>
 			</header>
 
-			<nav class="tabs">${VIEWS.map((v) => html`<button key=${v.key} class=${view === v.key ? 'is-active' : ''} onClick=${() => setView(v.key)}><${Icon} name=${v.icon} size="16" /> ${v.label}</button>`)}</nav>
+			<nav class="tabs">${VIEWS.filter((v) => v.key !== 'files' || p.client_id).map((v) => html`<button key=${v.key} class=${view === v.key ? 'is-active' : ''} onClick=${() => setView(v.key)}><${Icon} name=${v.icon} size="16" /> ${v.label}</button>`)}</nav>
 
 			${view === 'board' ? html`<${Board} project=${p} tasks=${tasks} statuses=${statuses} reload=${load} setTasks=${setTasks} />` : null}
 			${view === 'list' ? html`<${ListView} project=${p} tasks=${tasks} statuses=${statuses} reload=${load} />` : null}
 			${view === 'timeline' ? html`<${Timeline} project=${p} tasks=${tasks} reload=${load} setTasks=${setTasks} />` : null}
+			${view === 'files' && p.client_id ? html`<${FilesPanel} clientId=${p.client_id} projectId=${p.id} hideProject />` : null}
 			${settings ? html`<${SettingsModal} project=${p} onClose=${() => setSettings(false)} onSaved=${load} />` : null}
 			${calling ? html`<${NewCallModal} clientId=${p.client_id} projectId=${p.id} onClose=${() => setCalling(false)} />` : null}
 		</div>`;

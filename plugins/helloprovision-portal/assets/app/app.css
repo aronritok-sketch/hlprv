@@ -618,3 +618,27 @@ button.convert:hover { border-color: var(--ink); }
 	.grid-row--timeline > :nth-child(3) { grid-column: 1 / -1; grid-row: 2; }
 	.rt-body { padding: 16px; }
 }
+
+/* Fájlok */
+.files { display: grid; gap: 16px; }
+.dropzone { display: grid; gap: 12px; padding: 18px; border: 1.5px dashed #c9c9c1; border-radius: var(--radius); background: #fff; transition: border-color .12s, background .12s; }
+.dropzone.is-over { border-color: var(--ink); background: #f7fbe9; }
+.dropzone__cta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.dropzone__cta small { margin-left: auto; }
+.dropzone__busy { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.dropzone__busy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dropzone__busy .progress { grid-column: 1 / -1; }
+.dropzone__opts { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; font-size: 13px; }
+.dropzone__opts select, .dropzone__note { padding: 6px 10px; border: 1px solid var(--line); border-radius: 9px; background: #fff; font-size: 13px; }
+.dropzone__note { flex: 1 1 200px; min-width: 0; }
+.opt { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); cursor: pointer; }
+.opt input { accent-color: var(--ink); }
+.files-table__name { max-width: 360px; }
+.files-table__name a { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.files-table__name small { display: block; }
+.files-client { min-width: 240px; padding: 8px 12px; font-size: 14px; }
+@media (max-width: 720px) {
+	.dropzone__cta small { margin-left: 0; }
+	.files-client { width: 100%; min-width: 0; }
+}
+.files-table__name a.link { color: var(--ink); font-weight: 600; }

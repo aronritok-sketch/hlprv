@@ -765,6 +765,7 @@
 }
 
 .hpv-field input,
+.hpv-field select,
 .hpv-login input[type=text],
 .hpv-login input[type=password] {
 	width: 100%;
@@ -782,6 +783,86 @@
 .hpv-login input:focus {
 	border-color: #999;
 	outline: 3px solid rgba(184, 255, 52, .5);
+}
+
+/* Fájlok */
+.hpv-upload {
+	display: grid;
+	gap: 12px;
+}
+
+.hpv-upload h2 {
+	margin: 0;
+}
+
+.hpv-upload__row {
+	display: grid;
+	grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+	gap: 12px;
+}
+
+.hpv-upload .hpv-muted {
+	margin: 0;
+}
+
+.hpv-upload .hpv-btn {
+	justify-self: start;
+}
+
+.hpv-field input[type=file] {
+	padding: 10px 12px;
+	font-size: 14px;
+}
+
+.hpv-files td small {
+	font-size: 12px;
+}
+
+.hpv-files__actions {
+	white-space: nowrap;
+}
+
+.hpv-files__actions form {
+	display: inline;
+	margin-left: 12px;
+}
+
+.hpv-link-btn {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--p-muted);
+	font: inherit;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+@media (max-width: 720px) {
+	.hpv-upload__row {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	/* Telefonon: fájlnév, méret, műveletek; a feladó és a dátum elfér a név alatt is. */
+	.hpv-files th:nth-child(2),
+	.hpv-files td:nth-child(2),
+	.hpv-files th:nth-child(3),
+	.hpv-files td:nth-child(3) {
+		display: none;
+	}
+
+	.hpv-files td:first-child {
+		word-break: break-word;
+	}
+
+	.hpv-files__actions {
+		white-space: normal;
+		text-align: right;
+	}
+
+	.hpv-files__actions form {
+		display: block;
+		margin: 6px 0 0;
+	}
 }
 
 .hpv-check {
@@ -1030,7 +1111,7 @@
 
 @media (max-width: 900px) {
 	.hpv-portal {
-		grid-template-columns: 1fr;
+		grid-template-columns: minmax(0, 1fr);
 	}
 
 	.hpv-side {
