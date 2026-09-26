@@ -54,6 +54,10 @@ function hpv_p_entities(): array {
 				'billing_email' => array( 'type' => 'email', 'label' => 'Számlázási e-mail', 'help' => 'Ide megy a számla. Üresen a fenti e-mail cím.' ),
 				'address'      => array( 'type' => 'textarea', 'label' => 'Számlázási cím (régi, szabad szöveg)', 'hidden' => true ),
 				'external_customer_id' => array( 'type' => 'text', 'label' => 'QuickBooks ügyfél azonosító', 'readonly' => true ),
+				'gsc_property'    => array( 'type' => 'text', 'label' => 'Search Console tulajdon', 'help' => 'pl. sc-domain:pelda.hu vagy https://pelda.hu/ — a havi riporthoz' ),
+				'ga4_property'    => array( 'type' => 'text', 'label' => 'GA4 tulajdon azonosító', 'help' => 'Számok, pl. 412345678 (GA4 → Adminisztráció → Tulajdon részletei)' ),
+				'gads_customer'   => array( 'type' => 'text', 'label' => 'Google Ads ügyfélazonosító', 'help' => 'pl. 123-456-7890' ),
+				'meta_ad_account' => array( 'type' => 'text', 'label' => 'Meta hirdetési fiók', 'help' => 'pl. act_1234567890' ),
 				'status'       => array(
 					'type'    => 'select',
 					'label'   => 'Státusz',
@@ -653,6 +657,32 @@ function hpv_p_entities(): array {
 				'user_id'     => array( 'type' => 'int', 'label' => 'Szerző' ),
 				'body'        => array( 'type' => 'textarea', 'label' => 'Szöveg', 'required' => true ),
 				'kind'        => array( 'type' => 'text', 'label' => 'Fajta (comment, approved, changes, sent)' ),
+			),
+		),
+
+		// Havi riport az ügyfélnek: számok (Google, hirdetések, kézi), elvégzett munka, következő hónap, összefoglaló.
+		'report'       => array(
+			'table'    => 'reports',
+			'label'    => 'Riportok',
+			'singular' => 'Riport',
+			'parent'   => 'client',
+			'fields'   => array(
+				'client_id'  => array( 'type' => 'ref', 'ref' => 'client', 'label' => 'Ügyfél', 'required' => true ),
+				'period'     => array( 'type' => 'text', 'label' => 'Hónap (ÉÉÉÉ-HH)', 'required' => true ),
+				'title'      => array( 'type' => 'text', 'label' => 'Cím' ),
+				'status'     => array(
+					'type'    => 'select',
+					'label'   => 'Státusz',
+					'default' => 'draft',
+					'options' => array(
+						'draft' => array( 'Piszkozat', 'Draft' ),
+						'sent'  => array( 'Kiküldve', 'Sent' ),
+					),
+				),
+				'summary'    => array( 'type' => 'html', 'label' => 'Összefoglaló' ),
+				'data'       => array( 'type' => 'textarea', 'label' => 'Adatok (JSON: metrics, highlights, work, next)', 'readonly' => true ),
+				'sent_at'    => array( 'type' => 'datetime', 'label' => 'Kiküldve', 'readonly' => true ),
+				'created_by' => array( 'type' => 'int', 'label' => 'Létrehozta', 'readonly' => true ),
 			),
 		),
 

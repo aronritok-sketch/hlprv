@@ -13,6 +13,7 @@ const HPV_PORTAL_VIEWS = array(
 	'meetings'  => 'Meetings',
 	'files'     => 'Files',
 	'approvals' => 'Approvals',
+	'reports'   => 'Reports',
 	'proposals' => 'Proposals',
 	'invoices'  => 'Invoices',
 	'contracts' => 'Contracts',
@@ -55,6 +56,7 @@ function hpv_p_portal_icon( string $name ): string {
 		'meetings'  => 'M3 7h12v10H3zM15 10l6-3v10l-6-3',
 		'files'     => 'M3 6h6l2 2h10v11H3zM3 10h18',
 		'approvals' => 'M5 3h14v18H5zM9 12l2 2 4-4',
+		'reports'   => 'M4 20V10M10 20V4M16 20v-8M22 20H2',
 		'proposals' => 'M5 3h10l4 4v14H5zM14 3v5h5M9 13l2 2 4-4',
 		'invoices'  => 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6',
 		'contracts' => 'M6 3h9l3 3v15H6zM9 10h6M9 14h6M9 18h3',
@@ -255,6 +257,9 @@ function hpv_p_portal_app(): string {
 				case 'approvals':
 					hpv_pv_approvals( $client_id, $id );
 					break;
+				case 'reports':
+					hpv_pv_reports( $client_id, $id );
+					break;
 				case 'proposals':
 					hpv_pv_proposals( $client_id );
 					break;
@@ -363,6 +368,16 @@ function hpv_pv_overview( array $client, array $counts ) {
 				'label' => hpv_t( 'Review proposal: %s', $prop['title'] ),
 				'meta'  => $prop['valid_until'] ? hpv_t( 'Valid until %s', hpv_date( $prop['valid_until'], 'short' ) ) : '',
 				'url'   => hpv_prop_public_url( $prop ),
+				'alert' => false,
+			);
+		}
+	}
+	foreach ( hpv_p_find( 'report', array( 'client_id' => (int) $client['id'], 'status' => 'sent' ), array( 'limit' => 24 ) ) as $rep ) {
+		if ( $rep['sent_at'] && strtotime( $rep['sent_at'] . ' UTC' ) > time() - 14 * DAY_IN_SECONDS ) {
+			$todo[] = array(
+				'label' => hpv_t( 'New monthly report: %s', hpv_date( $rep['period'] . '-01', 'month' ) ),
+				'meta'  => hpv_t( 'Numbers, work done and next steps' ),
+				'url'   => hpv_p_portal_link( 'reports', array( 'id' => $rep['id'] ) ),
 				'alert' => false,
 			);
 		}

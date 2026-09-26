@@ -15,6 +15,7 @@ import { Proposals, ProposalPage } from './views/proposals.js';
 import { Templates } from './views/templates.js';
 import { Files } from './views/files.js';
 import { Content, ContentPage } from './views/content.js';
+import { Reports, ReportPage, DataSourcesModal } from './views/reports.js';
 import { ImportPage } from './views/import.js';
 import { Invoices, InvoicePage, Subscriptions } from './views/invoices.js';
 
@@ -45,6 +46,7 @@ function ChatView({ channel, client }) {
 function Clients() {
 	const { boot } = useApp();
 	const [q, setQ] = useState('');
+	const [sources, setSources] = useState(null);
 	const list = boot.clients.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()));
 	const labels = { lead: 'Érdeklődő', active: 'Aktív', paused: 'Szünetel', former: 'Korábbi' };
 	return html`
@@ -68,6 +70,7 @@ function Clients() {
 									<a class="link" href=${'#/chat?client=' + c.id}>Chat</a>
 									<a class="link" href=${'#/calls?client=' + c.id}>Hívások</a>
 									<a class="link" href=${'#/files?client=' + c.id}>Fájlok</a>
+									<button class="link" onClick=${() => setSources(c)}>Riport adatok</button>
 									${boot.me.caps && boot.me.caps.invoices ? html`<a class="link" href=${'#/invoices?client=' + c.id}>Számlák</a>` : null}
 									<a class="link" href=${CFG.adminUrl + '&client=' + c.id}>Adatlap <${Icon} name="ext" size="13" /></a>
 								</td>
@@ -75,6 +78,7 @@ function Clients() {
 					</tbody>
 				</table>
 			</div>
+			${sources ? html`<${DataSourcesModal} client=${sources} onClose=${() => setSources(null)} />` : null}
 		</div>`;
 }
 
@@ -153,6 +157,7 @@ const NAV = [
 	{ path: '/chat', label: 'Chat', icon: 'chat', badge: 'unread' },
 	{ path: '/calls', label: 'Hívások', icon: 'video' },
 	{ path: '/content', label: 'Tartalom', icon: 'proposal', badge: 'approvals' },
+	{ path: '/reports', label: 'Riportok', icon: 'gantt' },
 	{ path: '/files', label: 'Fájlok', icon: 'files' },
 	{ path: '/clients', label: 'Ügyfelek', icon: 'users' },
 	{ path: '/proposals', label: 'Ajánlatok', icon: 'proposal', cap: 'proposals' },
@@ -248,6 +253,8 @@ function App() {
 	else if (path === '/clients') page = html`<${Clients} />`;
 	else if (path === '/content') page = html`<${Content} params=${params} />`;
 	else if ((m = path.match(/^\/content\/(\d+)$/))) page = html`<${ContentPage} key=${'ct-' + m[1]} id=${Number(m[1])} />`;
+	else if (path === '/reports') page = html`<${Reports} params=${params} />`;
+	else if ((m = path.match(/^\/reports\/(\d+)$/))) page = html`<${ReportPage} key=${'rep-' + m[1]} id=${Number(m[1])} />`;
 	else if (path === '/files') page = html`<${Files} key=${'files' + (params.client || '')} params=${params} />`;
 	else if (path === '/team') page = html`<${Team} />`;
 	else if (path === '/import') page = html`<${ImportPage} />`;

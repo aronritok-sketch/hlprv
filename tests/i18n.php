@@ -97,6 +97,11 @@ foreach ( array( 'Overview', 'Projects', 'Messages', 'Meetings', 'Proposals', 'I
 	check( "szótárban: $l", isset( $dict[ $l ] ) );
 }
 
+// A riport mutatóinak címkéi (connectors.php).
+preg_match( "/const HPV_METRIC_LABELS = array\\((.*?)\\);/s", file_get_contents( $plugin . '/includes/connectors.php' ), $mm );
+preg_match_all( "/'([^']+)'/", $mm[1] ?? '', $labels );
+check( sprintf( 'riport mutatók (%d) lefordítva', count( $labels[1] ) ), count( $labels[1] ) > 15 && ! array_diff( $labels[1], array_keys( $dict ) ) );
+
 echo "Nyelv és dátum\n";
 function get_date_from_gmt( $d, $f ) {
 	return gmdate( $f, strtotime( $d ) + 2 * 3600 );

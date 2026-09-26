@@ -1106,6 +1106,8 @@ function hpv_p_sanitize_settings( $input ): array {
 		'hu_vat_key'      => '' !== (string) ( $input['hu_vat_key'] ?? '' ) && isset( hpv_p_entity( 'invoice' )['fields']['vat_key']['options'][ $input['hu_vat_key'] ] ) ? $input['hu_vat_key'] : '27',
 		'hu_fizmod'       => in_array( $input['hu_fizmod'] ?? '', array( 'Bankkártya', 'Átutalás', 'Készpénz' ), true ) ? $input['hu_fizmod'] : 'Bankkártya',
 		'qbo_item_name'   => sanitize_text_field( $input['qbo_item_name'] ?? '' ) ?: 'Services',
+		'report_auto'     => ! empty( $input['report_auto'] ),
+		'report_day'      => min( 28, max( 1, absint( $input['report_day'] ?? 3 ) ) ),
 		'recurring_mode'  => in_array( $input['recurring_mode'] ?? '', array( 'off', 'draft', 'send' ), true ) ? $input['recurring_mode'] : 'draft',
 	);
 }
@@ -1181,6 +1183,10 @@ function hpv_p_admin_settings_page() {
 					<p class="description">Az aktív előfizetésekből a „Következő számla” napján reggel 7-kor ügyfelenként egy számla készül, a csapat összefoglaló e-mailt kap.
 						<?php $last = get_option( 'hpv_recurring_last_run' ); echo $last ? esc_html( sprintf( 'Utolsó futás: %s, %d számla.', get_date_from_gmt( $last['at'], 'Y-m-d H:i' ), $last['count'] ) ) : ''; ?></p>
 				</td></tr>
+				<tr><th><label for="hpv-s-report_day">Havi riportok</label></th><td>
+					<label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[report_auto]" value="1" <?php checked( ! empty( $s['report_auto'] ) ); ?>> Az előző hónap riport-piszkozata magától elkészül a havidíjas / marketinges ügyfeleknek</label><br>
+					minden hónap <input type="number" min="1" max="28" id="hpv-s-report_day" name="<?php echo esc_attr( $n ); ?>[report_day]" value="<?php echo (int) $s['report_day']; ?>" style="width:60px">. napján (kiküldés a CRM appból, átnézés után).
+				</td></tr>
 			</table>
 			<h2 class="title">Portál</h2>
 			<table class="form-table" role="presentation">
@@ -1209,6 +1215,7 @@ function hpv_p_admin_settings_page() {
 		</form>
 		<?php hpv_p_billing_admin_section(); ?>
 		<?php hpv_video_admin_section(); ?>
+		<?php hpv_conn_admin_section(); ?>
 	</div>
 	<?php
 }

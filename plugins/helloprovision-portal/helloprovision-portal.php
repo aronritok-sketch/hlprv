@@ -31,6 +31,8 @@ require_once __DIR__ . '/includes/notify.php';
 require_once __DIR__ . '/includes/chat.php';
 require_once __DIR__ . '/includes/files.php';
 require_once __DIR__ . '/includes/approvals.php';
+require_once __DIR__ . '/includes/reports.php';
+require_once __DIR__ . '/includes/connectors.php';
 require_once __DIR__ . '/includes/bitrix.php';
 require_once __DIR__ . '/includes/pm.php';
 require_once __DIR__ . '/includes/ai.php';
@@ -132,6 +134,8 @@ function hpv_p_default_settings(): array {
 		'hu_fizmod'       => 'Bankkártya',
 		'qbo_item_name'   => 'Services',
 		'recurring_mode'  => 'draft',
+		'report_auto'     => true,
+		'report_day'      => 3,
 	);
 }
 
