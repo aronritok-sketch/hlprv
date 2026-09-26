@@ -141,9 +141,24 @@ $c   = $res->get_data();
 it( 'új érdeklődő ügyfél', 200 === $res->get_status() && $c['created'] && 'lead' === hpv_p_get( 'client', $c['client_id'] )['status'] && "Palm Dental $suffix" === hpv_p_get( 'client', $c['client_id'] )['name'] && "palm_$suffix@dental.test" === hpv_p_get( 'client', $c['client_id'] )['email'] );
 $note = hpv_p_find( 'activity', array( 'client_id' => $c['client_id'] ), array( 'limit' => 1 ) )[0] ?? array();
 it( 'pontszám és hibák belső jegyzetben', false !== strpos( $note['body'] ?? '', '58/100 (D)' ) && false !== strpos( $note['body'], 'No LocalBusiness schema' ) && ! (int) $note['visible'] );
-it( 'a csapat e-mailt kap (válasz a leadnek)', (bool) array_filter( $GLOBALS['hpv_it_mail'], fn( $x ) => 0 === strpos( $x['subject'], 'Új érdeklődő: Palm Dental' ) && false !== strpos( implode( ' ', (array) $x['headers'] ), "Reply-To: palm_$suffix@dental.test" ) ) );
+it( 'a csapat e-mailt kap (válasz a leadnek)', (bool) array_filter( $GLOBALS['hpv_it_mail'], fn( $x ) => 0 === strpos( $x['subject'], 'Új érdeklődő (Website Grader): Palm Dental' ) && false !== strpos( implode( ' ', (array) $x['headers'] ), "Reply-To: palm_$suffix@dental.test" ) ) );
 $res2 = signed( '/bridge/lead', array_merge( $lead, array( 'score' => 71 ) ) );
 it( 'ugyanaz az e-mail: nem lesz dupla, új jegyzet', ! $res2->get_data()['created'] && $c['client_id'] === $res2->get_data()['client_id'] && 2 === count( hpv_p_find( 'activity', array( 'client_id' => $c['client_id'] ) ) ) );
+
+echo "Kapcsolati űrlap érdeklődő\n";
+$GLOBALS['hpv_it_mail'] = array();
+$form = array( 'source' => 'contact', 'form' => 'Project Brief', 'page' => 'https://helloprovision.com/contact/', 'name' => 'Kiss Anna', 'email' => "anna_$suffix@virag.test", 'phone' => '+36 30 555 1234', 'country' => 'HU', 'message' => "Új webshopot szeretnénk tavaszra.\nKöltségkeret kb. 2 millió.", 'fields' => array( 'Budget' => '$5k–10k', 'Services' => array( 'Web design', 'SEO' ), 'Üres' => '' ) );
+$r3 = signed( '/bridge/lead', $form );
+$cf = $r3->get_data();
+$cl = hpv_p_get( 'client', (int) ( $cf['client_id'] ?? 0 ) );
+it( 'új érdeklődő: név, telefon, magyar ügyfél', 200 === $r3->get_status() && $cf['created'] && 'lead' === $cl['status'] && 'Kiss Anna' === $cl['name'] && '+36 30 555 1234' === $cl['phone'] && 'HU' === $cl['country'] && false !== strpos( $cl['notes'], 'Kapcsolati űrlap (Project Brief)' ) );
+$fnote = hpv_p_find( 'activity', array( 'client_id' => $cf['client_id'] ), array( 'limit' => 1 ) )[0]['body'] ?? '';
+it( 'jegyzetben: űrlap, oldal, üzenet, további válaszok (az üres nem)', false !== strpos( $fnote, 'Kapcsolati űrlap (Project Brief): https://helloprovision.com/contact/' ) && false !== strpos( $fnote, "Üzenet:\nÚj webshopot" ) && false !== strpos( $fnote, 'Services: Web design, SEO' ) && false !== strpos( $fnote, 'Budget: $5k–10k' ) && false === strpos( $fnote, 'Üres' ) );
+$fm = array_values( array_filter( $GLOBALS['hpv_it_mail'], fn( $x ) => 0 === strpos( $x['subject'], 'Új érdeklődő (Kapcsolati űrlap): Kiss Anna' ) ) );
+it( 'a csapat levele: üzenet, link az adatlapra, válasz neki', 1 === count( $fm ) && false !== strpos( $fm[0]['message'], 'Új webshopot' ) && false !== strpos( $fm[0]['message'], '#/clients/' . $cf['client_id'] ) && false !== strpos( implode( ' ', (array) $fm[0]['headers'] ), "Reply-To: anna_$suffix@virag.test" ) );
+$r4 = signed( '/bridge/lead', array( 'source' => 'contact', 'name' => 'Dr. Palm', 'email' => "palm_$suffix@dental.test", 'phone' => '239-555-0101', 'message' => 'Can we talk about ads?' ) );
+it( 'meglévő ügyfél űrlapja: nem dupla, a hiányzó telefon kitöltve, státusz marad', ! $r4->get_data()['created'] && $c['client_id'] === $r4->get_data()['client_id'] && '239-555-0101' === hpv_p_get( 'client', $c['client_id'] )['phone'] && 'lead' === hpv_p_get( 'client', $c['client_id'] )['status'] );
+it( 'e-mail nélkül elutasítva', 400 === signed( '/bridge/lead', array( 'source' => 'contact', 'name' => 'x' ) )->get_status() );
 
 echo "Google értékeléskérés\n";
 $done_us = hpv_p_insert( 'project', array( 'client_id' => $us, 'name' => 'Website redesign', 'status' => 'completed', 'visible' => 1 ) );
@@ -161,7 +176,7 @@ $req->set_body_params( array( 'project' => 'SEO' ) );
 it( 'kézi kérés a CRM-ből', 'sent' === rest_do_request( $req )->get_data()['status'] && 2 === count( $GLOBALS['reviews'] ) );
 
 echo "Takarítás\n";
-foreach ( array( $us, $hu, $c['client_id'] ) as $cid ) {
+foreach ( array( $us, $hu, $c['client_id'], $cf['client_id'] ) as $cid ) {
 	hpv_p_delete( 'client', $cid );
 }
 require_once ABSPATH . 'wp-admin/includes/user.php';

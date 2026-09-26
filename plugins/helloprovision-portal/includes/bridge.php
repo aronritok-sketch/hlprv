@@ -2,8 +2,9 @@
 /**
  * Híd a marketing weboldal bővítményeihez (külön WordPress telepítés):
  *
- * 1. Website Grader → CRM: a kitöltött riport érdeklődője ügyfélként („Érdeklődő”) kerül a CRM-be, a pontszámmal és a
- *    hibákkal belső jegyzetként; a csapat e-mailt kap. Ugyanarra az e-mail címre nem lesz dupla ügyfél.
+ * 1. Weboldal → CRM: a Website Grader és a kapcsolati űrlapok (mu-plugins/helloprovision-leads.php) kitöltője ügyfélként
+ *    („Érdeklődő”) kerül a CRM-be; a pontszám, az üzenet és a válaszok belső jegyzetbe kerülnek, a csapat e-mailt kap.
+ *    Ugyanarra az e-mail címre nem lesz dupla ügyfél.
  * 2. CRM → Reviews: a kész projekt után (alap: 3 nap múlva) a Reviews bővítmény értékelést kér az ügyféltől.
  *    Csak a beállított országok ügyfeleinek (alap: USA — a Google-profil a floridai cégé), ügyfelenként 90 naponta egyszer.
  *
@@ -29,9 +30,23 @@ function hpv_bridge_verify( WP_REST_Request $r ): bool {
 	return hash_equals( hash_hmac( 'sha256', $ts . '.' . $r->get_body(), $secret ), $sig );
 }
 
-/* ─── 1. Érdeklődő a Graderből ────────────────────────────── */
+/* ─── 1. Érdeklődő a weboldalról (Grader, kapcsolati űrlap) ── */
+
+const HPV_LEAD_SOURCES = array(
+	'grader'  => 'Website Grader',
+	'contact' => 'Kapcsolati űrlap',
+	'seo_os'  => 'SEO OS',
+);
+
+function hpv_lead_source_label( string $source ): string {
+	return HPV_LEAD_SOURCES[ $source ] ?? ucfirst( str_replace( '_', ' ', $source ) );
+}
 
 /**
+ * Mezők: email (kötelező), name, business, website, phone, country (US|HU), source (grader|contact|…),
+ * form (az űrlap neve), page (ahol kitöltötték), message, fields (további kérdés → válasz),
+ * a Graderből még: score, grade, issues, report_url.
+ *
  * @return array|WP_Error { client_id, created }
  */
 function hpv_leads_ingest( array $d ) {
@@ -42,9 +57,22 @@ function hpv_leads_ingest( array $d ) {
 	$name     = sanitize_text_field( (string) ( $d['name'] ?? '' ) );
 	$business = sanitize_text_field( (string) ( $d['business'] ?? '' ) );
 	$website  = esc_url_raw( (string) ( $d['website'] ?? '' ) );
-	$score    = isset( $d['score'] ) ? (int) $d['score'] : null;
+	$phone    = sanitize_text_field( (string) ( $d['phone'] ?? '' ) );
+	$country  = 'HU' === strtoupper( (string) ( $d['country'] ?? '' ) ) ? 'HU' : 'US';
+	$score    = isset( $d['score'] ) && '' !== $d['score'] ? (int) $d['score'] : null;
 	$issues   = array_slice( array_map( 'sanitize_text_field', (array) ( $d['issues'] ?? array() ) ), 0, 10 );
 	$source   = sanitize_key( (string) ( $d['source'] ?? 'web' ) ) ?: 'web';
+	$form     = sanitize_text_field( (string) ( $d['form'] ?? '' ) );
+	$page     = esc_url_raw( (string) ( $d['page'] ?? '' ) );
+	$message  = trim( mb_substr( sanitize_textarea_field( (string) ( $d['message'] ?? '' ) ), 0, 5000 ) );
+	$fields   = array();
+	foreach ( array_slice( (array) ( $d['fields'] ?? array() ), 0, 20, true ) as $k => $v ) {
+		$v = trim( mb_substr( sanitize_textarea_field( is_array( $v ) ? implode( ', ', array_map( 'strval', $v ) ) : (string) $v ), 0, 1000 ) );
+		if ( '' !== $v ) {
+			$fields[ mb_substr( sanitize_text_field( (string) $k ), 0, 80 ) ] = $v;
+		}
+	}
+	$label = hpv_lead_source_label( $source ) . ( $form ? ' (' . $form . ')' : '' );
 
 	$existing = hpv_p_find( 'client', array( 'email' => $email ), array( 'limit' => 1 ) )[0] ?? null;
 	if ( ! $existing && function_exists( 'hpv_bx_find_client' ) ) {
@@ -54,7 +82,13 @@ function hpv_leads_ingest( array $d ) {
 	$created = false;
 	if ( $existing ) {
 		$client_id = (int) $existing['id'];
-		$fill      = array_filter( array( 'website' => $existing['website'] ? '' : $website, 'contact_name' => $existing['contact_name'] ? '' : $name ) );
+		$fill      = array_filter(
+			array(
+				'website'      => $existing['website'] ? '' : $website,
+				'contact_name' => $existing['contact_name'] ? '' : $name,
+				'phone'        => $existing['phone'] ? '' : $phone,
+			)
+		);
 		if ( $fill ) {
 			hpv_p_update( 'client', $client_id, $fill );
 		}
@@ -65,10 +99,11 @@ function hpv_leads_ingest( array $d ) {
 				'name'         => $business ?: ( $name ?: $email ),
 				'contact_name' => $name,
 				'email'        => $email,
+				'phone'        => $phone,
 				'website'      => $website,
-				'country'      => 'US',
+				'country'      => $country,
 				'status'       => 'lead',
-				'notes'        => 'Forrás: ' . ( 'grader' === $source ? 'Website Grader' : $source ),
+				'notes'        => 'Forrás: ' . $label,
 			)
 		);
 		if ( ! $client_id ) {
@@ -77,16 +112,36 @@ function hpv_leads_ingest( array $d ) {
 		$created = true;
 	}
 
-	$note = ( 'grader' === $source ? 'Website Grader' : ucfirst( $source ) ) . ': ' . ( $website ?: '—' )
-		. ( null !== $score ? sprintf( "\nPontszám: %d/100 (%s)", $score, sanitize_text_field( (string) ( $d['grade'] ?? '' ) ) ) : '' )
-		. ( $issues ? "\nSúlyos hibák:\n- " . implode( "\n- ", $issues ) : '' )
-		. ( ! empty( $d['report_url'] ) ? "\nRiport: " . esc_url_raw( (string) $d['report_url'] ) : '' );
+	$lines = array( $label . ( $page ? ': ' . $page : ( $website ? ': ' . $website : '' ) ) );
+	if ( null !== $score ) {
+		$lines[] = sprintf( 'Pontszám: %d/100 (%s)', $score, sanitize_text_field( (string) ( $d['grade'] ?? '' ) ) );
+	}
+	if ( $issues ) {
+		$lines[] = "Súlyos hibák:\n- " . implode( "\n- ", $issues );
+	}
+	if ( $phone ) {
+		$lines[] = 'Telefon: ' . $phone;
+	}
+	if ( $website && $page ) {
+		$lines[] = 'Weboldal: ' . $website;
+	}
+	foreach ( $fields as $k => $v ) {
+		$lines[] = $k . ': ' . $v;
+	}
+	if ( '' !== $message ) {
+		$lines[] = "Üzenet:\n" . $message;
+	}
+	if ( ! empty( $d['report_url'] ) ) {
+		$lines[] = 'Riport: ' . esc_url_raw( (string) $d['report_url'] );
+	}
+	$note = implode( "\n", $lines );
 	hpv_p_log( $client_id, 'note', $note, false );
 
+	$who = $business ?: ( $name ?: $email );
 	hpv_p_notify_staff(
-		sprintf( '%s érdeklődő: %s%s', $created ? 'Új' : 'Visszatérő', $business ?: $name, null !== $score ? ' (' . $score . '/100)' : '' ),
-		'<p><strong>' . esc_html( $name ) . '</strong> (' . esc_html( $email ) . ')' . ( $business ? ', ' . esc_html( $business ) : '' ) . '</p><p>' . nl2br( esc_html( $note ) ) . '</p><p>Ajánlat készítése: CRM app → Ajánlatok → Új ajánlat, ügyfélnek ezt az érdeklődőt választva.</p>',
-		hpv_p_crm_app_url( '/clients' ),
+		sprintf( '%s érdeklődő (%s): %s%s', $created ? 'Új' : 'Visszatérő', hpv_lead_source_label( $source ), $who, null !== $score ? ' (' . $score . '/100)' : '' ),
+		'<p><strong>' . esc_html( $name ?: $email ) . '</strong> (' . esc_html( $email ) . ')' . ( $business ? ', ' . esc_html( $business ) : '' ) . '</p><p>' . nl2br( esc_html( $note ) ) . '</p><p>Erre a levélre válaszolva közvetlenül neki írsz. Ajánlat: CRM app → Ajánlatok → Új ajánlat, ügyfélnek ezt az érdeklődőt választva.</p>',
+		hpv_p_crm_app_url( '/clients/' . $client_id ),
 		$email
 	);
 

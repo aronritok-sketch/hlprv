@@ -505,6 +505,11 @@ function hpv_grader_push_to_crm( array $report, array $lead, int $lead_id ): voi
 		update_post_meta( $lead_id, '_hpv_crm', is_wp_error( $res ) ? 'error: ' . $res->get_error_message() : 'ok' );
 		return;
 	}
+	// A leads mu-plugin sorba teszi és újrapróbálja, ha a CRM épp nem érhető el.
+	if ( function_exists( 'hpv_leads_send' ) ) {
+		update_post_meta( $lead_id, '_hpv_crm', hpv_leads_send( $data ) ? 'ok' : 'queued' );
+		return;
+	}
 	if ( ! defined( 'HPV_CRM_URL' ) || ! defined( 'HPV_BRIDGE_SECRET' ) || strlen( (string) HPV_BRIDGE_SECRET ) < 16 ) {
 		return;
 	}

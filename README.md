@@ -42,6 +42,30 @@ Minden beállítás az admin felületen szerkeszthető, kódot nem kell írni. A
 
 Ha valamit hibásan adsz meg (pl. rossz link, ismeretlen város, a nyitásnál korábbi zárás), a mentés után figyelmeztetés jelenik meg, és a hibás elem kimarad.
 
+## `mu-plugins/helloprovision-leads.php` – a weboldal űrlapjai a CRM-be
+
+A marketing weboldalra kerül. Aki kitölt egy űrlapot, „Érdeklődő” ügyfélként bekerül a CRM-be (a CRM oldali részt lásd lent a portálnál).
+
+- **A téma „Project Brief” űrlapja** (és minden más, ami a téma `form_submit` kezelőjén megy át): a téma kódja nem változik, a látogató ugyanazt a választ kapja. A CRM-be küldés a válasz után, a háttérben történik, és csak akkor, ha a téma sikeresnek jelezte a beküldést (amit a téma elutasít, pl. spam vagy hibás e-mail, az nem megy át).
+- **Űrlap-bővítmények**, ha később ilyet használtok: Contact Form 7, WPForms, Gravity Forms, Elementor Pro, Fluent Forms. A mezőket név szerint ismeri fel (név, e-mail, telefon, cég, weboldal, üzenet), a többi kérdés „kérdés: válasz” formában kerül a jegyzetbe.
+- E-mail nélküli beküldés nem megy át. Egy IP-címről óránként legfeljebb 5 kitöltés kerül a CRM-be.
+- Ha a CRM épp nem érhető el, a kitöltés sorba kerül, és óránként újrapróbálja. Ha 3 nap alatt sem sikerül, az oldal adminja e-mailben megkapja, hogy kézzel fel lehessen vinni.
+- A Grader is ezen keresztül küld, ha a mu-plugin telepítve van (így az ő érdeklődői sem vesznek el).
+
+### Telepítés
+
+1. Másold a fájlt a weboldal `wp-content/mu-plugins/` mappájába (bekapcsolni nem kell).
+2. A `wp-config.php`-ba (ugyanaz a titok, mint a CRM-ben):
+   ```php
+   define( 'HPV_CRM_URL', 'https://crm.helloprovision.com' );
+   define( 'HPV_BRIDGE_SECRET', '…' );
+   ```
+3. Próba: töltsd ki az űrlapot egy saját e-mail címmel; azonnal megjelenik a CRM Ügyfelek listájában „Érdeklődő” státusszal, és a csapat e-mailt kap.
+
+Egy űrlap kihagyása (pl. hírlevél): `add_filter( 'hpv_leads_capture', fn( $lead ) => 'Newsletter' === $lead['form'] ? false : $lead );`
+
+A téma űrlapja mellett a téma valószínűleg most is küld e-mailt az info@ címre; ha a CRM levele elég, azt a témában ki lehet kapcsolni.
+
 ## `plugins/helloprovision-reviews/` – Google értékelés-kérő rendszer
 
 A Google-profil helyezésére az általatok befolyásolható tényezők közül az értékelések rendszeres érkezése hat a legjobban. Ez a bővítmény ezt automatizálja.
@@ -260,7 +284,12 @@ Saját, gyors felület, nem a WordPress admin. Oldalújratöltés nélkül műk�
   - a számla szerkesztőjében „Rögzített munkaidő hozzáadása”: a még nem számlázott idő időszakra szűrve, projektenként vagy feladatonként egy tétellel;
   - óradíj: az ügyfél adatlapjáról, különben a beállításokból (USD és HUF külön);
   - a kiszámlázott idő nem kerülhet kétszer számlára; a piszkozat törlése vagy a számla érvénytelenítése felszabadítja.
-- **Website Grader → CRM:** aki a Graderen kitölti a riportot, „Érdeklődő” ügyfélként bekerül, a pontszámmal és a hibákkal belső jegyzetként. Ugyanarra az e-mailre nem lesz dupla ügyfél. A csapat e-mailt kap, a válasz közvetlenül az érdeklődőnek megy.
+- **Weboldal → CRM (érdeklődők):**
+  - aki a weboldalon kitölti a kapcsolati űrlapot („Project Brief”) vagy a Website Gradert, „Érdeklődő” ügyfélként bekerül a CRM-be;
+  - az üzenet, a telefonszám, az oldal, ahol kitöltötte, és a többi válasz (vagy a Grader pontszáma és hibái) belső jegyzetbe kerül;
+  - ugyanarra az e-mailre nem lesz dupla ügyfél: a meglévő ügyfélnél új jegyzet lesz, a hiányzó adatai kitöltődnek;
+  - a csapat e-mailt kap, amire válaszolva közvetlenül az érdeklődőnek írsz; a levélben link van az ügyfél adatlapjára.
+  - Részletek: `mu-plugins/helloprovision-leads.php`, lent.
 - **Google értékelés kérése a kész projekt után:**
   - a „Kész” státuszú, ügyfél által látható projekt után (alap: 3 nap múlva) a Reviews bővítmény értékelést kér;
   - csak a beállított országoknak (alap: USA, mert a Google-profil a floridai cégé), projektenként egyszer, és a Reviews szabálya szerint ügyfelenként 90 naponta egyszer.
@@ -365,7 +394,7 @@ A portál saját keretben fut, a WordPress témától függetlenül, mobilon is.
     define( 'HPV_META_ACCESS_TOKEN', '…' );                  // Business Manager rendszerfelhasználó, ads_read
     ```
     Az OAuth kliens átirányítási címe: `https://crm.helloprovision.com/wp-admin/admin-post.php?action=hpv_google_callback`. Utána: CRM → Beállítások → „Google összekapcsolása” az ügynökség Google fiókjával (amelyik hozzáfér az ügyfelek Search Console-, GA4- és Ads-fiókjaihoz).
-12. **Híd a marketing weboldalhoz** (Grader → CRM, CRM → Reviews): mindkét WordPress `wp-config.php`-jába ugyanaz a titok, legalább 16 karakter:
+12. **Híd a marketing weboldalhoz** (űrlapok és Grader → CRM, CRM → Reviews): mindkét WordPress `wp-config.php`-jába ugyanaz a titok, legalább 16 karakter:
     ```php
     define( 'HPV_BRIDGE_SECRET', '…' );
     // a CRM-be:          define( 'HPV_SITE_URL', 'https://helloprovision.com' );
@@ -422,6 +451,7 @@ wp eval-file tests/approvals-integration.php     # tartalom jóváhagyása
 wp eval-file tests/reports-integration.php       # havi riport (Google, Meta és AI helyettesítve)
 wp eval-file tests/automation-integration.php    # emlékeztetők, munkaidő, Grader és Reviews híd
 wp eval-file tests/clients-integration.php       # ügyfél-adatlap és szolgáltatás-katalógus
+HPV_TEST_SITE_URL=https://teszt.oldal wp eval-file tests/leads-integration.php  # weboldal űrlapjai → CRM (a leads mu-pluginnal)
 php tests/i18n.php                               # minden magyar fordítás megvan-e
 ```
 
