@@ -247,6 +247,7 @@ function ConvertBar({ p, onDone }) {
 				onDone(r.proposal);
 				if (r.target.type === 'contract') navigate('/contracts/' + r.target.id);
 				else if (r.target.type === 'project') navigate('/projects/' + r.target.id);
+				else if (r.target.type === 'invoice') navigate('/invoices/' + r.target.id);
 				else if (r.target.url) window.open(r.target.url, '_blank', 'noopener');
 				toast('Elkészült.');
 			})
@@ -267,7 +268,7 @@ function ConvertBar({ p, onDone }) {
 					${caps.contracts ? html`<button class="convert" disabled=${!!busy} onClick=${() => (p.contract_id ? navigate('/contracts/' + p.contract_id) : run('contract', { ai: 1 }))}><${Icon} name="doc" /><strong>${p.contract_id ? 'Szerződés megnyitása' : 'Szerződés AI-val'}</strong><span>a szerződésmintából, az elfogadott tételekkel</span></button>` : null}
 					${caps.invoices ? html`<div class="convert">
 						<${Icon} name="receipt" /><strong>${p.invoice_id ? 'Számla megnyitása' : 'Előleg / számla'}</strong>
-						${p.invoice_id ? html`<a class="link" href=${p.invoice_url} target="_blank" rel="noopener">Számla piszkozat →</a>` : html`
+						${p.invoice_id ? html`<a class="link" href=${'#/invoices/' + p.invoice_id}>Számla →</a>` : html`
 							<span class="inline"><select value=${deposit} onChange=${(e) => setDeposit(e.target.value)}><option value="30">30% előleg</option><option value="50">50% előleg</option><option value="100">teljes összeg</option></select>
 							<button class="btn btn--small" disabled=${!!busy} onClick=${() => run('invoice', { deposit })}>Piszkozat</button></span>`}
 					</div>` : null}

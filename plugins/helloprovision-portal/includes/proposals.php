@@ -281,7 +281,7 @@ function hpv_prop_format( array $p, bool $full = false ): array {
 				'declined'    => 'declined' === $p['status'] ? array( 'at' => hpv_video_ts( $p['declined_at'] ), 'reason' => (string) $p['decline_reason'] ) : null,
 				'contract_id' => (int) $p['contract_id'],
 				'invoice_id'  => (int) $p['invoice_id'],
-				'invoice_url' => (int) $p['invoice_id'] ? admin_url( 'admin.php?page=hpv-crm&action=edit&entity=invoice&id=' . (int) $p['invoice_id'] ) : '',
+				'invoice_url' => (int) $p['invoice_id'] ? hpv_p_crm_app_url( '/invoices/' . (int) $p['invoice_id'] ) : '',
 			)
 		);
 	}
@@ -524,7 +524,7 @@ function hpv_prop_convert( array $p, string $what, array $args, int $user_id ) {
 			);
 			hpv_p_save_invoice_items( $id, $lines );
 			hpv_p_update( 'proposal', (int) $p['id'], array( 'invoice_id' => $id ) );
-			$target = array( 'type' => 'invoice', 'id' => $id, 'url' => admin_url( 'admin.php?page=hpv-crm&action=edit&entity=invoice&id=' . $id ) );
+			$target = array( 'type' => 'invoice', 'id' => $id, 'url' => hpv_p_crm_app_url( '/invoices/' . $id ) );
 			break;
 
 		case 'subscriptions':

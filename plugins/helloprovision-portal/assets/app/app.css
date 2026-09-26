@@ -660,3 +660,69 @@ button.convert:hover { border-color: var(--ink); }
 .spin-dot { display: inline-block; width: 10px; height: 10px; border: 2px solid var(--ink); border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -1px; }
 .import-warn summary { cursor: pointer; color: var(--muted); }
 .import-warn ul { margin: 8px 0 0; padding-left: 20px; font-size: 13px; }
+
+/* Számlák */
+.head-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg-count { margin-left: 2px; color: var(--muted); font-style: normal; font-size: 12px; }
+.search-input--inline { width: min(280px, 100%); margin-left: auto; padding: 7px 12px; font-size: 14px; }
+.row-link { cursor: pointer; }
+.row-link:hover td { background: #fafaf6; }
+.late { color: var(--late); }
+.is-muted td { color: var(--muted); }
+.pill--inv-draft { background: #efefea; color: #555; }
+.pill--inv-sent { background: #e5f0ff; color: #1f4fbf; }
+.pill--inv-overdue { background: #ffe5e3; color: #b3261e; }
+.pill--inv-paid { background: #ecffd0; color: var(--accent-ink); }
+.pill--inv-void { background: #efefea; color: #888; text-decoration: line-through; }
+.pill--late { background: #ffe5e3; color: #b3261e; }
+.inv-page h1 { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.inv-page h1 .pill { font-size: 13px; }
+.inv-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+.inv-grid > .card { display: grid; gap: 14px; }
+.inv-side { display: grid; gap: 12px; }
+.inv-side .card { display: grid; gap: 8px; }
+.inv-side h3 { margin: 0; font-size: 15px; }
+.row--3 { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr); }
+.field--inline { display: flex; align-items: center; gap: 10px; }
+.field--inline select { width: auto; }
+.grid-row--inv { grid-template-columns: minmax(0, 1fr) 80px 130px 120px 32px; align-items: center; }
+.inv-line { font-variant-numeric: tabular-nums; }
+.inv-totals { display: grid; grid-template-columns: auto minmax(120px, max-content); gap: 6px 24px; justify-content: end; justify-items: end; padding-top: 10px; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.inv-totals span { color: var(--muted); }
+.inv-total { font-size: 18px; }
+.inv-foot { display: flex; justify-content: space-between; align-items: center; }
+.inv-meta { display: grid; grid-template-columns: repeat(4, auto); justify-content: start; gap: 4px 28px; margin: 0; }
+.inv-meta dt { grid-row: 1; color: var(--muted); font-size: 12px; }
+.inv-meta dd { grid-row: 2; margin: 0; font-weight: 600; }
+.inv-items td, .inv-items th { padding-left: 0; }
+.inv-notes { margin: 0; white-space: pre-line; }
+.inv-payments { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.inv-payments li { display: grid; gap: 2px; }
+.inline-form { display: flex; gap: 8px; }
+.inline-form input { flex: 1; min-width: 0; padding: 7px 10px; border: 1px solid var(--line); border-radius: 9px; font-size: 13px; }
+.alert { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 16px; padding: 12px 16px; border-radius: 12px; }
+.alert--error { background: #fff1f0; color: #8c1d18; }
+.upcoming { margin-bottom: 16px; }
+.upcoming h3 { margin: 0 0 8px; font-size: 15px; }
+.upcoming ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: 14px; }
+.upcoming li { display: flex; flex-wrap: wrap; gap: 8px; }
+.upcoming li .right { margin-left: auto; font-variant-numeric: tabular-nums; }
+@media (max-width: 1000px) {
+	.inv-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 720px) {
+	.row--3 { grid-template-columns: minmax(0, 1fr); }
+	.grid-row--inv { grid-template-columns: minmax(0, 1fr) 60px 90px 32px; }
+	.grid-row--inv .inv-line { display: none; }
+	.search-input--inline { width: 100%; margin-left: 0; }
+	.inv-meta { grid-template-columns: repeat(2, auto); }
+	.inv-meta dt, .inv-meta dd { grid-row: auto; }
+}
+.kpi-line { display: block; }
+.kpis--money .kpi strong { font-size: 22px; line-height: 1.2; }
+@media (max-width: 720px) {
+	.seg--scroll { max-width: 100%; overflow-x: auto; }
+	.seg--scroll button { white-space: nowrap; }
+	.col-opt { display: none; }
+	.kpis--money .kpi strong { font-size: 17px; }
+}

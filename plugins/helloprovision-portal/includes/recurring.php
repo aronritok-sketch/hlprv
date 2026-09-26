@@ -170,13 +170,13 @@ function hpv_recurring_run( ?string $today = null, ?string $mode = null ): array
 function hpv_recurring_digest( array $created, string $mode ): void {
 	$rows = '';
 	foreach ( $created as $c ) {
-		$rows .= '<li><a href="' . esc_url( admin_url( 'admin.php?page=hpv-crm&action=edit&entity=invoice&id=' . (int) $c['invoice_id'] ) ) . '">' . esc_html( $c['client'] ) . '</a> — ' . esc_html( $c['total'] )
+		$rows .= '<li><a href="' . esc_url( hpv_p_crm_app_url( '/invoices/' . (int) $c['invoice_id'] ) ) . '">' . esc_html( $c['client'] ) . '</a> — ' . esc_html( $c['total'] )
 			. ( $c['sent'] ? ' · kiküldve' : ( $c['error'] ? ' · <strong>hiba: ' . esc_html( $c['error'] ) . '</strong>' : ' · piszkozat, átnézésre vár' ) ) . '</li>';
 	}
 	hpv_p_notify_staff(
 		sprintf( 'Ismétlődő számlák: %d db', count( $created ) ),
 		'<p>' . ( 'send' === $mode ? 'A mai esedékes előfizetésekből készült számlák:' : 'A mai esedékes előfizetésekből piszkozat készült. Nézd át és küldd ki őket:' ) . '</p><ul>' . $rows . '</ul>',
-		admin_url( 'admin.php?page=hpv-crm-invoices&status=draft' )
+		hpv_p_crm_app_url( '/invoices?status=draft' )
 	);
 }
 

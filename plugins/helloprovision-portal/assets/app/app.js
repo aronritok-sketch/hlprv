@@ -15,6 +15,7 @@ import { Proposals, ProposalPage } from './views/proposals.js';
 import { Templates } from './views/templates.js';
 import { Files } from './views/files.js';
 import { ImportPage } from './views/import.js';
+import { Invoices, InvoicePage, Subscriptions } from './views/invoices.js';
 
 /* ── Chat (a meglévő chat komponens beágyazva) ───── */
 
@@ -66,7 +67,8 @@ function Clients() {
 									<a class="link" href=${'#/chat?client=' + c.id}>Chat</a>
 									<a class="link" href=${'#/calls?client=' + c.id}>Hívások</a>
 									<a class="link" href=${'#/files?client=' + c.id}>Fájlok</a>
-									<a class="link" href=${CFG.adminUrl + '&client=' + c.id}>Adatlap${boot.me.caps && boot.me.caps.invoices ? ', számlák' : ''} <${Icon} name="ext" size="13" /></a>
+									${boot.me.caps && boot.me.caps.invoices ? html`<a class="link" href=${'#/invoices?client=' + c.id}>Számlák</a>` : null}
+									<a class="link" href=${CFG.adminUrl + '&client=' + c.id}>Adatlap <${Icon} name="ext" size="13" /></a>
 								</td>
 							</tr>`)}
 					</tbody>
@@ -159,7 +161,6 @@ function Sidebar({ path }) {
 	const { boot, unread } = useApp();
 	const caps = boot.me.caps || {};
 	const legacy = [];
-	if (caps.invoices) legacy.push({ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-invoices'), label: 'Számlák', icon: 'receipt' });
 	if (caps.invoices) legacy.push({ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-services'), label: 'Szolgáltatások', icon: 'tag' });
 	if (boot.me.is_admin) legacy.push({ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-settings'), label: 'Beállítások', icon: 'cog' });
 	const isActive = (p) => (p === '/' ? path === '/' : path.startsWith(p));
@@ -175,6 +176,8 @@ function Sidebar({ path }) {
 			</nav>
 			${legacy.length || boot.me.is_admin || caps.contracts || caps.proposals ? html`<p class="nav-label">Pénzügy és admin</p>` : null}
 			<nav class="nav nav--secondary">
+				${caps.invoices ? html`<a href="#/invoices" class=${isActive('/invoices') ? 'is-active' : ''}><${Icon} name="receipt" /><span>Számlák</span></a>` : null}
+				${caps.invoices ? html`<a href="#/subscriptions" class=${isActive('/subscriptions') ? 'is-active' : ''}><${Icon} name="clock" /><span>Előfizetések</span></a>` : null}
 				${caps.contracts || caps.proposals ? html`<a href="#/templates" class=${isActive('/templates') ? 'is-active' : ''}><${Icon} name="template" /><span>Minták</span></a>` : null}
 				${boot.me.is_admin ? html`<a href="#/team" class=${isActive('/team') ? 'is-active' : ''}><${Icon} name="users" /><span>Csapat és jogok</span></a>` : null}
 				${boot.me.is_admin ? html`<a href="#/import" class=${isActive('/import') ? 'is-active' : ''}><${Icon} name="down" /><span>Import (Bitrix24)</span></a>` : null}
@@ -243,6 +246,9 @@ function App() {
 	else if (path === '/files') page = html`<${Files} key=${'files' + (params.client || '')} params=${params} />`;
 	else if (path === '/team') page = html`<${Team} />`;
 	else if (path === '/import') page = html`<${ImportPage} />`;
+	else if (path === '/invoices') page = html`<${Invoices} params=${params} />`;
+	else if ((m = path.match(/^\/invoices\/(\d+)$/))) page = html`<${InvoicePage} key=${'inv' + m[1]} id=${Number(m[1])} />`;
+	else if (path === '/subscriptions') page = html`<${Subscriptions} />`;
 	else if (path === '/proposals') page = html`<${Proposals} params=${params} />`;
 	else if ((m = path.match(/^\/proposals\/(\d+)$/))) page = html`<${ProposalPage} key=${'prop' + m[1]} id=${Number(m[1])} />`;
 	else if (path === '/contracts') page = html`<${Contracts} params=${params} />`;

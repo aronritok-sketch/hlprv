@@ -308,7 +308,7 @@ function hpv_bill_record_payment( array $invoice, array $p, string $reference ) 
 		hpv_p_notify_staff(
 			sprintf( 'Online befizetés: %s — %s', $invoice['number'], hpv_p_money( $amount, $currency ) ),
 			sprintf( '<p><strong>%s</strong> fizetett: %s (%s, %s számla).</p>', esc_html( hpv_p_client_name_safe( (int) $invoice['client_id'] ) ), esc_html( hpv_p_money( $amount, $currency ) ), esc_html( ucfirst( $p['provider'] ) ), esc_html( $invoice['number'] ) ),
-			admin_url( 'admin.php?page=hpv-crm&action=edit&entity=invoice&id=' . $invoice_id )
+			hpv_p_crm_app_url( '/invoices/' . $invoice_id )
 		);
 	}
 

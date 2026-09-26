@@ -24,6 +24,7 @@ require_once __DIR__ . '/includes/szamlazz.php';
 require_once __DIR__ . '/includes/stripe.php';
 require_once __DIR__ . '/includes/quickbooks.php';
 require_once __DIR__ . '/includes/recurring.php';
+require_once __DIR__ . '/includes/invoices-api.php';
 require_once __DIR__ . '/includes/domains.php';
 require_once __DIR__ . '/includes/notify.php';
 require_once __DIR__ . '/includes/chat.php';
