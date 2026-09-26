@@ -71,6 +71,7 @@ foreach ( $cases as $want => $touch ) {
 	}
 }
 it( 'Google Ads, Meta, Cégprofil, organikus, közösségi, e-mail, hivatkozó, kampány, egyéb hirdetés, közvetlen' . ( $bad ? ' (' . implode( ', ', $bad ) . ')' : '' ), ! $bad );
+it( 'a levelezés modul forráscímkéje', 'E-mail' === hpv_lead_source_label( 'mail' ) );
 it( 'forrásadat nélkül az űrlap dönt', 'unknown' === hpv_sales_lead_channel( array(), 'contact' ) && 'offline' === hpv_sales_lead_channel( array(), 'manual' ) && 'import' === hpv_sales_lead_channel( array(), 'bitrix' ) );
 it( 'ismeretlen kulcsok és tömbök kiszűrve', array( 'first' => array( 'utm_source' => 'google' ) ) === hpv_sales_clean_attribution( '{"first":{"utm_source":"google","evil":"<x>","gclid":["a"]}}' ) );
 
