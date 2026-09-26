@@ -102,6 +102,8 @@ def test_workflow_roles(as_role):
     # Kihagyás nem megy
     assert seo.post(f"/projects/{pid}/transition", json={"to": "seo_review"}).status_code == 403
     seo.post(f"/projects/{pid}/keywords", json={"terms": ["kitchen remodeling naples"]})
+    seo.post(f"/projects/{pid}/analysis/run")
+    seo.post(f"/projects/{pid}/analysis/accept", json={})
     for to in ("researching", "ai_analysis_complete", "seo_review", "client_review"):
         r = seo.post(f"/projects/{pid}/transition", json={"to": to})
         assert r.status_code == 200, r.text

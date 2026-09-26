@@ -92,7 +92,7 @@ export function Keywords({ project, params }) {
 	const [open, setOpen] = useState(null);
 	const [adding, setAdding] = useState(false);
 	const [limit, setLimit] = useState(PAGE);
-	const [sort, setSort] = useState({ key: 'volume', dir: 'desc' });
+	const [sort, setSort] = useState({ key: 'auto', dir: 'desc' });
 	const [view, setView] = useState(params.view || 'table');
 	const editable = can(me, 'keywords.edit');
 
@@ -113,7 +113,9 @@ export function Keywords({ project, params }) {
 			}
 			return true;
 		});
-		const get = (k) => (['volume', 'kd', 'cpc', 'traffic_potential'].includes(sort.key) ? k._m[sort.key] : k[sort.key]);
+		// Alapértelmezés: elemzés után a prioritási pontszám, előtte a volumen szerint.
+		const key = sort.key === 'auto' ? (data.keywords.some((k) => k.analysis) ? 'priority_score' : 'volume') : sort.key;
+		const get = (k) => (['volume', 'kd', 'cpc', 'traffic_potential'].includes(key) ? k._m[key] : k[key]);
 		list.sort((a, b) => {
 			const x = get(a); const y = get(b);
 			if (x === y) return a.term.localeCompare(b.term);

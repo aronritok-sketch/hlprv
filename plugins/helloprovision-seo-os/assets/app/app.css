@@ -134,6 +134,7 @@ button { font: inherit; color: inherit; }
 .grid--overview { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
 .grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid--wf { grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); align-items: start; }
 .stack { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 .stack-sm { display: flex; flex-direction: column; gap: 10px; }
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 18px; }
@@ -424,7 +425,7 @@ textarea.input { resize: vertical; min-height: 60px; }
 /* ── Mobil ───────────────────────────────────────── */
 
 @media (max-width: 1100px) {
-	.grid--dash, .grid--overview, .grid--2, .grid--3 { grid-template-columns: minmax(0, 1fr); }
+	.grid--dash, .grid--overview, .grid--2, .grid--3, .grid--wf { grid-template-columns: minmax(0, 1fr); }
 	.wf-head { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 

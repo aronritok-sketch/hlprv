@@ -4,6 +4,8 @@ import importlib
 
 MODULES = [
     "app.services.research",
+    "app.services.analysis",
+    "app.services.planning",
 ]
 
 

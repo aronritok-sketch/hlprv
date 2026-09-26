@@ -19,6 +19,7 @@ DEFINITIONS: dict[str, tuple[str, bool, Any, str | None]] = {
     "dataforseo_password": ("DataForSEO jelszó", True, "", "dataforseo_password"),
     "ahrefs_api_key": ("Ahrefs API kulcs", True, "", "ahrefs_api_key"),
     "monthly_budget_usd": ("Havi API-keret projektenként (USD)", False, 50, None),
+    "llm_prices": ("Modellárak (USD / 1M token: [bemenet, kimenet])", False, {}, None),
     "scoring_weights": (
         "Prioritási súlyok",
         False,
