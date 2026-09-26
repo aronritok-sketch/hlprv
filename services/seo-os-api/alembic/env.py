@@ -24,7 +24,9 @@ def include_name(name, type_, parent_names):
 
 def run_migrations_online() -> None:
     url = config.attributes.get("url") or get_settings().database_url
-    engine = create_engine(url)
+    # Ha az adatbázis-felhasználó neve „seo”, a "$user" miatt a seo séma lenne az alapértelmezett,
+    # és az összehasonlítás összekeveredne. A kapcsolat ezért a public sémával indul; a seo mindig kifejezett.
+    engine = create_engine(url, connect_args={"options": "-csearch_path=public"})
     with engine.connect() as connection:
         connection.execute(text(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA}"))
         connection.commit()

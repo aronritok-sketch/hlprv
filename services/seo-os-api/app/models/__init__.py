@@ -11,3 +11,14 @@ from .core import (  # noqa: F401
     StatusHistory,
     User,
 )
+from .research import (  # noqa: F401
+    IMPORT_SOURCES,
+    STYLE_QUESTIONS,
+    CompetitorRanking,
+    Import,
+    Job,
+    Keyword,
+    KeywordMetric,
+    StoredFile,
+    StyleGuide,
+)

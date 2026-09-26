@@ -61,8 +61,9 @@ export async function download(path, fallbackName = 'export') {
 	}
 	const blob = await res.blob();
 	const cd = res.headers.get('Content-Disposition') || '';
-	const m = cd.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
-	const name = m ? decodeURIComponent(m[1] || m[2]) : fallbackName;
+	const utf = cd.match(/filename\*=UTF-8''([^;]+)/i);
+	const plain = cd.match(/filename="?([^";]+)"?/i);
+	const name = utf ? decodeURIComponent(utf[1]) : plain ? plain[1] : fallbackName;
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement('a');
 	a.href = url;
