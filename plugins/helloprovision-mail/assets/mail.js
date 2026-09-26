@@ -182,7 +182,7 @@ function MailPage({ params }) {
 /* ── Olvasás ─────────────────────────────────────── */
 
 function Reader({ id, me, onCompose, onChanged, onClose }) {
-	const { boot } = useApp();
+	const { boot, setBoot } = useApp();
 	const [m, setM] = useState(null);
 	const [images, setImages] = useState(false);
 	const [taskOpen, setTaskOpen] = useState(false);
@@ -202,6 +202,15 @@ function Reader({ id, me, onCompose, onChanged, onClose }) {
 		forward_attachments: m.attachments });
 	const link = async (clientId) => {
 		try { const r = await api(`/mail/messages/${m.id}/link`, { method: 'POST', body: { crm_client_id: clientId || null, remember: true } }); setM({ ...m, crm_client_id: r.crm_client_id }); toast(clientId ? 'Ügyfélhez kötve – a következő levelei is ide kerülnek.' : 'Leválasztva.'); onChanged(); } catch (e) { toast(e.message, 'error'); }
+	};
+	const addLead = async () => {
+		try {
+			const r = await api('/mail-lead', { method: 'POST', body: { message_id: m.id } });
+			if (!boot.clients.some((c) => c.id === r.client_id)) setBoot({ ...boot, clients: [...boot.clients, { id: r.client_id, name: r.name, status: r.status }] });
+			setM({ ...m, crm_client_id: r.client_id });
+			toast(r.created ? 'Új érdeklődő a tölcsér elején (Értékesítés).' : 'Már ismert ügyfél – a levelet hozzá kötöttük.');
+			onChanged();
+		} catch (e) { toast(e.message, 'error'); }
 	};
 	const markUnread = async () => { await api(`/mail/messages/${m.id}/seen`, { method: 'POST', body: { seen: false } }); onChanged(); onClose(); };
 
@@ -234,6 +243,7 @@ function Reader({ id, me, onCompose, onChanged, onClose }) {
 					</select>
 				</label>
 				${m.crm_client_id ? html`<a class="link small" href=${'#/clients/' + m.crm_client_id}>Ügyfél adatlapja</a> <a class="link small" href=${'#/mail?client=' + m.crm_client_id}>Összes levele</a>` : null}
+				${!m.crm_client_id && m.folder === 'inbox' ? html`<button class="btn btn--ghost btn--small" onClick=${addLead}><${Icon} name="flag" size="15" /> Felvétel érdeklődőként</button>` : null}
 				${m.crm_task_id ? html`<span class="pill pill--done">Feladat készült belőle</span>` : null}
 			</div>
 			${m.thread && m.thread.length > 1 ? html`<details class="mail-thread"><summary>${m.thread.length} levél ebben a beszélgetésben</summary>

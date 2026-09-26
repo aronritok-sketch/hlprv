@@ -2,7 +2,7 @@
 /**
  * Plugin Name: HelloProVision Levelezés
  * Description: Levelezés a CRM-ben: mindenkinek postafiók, az admin által kezelt egységes aláírás, levélből feladat, a levelek az ügyfélhez kötve. A leveleket az SEO OS szervere szinkronizálja (IMAP/SMTP).
- * Version:     0.1.0
+ * Version:     0.2.0
  * Author:      HelloProVision
  * Requires PHP: 8.0
  * Text Domain: helloprovision-mail
@@ -13,7 +13,7 @@ defined( 'ABSPATH' ) || exit;
 require_once __DIR__ . '/includes/github-updater.php';
 HPV_GitHub_Updater::register( __FILE__, 'helloprovision-mail' );
 
-const HPV_MAIL_VERSION = '0.1.0';
+const HPV_MAIL_VERSION = '0.2.0';
 const HPV_MAIL_FILE    = __FILE__;
 
 require_once __DIR__ . '/includes/core.php';
