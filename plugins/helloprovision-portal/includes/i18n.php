@@ -75,6 +75,7 @@ function hpv_date( ?string $date, string $style = 'date', bool $gmt = false ): s
 			'short'    => 'M j',
 			'datetime' => 'M j, Y · g:i a',
 			'full'     => 'l, M j, Y · g:i a',
+			'month'    => 'F Y',
 		);
 
 		return gmdate( $formats[ $style ] ?? $formats['date'], $ts );
@@ -91,6 +92,8 @@ function hpv_date( ?string $date, string $style = 'date', bool $gmt = false ): s
 	switch ( $style ) {
 		case 'long':
 			return "$y. {$long[ $m ]} $d.";
+		case 'month':
+			return "$y. {$long[ $m ]}";
 		case 'short':
 			return "{$short[ $m ]} $d.";
 		case 'datetime':
@@ -207,6 +210,7 @@ function hpv_i18n_hu(): array {
 		'Start'                              => 'Kezdés',
 		'Due'                                => 'Határidő',
 		'Progress'                           => 'Haladás',
+		'Month'                              => 'Hónap',
 
 		// Státuszok (a séma angol címkéi)
 		'Planning'                           => 'Tervezés',

@@ -29,7 +29,7 @@ function Badges({ t, blocked, projectHasClient }) {
 
 /* ── Tábla húzással ──────────────────────────────── */
 
-function Board({ project, tasks, statuses, reload, setTasks }) {
+function Board({ project, tasks, statuses, reload, setTasks, period }) {
 	const [drag, setDrag] = useState(null); // { id, status, index }
 	const [adding, setAdding] = useState(null);
 	const boardRef = useRef(null);
@@ -101,7 +101,7 @@ function Board({ project, tasks, statuses, reload, setTasks }) {
 
 	const create = (status, title) => {
 		if (!title.trim()) return;
-		api('/pm/tasks', { method: 'POST', body: { project_id: project.id, title, status } }).then((t) => {
+		api('/pm/tasks', { method: 'POST', body: { project_id: project.id, title, status, ...(period ? { period } : {}) } }).then((t) => {
 			setTasks((list) => [...list, t]);
 		}).catch((e) => toast(e.message, 'error'));
 	};
@@ -340,10 +340,12 @@ function Timeline({ project, tasks, reload, setTasks }) {
 
 function SettingsModal({ project, onClose, onSaved }) {
 	const { boot } = useApp();
-	const [f, setF] = useState({ description: project.description || '', visible: project.visible, color: project.color, client_id: project.client_id || '', is_template: project.is_template });
+	const [f, setF] = useState({ description: project.description || '', visible: project.visible, color: project.color, client_id: project.client_id || '', is_template: project.is_template, kind: project.kind || 'web', package_id: project.package_id || '', package_day: project.package_day || 1 });
+	const [templates, setTemplates] = useState([]);
+	useEffect(() => { api('/pm/projects?templates=1').then((l) => setTemplates(l.filter((t) => t.id !== project.id))).catch(() => {}); }, []);
 	const save = (e) => {
 		e.preventDefault();
-		api('/pm/projects/' + project.id, { method: 'POST', body: { ...f, visible: f.visible ? 1 : 0, is_template: f.is_template ? 1 : 0 } }).then(() => { onClose(); onSaved(); toast('Mentve.'); }).catch((err) => toast(err.message, 'error'));
+		api('/pm/projects/' + project.id, { method: 'POST', body: { ...f, package_id: f.is_template ? 0 : Number(f.package_id) || 0, visible: f.visible ? 1 : 0, is_template: f.is_template ? 1 : 0 } }).then(() => { onClose(); onSaved(); toast('Mentve.'); }).catch((err) => toast(err.message, 'error'));
 	};
 	const del = () => {
 		if (!window.confirm('Biztosan törlöd a projektet az összes feladattal együtt?')) return;
@@ -353,7 +355,15 @@ function SettingsModal({ project, onClose, onSaved }) {
 		<${Modal} title="Projekt beállítások" onClose=${onClose}>
 			<form class="form" onSubmit=${save}>
 				<label class="field"><span>Leírás (az ügyfél is látja, ha a projekt látható)</span><textarea rows="4" value=${f.description} onInput=${(e) => setF({ ...f, description: e.target.value })}></textarea></label>
-				<label class="field"><span>Ügyfél</span><select value=${f.client_id} onChange=${(e) => setF({ ...f, client_id: e.target.value })}><option value="">— belső projekt —</option>${boot.clients.map((c) => html`<option value=${c.id}>${c.name}</option>`)}</select></label>
+				<div class="row">
+					<label class="field"><span>Ügyfél</span><select value=${f.client_id} onChange=${(e) => setF({ ...f, client_id: e.target.value })}><option value="">— belső projekt —</option>${boot.clients.map((c) => html`<option value=${c.id}>${c.name}</option>`)}</select></label>
+					<label class="field"><span>Típus</span><select value=${f.kind} onChange=${(e) => setF({ ...f, kind: e.target.value })}>${(boot.projectKinds || []).map((k) => html`<option value=${k.key}>${k.label}</option>`)}</select></label>
+				</div>
+				${!f.is_template ? html`
+					<div class="row">
+						<label class="field"><span>Havi feladatcsomag</span><select value=${f.package_id} onChange=${(e) => setF({ ...f, package_id: e.target.value })}><option value="">— nincs (egyszeri projekt) —</option>${templates.map((t) => html`<option value=${t.id}>${t.name}</option>`)}</select></label>
+						${f.package_id ? html`<label class="field"><span>Minden hónap ennyiedik napján</span><input type="number" min="1" max="28" value=${f.package_day} onInput=${(e) => setF({ ...f, package_day: e.target.value })} /></label>` : null}
+					</div>` : null}
 				<div class="field"><span>Szín</span><div class="swatches">${COLORS.map((c) => html`<button type="button" key=${c} class=${'swatch' + (f.color === c ? ' is-active' : '')} style=${{ background: c }} onClick=${() => setF({ ...f, color: c })}></button>`)}</div></div>
 				<label class="toggle"><input type="checkbox" checked=${f.visible} onChange=${(e) => setF({ ...f, visible: e.target.checked })} /> <span>Az ügyfél látja a portálon</span></label>
 				<label class="toggle"><input type="checkbox" checked=${f.is_template} onChange=${(e) => setF({ ...f, is_template: e.target.checked })} /> <span>Sablon (új projektek kiindulópontja)</span></label>
@@ -376,6 +386,7 @@ export function ProjectPage({ id, params }) {
 	const [calling, setCalling] = useState(false);
 	const [error, setError] = useState('');
 	const view = params.view || localStorage.getItem('hpv-project-view') || 'board';
+	const [creatingPkg, setCreatingPkg] = useState(false);
 
 	const load = () => api('/pm/projects/' + id).then((d) => { setData(d); setTasks(d.tasks); }).catch((e) => setError(e.message));
 	useEffect(() => {
@@ -389,8 +400,22 @@ export function ProjectPage({ id, params }) {
 	if (!data) return html`<${Spinner} />`;
 	const p = data.project;
 	const statuses = boot.statuses;
-	const done = tasks.filter((t) => !t.parent_id && t.status === 'done').length;
-	const total = tasks.filter((t) => !t.parent_id).length;
+	// Havidíjas projekt: hónaponként (alapból a legutóbbi hónap; „all” = minden hónap).
+	const periods = [...new Set(tasks.map((t) => t.period).filter(Boolean))].sort().reverse();
+	const period = p.package_id && periods.length ? (params.period === 'all' ? '' : periods.includes(params.period) ? params.period : periods[0]) : '';
+	const shown = period ? tasks.filter((t) => !t.period || t.period === period) : tasks;
+	const monthLabel = (per) => { const [y, m] = per.split('-'); return y + '. ' + MONTHS_LONG[Number(m) - 1]; };
+	const nextPeriod = (() => { const d = new Date(); const cur = d.toISOString().slice(0, 7); if (!periods.includes(cur)) return cur; d.setDate(1); d.setMonth(d.getMonth() + 1); return d.toISOString().slice(0, 7); })();
+	const createPackage = () => {
+		if (!window.confirm('Elkészítsük a(z) ' + monthLabel(nextPeriod) + ' havi feladatcsomagot?')) return;
+		setCreatingPkg(true);
+		api('/pm/projects/' + p.id + '/package', { method: 'POST', body: { period: nextPeriod } })
+			.then((r) => { toast(r.created + ' feladat létrehozva.'); setParam('period', nextPeriod); load(); })
+			.catch((e) => toast(e.message, 'error'))
+			.finally(() => setCreatingPkg(false));
+	};
+	const done = shown.filter((t) => !t.parent_id && t.status === 'done').length;
+	const total = shown.filter((t) => !t.parent_id).length;
 	const progress = total ? Math.round((100 * done) / total) : 0;
 
 	const saveProject = (body) => api('/pm/projects/' + p.id, { method: 'POST', body }).then((np) => setData({ ...data, project: { ...p, ...np } })).catch((e) => toast(e.message, 'error'));
@@ -401,7 +426,7 @@ export function ProjectPage({ id, params }) {
 	const addTask = () => {
 		const title = window.prompt('Új feladat neve:');
 		if (!title) return;
-		api('/pm/tasks', { method: 'POST', body: { project_id: p.id, title, status: 'todo' } }).then((t) => { setTasks((l) => [...l, t]); setParam('task', t.id); });
+		api('/pm/tasks', { method: 'POST', body: { project_id: p.id, title, status: 'todo', ...(period ? { period } : {}) } }).then((t) => { setTasks((l) => [...l, t]); setParam('task', t.id); });
 	};
 
 	return html`
@@ -412,6 +437,9 @@ export function ProjectPage({ id, params }) {
 					<div class="project-head__title"><span class="project-dot"></span><${InlineText} className="title-input" value=${p.name} onSave=${(v) => saveProject({ name: v })} /></div>
 					<div class="project-head__meta">
 						${p.client ? html`<a class="chip chip--client" href=${'#/projects?client=' + p.client_id}>${p.client}</a>` : html`<span class="chip">${p.is_template ? 'Sablon' : 'Belső projekt'}</span>`}
+						${p.kind && p.kind !== 'web' ? html`<span class="chip chip--kind">${((boot.projectKinds || []).find((k) => k.key === p.kind) || {}).label || p.kind}</span>` : null}
+						${p.package_id ? html`<select class="meta-select meta-select--month" value=${period || 'all'} onChange=${(e) => setParam('period', e.target.value)} aria-label="Hónap">
+							${periods.map((per) => html`<option value=${per}>${monthLabel(per)}</option>`)}<option value="all">Minden hónap</option></select>` : null}
 						<select class="meta-select" value=${p.status} onChange=${(e) => saveProject({ status: e.target.value })}>${boot.projectStatuses.map((s) => html`<option value=${s.key}>${s.label}</option>`)}</select>
 						<label class="meta-field"><${Icon} name="users" size="15" /><select class="meta-select" value=${p.owner ? p.owner.id : 0} onChange=${(e) => saveProject({ owner_id: e.target.value })}><option value="0">Nincs felelős</option>${boot.users.map((u) => html`<option value=${u.id}>${u.name}</option>`)}</select></label>
 						<label class="meta-field"><span class="muted">Kezdés</span><input type="date" value=${p.start_date || ''} onChange=${(e) => saveProject({ start_date: e.target.value })} /></label>
@@ -424,15 +452,16 @@ export function ProjectPage({ id, params }) {
 					${p.client_id ? html`<button class="btn btn--ghost" onClick=${() => setCalling(true)}><${Icon} name="video" /> Hívás</button>` : null}
 					${p.client_id ? html`<a class="btn btn--ghost" target="_blank" rel="noopener" href=${CFG.portalUrl + (CFG.portalUrl.includes('?') ? '&' : '?') + 'preview_client=' + p.client_id + '&view=projects&id=' + p.id}>Portál előnézet</a>` : null}
 					<button class="icon-btn" onClick=${() => setSettings(true)} title="Beállítások" aria-label="Beállítások"><${Icon} name="cog" /></button>
+					${p.package_id ? html`<button class="btn btn--ghost" disabled=${creatingPkg} onClick=${createPackage} title="A havi csomag magától is elkészül a megadott napon">+ ${monthLabel(nextPeriod)}</button>` : null}
 					<button class="btn" onClick=${addTask}><${Icon} name="plus" /> Feladat</button>
 				</div>
 			</header>
 
 			<nav class="tabs">${VIEWS.filter((v) => v.key !== 'files' || p.client_id).map((v) => html`<button key=${v.key} class=${view === v.key ? 'is-active' : ''} onClick=${() => setView(v.key)}><${Icon} name=${v.icon} size="16" /> ${v.label}</button>`)}</nav>
 
-			${view === 'board' ? html`<${Board} project=${p} tasks=${tasks} statuses=${statuses} reload=${load} setTasks=${setTasks} />` : null}
-			${view === 'list' ? html`<${ListView} project=${p} tasks=${tasks} statuses=${statuses} reload=${load} />` : null}
-			${view === 'timeline' ? html`<${Timeline} project=${p} tasks=${tasks} reload=${load} setTasks=${setTasks} />` : null}
+			${view === 'board' ? html`<${Board} project=${p} tasks=${shown} statuses=${statuses} reload=${load} setTasks=${setTasks} period=${period} />` : null}
+			${view === 'list' ? html`<${ListView} project=${p} tasks=${shown} statuses=${statuses} reload=${load} />` : null}
+			${view === 'timeline' ? html`<${Timeline} project=${p} tasks=${shown} reload=${load} setTasks=${setTasks} />` : null}
 			${view === 'files' && p.client_id ? html`<${FilesPanel} clientId=${p.client_id} projectId=${p.id} hideProject />` : null}
 			${settings ? html`<${SettingsModal} project=${p} onClose=${() => setSettings(false)} onSaved=${load} />` : null}
 			${calling ? html`<${NewCallModal} clientId=${p.client_id} projectId=${p.id} onClose=${() => setCalling(false)} />` : null}

@@ -9,8 +9,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-const HPV_PORTAL_VERSION    = '0.6.0';
-const HPV_PORTAL_DB_VERSION = '7';
+const HPV_PORTAL_VERSION    = '0.7.0';
+const HPV_PORTAL_DB_VERSION = '8';
 const HPV_PORTAL_OPTION     = 'hpv_portal_settings';
 const HPV_PORTAL_FILE       = __FILE__;
 
@@ -24,6 +24,7 @@ require_once __DIR__ . '/includes/szamlazz.php';
 require_once __DIR__ . '/includes/stripe.php';
 require_once __DIR__ . '/includes/quickbooks.php';
 require_once __DIR__ . '/includes/recurring.php';
+require_once __DIR__ . '/includes/retainer.php';
 require_once __DIR__ . '/includes/invoices-api.php';
 require_once __DIR__ . '/includes/domains.php';
 require_once __DIR__ . '/includes/notify.php';

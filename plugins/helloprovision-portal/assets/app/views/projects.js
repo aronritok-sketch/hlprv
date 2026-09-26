@@ -6,7 +6,7 @@ export const COLORS = ['#b8ff34', '#d29dff', '#7dd3fc', '#fdba74', '#fca5a5', '#
 export function NewProjectModal({ onClose, clientId, asTemplate }) {
 	const { boot } = useApp();
 	const [templates, setTemplates] = useState([]);
-	const [f, setF] = useState({ name: '', client_id: clientId || '', template_id: '', start_date: todayISO(), due_date: '', owner_id: boot.me.id, color: COLORS[0], visible: true, is_template: !!asTemplate });
+	const [f, setF] = useState({ name: '', kind: 'web', client_id: clientId || '', template_id: '', package_id: '', package_day: 1, start_date: todayISO(), due_date: '', owner_id: boot.me.id, color: COLORS[0], visible: true, is_template: !!asTemplate });
 	const [busy, setBusy] = useState(false);
 	const set = (k) => (e) => setF({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
 
@@ -16,14 +16,20 @@ export function NewProjectModal({ onClose, clientId, asTemplate }) {
 		e.preventDefault();
 		setBusy(true);
 		api('/pm/projects', { method: 'POST', body: { ...f, visible: f.visible ? 1 : 0, is_template: f.is_template ? 1 : 0 } })
-			.then((p) => { onClose(); toast('Projekt létrehozva.'); navigate('/projects/' + p.id); })
+			.then(async (p) => {
+				if (f.package_id) await api('/pm/projects/' + p.id + '/package', { method: 'POST', body: {} }).catch((e) => toast(e.message, 'error'));
+				onClose(); toast('Projekt létrehozva.'); navigate('/projects/' + p.id);
+			})
 			.catch((err) => { toast(err.message, 'error'); setBusy(false); });
 	};
 
 	return html`
 		<${Modal} title=${asTemplate ? 'Új projektsablon' : 'Új projekt'} onClose=${onClose}>
 			<form class="form" onSubmit=${submit}>
-				<label class="field"><span>Név</span><input required value=${f.name} onInput=${set('name')} placeholder="pl. Weboldal újratervezés" autoFocus /></label>
+				<div class="row">
+					<label class="field"><span>Név</span><input required value=${f.name} onInput=${set('name')} placeholder=${f.kind === 'web' ? 'pl. Weboldal újratervezés' : 'pl. Helyi SEO — havi'} autoFocus /></label>
+					<label class="field"><span>Típus</span><select value=${f.kind} onChange=${set('kind')}>${(boot.projectKinds || []).map((k) => html`<option value=${k.key}>${k.label}</option>`)}</select></label>
+				</div>
 				${!asTemplate ? html`
 					<div class="row">
 						<label class="field"><span>Ügyfél</span>
@@ -45,6 +51,14 @@ export function NewProjectModal({ onClose, clientId, asTemplate }) {
 				</div>
 				${!asTemplate && f.client_id ? html`<label class="toggle"><input type="checkbox" checked=${f.visible} onChange=${set('visible')} /> <span>Az ügyfél látja a portálon</span></label>` : null}
 				${f.template_id ? html`<p class="hint">A sablon feladatai átmásolódnak, a dátumok a kezdőnaphoz igazodnak.</p>` : null}
+				${!asTemplate ? html`
+					<div class="row">
+						<label class="field"><span>Havi feladatcsomag (havidíjas munkához)</span>
+							<select value=${f.package_id} onChange=${set('package_id')}><option value="">— nincs —</option>${templates.map((t) => html`<option value=${t.id}>${t.name} (${t.tasks} feladat)</option>`)}</select>
+						</label>
+						${f.package_id ? html`<label class="field"><span>Minden hónap ennyiedik napján</span><input type="number" min="1" max="28" value=${f.package_day} onInput=${set('package_day')} /></label>` : null}
+					</div>
+					${f.package_id ? html`<p class="hint">A sablon feladatai minden hónapban újra létrejönnek ebben a projektben; az első csomag azonnal elkészül.</p>` : null}` : null}
 				<footer class="form__foot"><button type="button" class="btn btn--ghost" onClick=${onClose}>Mégse</button><button class="btn" disabled=${busy}>Létrehozás</button></footer>
 			</form>
 		</${Modal}>`;

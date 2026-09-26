@@ -104,6 +104,7 @@ function hpv_pm_format_task( array $t, array $stats = array() ): array {
 		'sort'         => (int) $t['sort'],
 		'estimate'     => (int) $t['estimate'],
 		'completed_at' => $t['completed_at'],
+		'period'       => (string) ( $t['period'] ?? '' ),
 		'stats'        => $s,
 	);
 }
@@ -122,6 +123,10 @@ function hpv_pm_format_project( array $p, bool $with_counts = true ): array {
 		'due_date'    => $p['due_date'],
 		'visible'     => (bool) $p['visible'],
 		'is_template' => (bool) $p['is_template'],
+		'kind'        => $p['kind'] ?: 'web',
+		'package_id'  => (int) $p['package_id'],
+		'package_day' => max( 1, (int) $p['package_day'] ),
+		'last_package' => (string) $p['last_package'],
 	);
 	if ( $with_counts ) {
 		$tasks           = hpv_p_find( 'task', array( 'project_id' => $p['id'], 'parent_id' => 0 ), array( 'limit' => 2000 ) );
@@ -147,7 +152,7 @@ function hpv_pm_update_task( int $id, array $input ): ?array {
 	if ( ! $task ) {
 		return null;
 	}
-	$allowed = array( 'title', 'status', 'priority', 'assignee_id', 'start_date', 'due_date', 'visible', 'description', 'estimate', 'parent_id', 'project_id', 'sort' );
+	$allowed = array( 'title', 'status', 'priority', 'assignee_id', 'start_date', 'due_date', 'visible', 'description', 'estimate', 'parent_id', 'project_id', 'sort', 'period' );
 	$data    = hpv_p_sanitize( 'task', array_intersect_key( $input, array_flip( $allowed ) ) );
 
 	if ( isset( $data['parent_id'] ) && $data['parent_id'] === $id ) {
@@ -222,10 +227,10 @@ function hpv_pm_next_sort( int $project_id, string $status ): int {
  * Új projekt sablonból: a feladatok (és alfeladatok, ellenőrzőlisták) átmásolódnak,
  * a dátumok a sablon kezdőnapjához képest eltolva.
  */
-function hpv_pm_copy_template( int $template_id, int $project_id, string $start ): void {
+function hpv_pm_copy_template( int $template_id, int $project_id, string $start ): array {
 	$template = hpv_p_get( 'project', $template_id );
 	if ( ! $template ) {
-		return;
+		return array();
 	}
 	$base  = $template['start_date'] ?: current_time( 'Y-m-d' );
 	$shift = function ( ?string $date ) use ( $base, $start ): ?string {
@@ -266,6 +271,8 @@ function hpv_pm_copy_template( int $template_id, int $project_id, string $start 
 			);
 		}
 	}
+
+	return array_values( $map );
 }
 
 /**
@@ -383,6 +390,7 @@ function hpv_pm_rest_bootstrap() {
 			),
 			'statuses'   => hpv_pm_statuses(),
 			'priorities' => array_map( fn( $k, $v ) => array( 'key' => $k, 'label' => $v[0] ), array_keys( hpv_p_entity( 'task' )['fields']['priority']['options'] ), hpv_p_entity( 'task' )['fields']['priority']['options'] ),
+			'projectKinds'    => array_map( fn( $k, $v ) => array( 'key' => $k, 'label' => $v[0] ), array_keys( hpv_p_entity( 'project' )['fields']['kind']['options'] ), hpv_p_entity( 'project' )['fields']['kind']['options'] ),
 			'projectStatuses' => array_map( fn( $k, $v ) => array( 'key' => $k, 'label' => $v[0] ), array_keys( hpv_p_entity( 'project' )['fields']['status']['options'] ), hpv_p_entity( 'project' )['fields']['status']['options'] ),
 			'timer'      => hpv_pm_format_timer( hpv_pm_running_timer( $me->ID ) ),
 			'unread'     => hpv_chat_total_unread( $me->ID ),
@@ -487,8 +495,17 @@ function hpv_pm_rest_update_project( WP_REST_Request $request ) {
 	if ( ! $project ) {
 		return hpv_pm_not_found();
 	}
-	$allowed = array( 'name', 'description', 'status', 'client_id', 'owner_id', 'color', 'start_date', 'due_date', 'visible', 'is_template' );
+	$allowed = array( 'name', 'description', 'status', 'client_id', 'owner_id', 'color', 'start_date', 'due_date', 'visible', 'is_template', 'kind', 'package_id', 'package_day' );
 	$data    = hpv_p_sanitize( 'project', array_intersect_key( $request->get_params(), array_flip( $allowed ) ) );
+	if ( isset( $data['package_id'] ) && $data['package_id'] ) {
+		$tpl = hpv_p_get( 'project', (int) $data['package_id'] );
+		if ( ! $tpl || ! (int) $tpl['is_template'] || (int) $tpl['id'] === (int) $project['id'] ) {
+			return new WP_Error( 'package', 'A havi csomag csak egy projektsablon lehet.', array( 'status' => 400 ) );
+		}
+	}
+	if ( isset( $data['package_day'] ) ) {
+		$data['package_day'] = min( 28, max( 1, (int) $data['package_day'] ) );
+	}
 	if ( isset( $data['name'] ) && '' === trim( $data['name'] ) ) {
 		unset( $data['name'] );
 	}

@@ -726,3 +726,5 @@ button.convert:hover { border-color: var(--ink); }
 	.col-opt { display: none; }
 	.kpis--money .kpi strong { font-size: 17px; }
 }
+.chip--kind { background: #f1e5ff; color: #6b21a8; }
+.meta-select--month { font-weight: 600; }

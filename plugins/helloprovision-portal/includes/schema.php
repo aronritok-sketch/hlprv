@@ -139,6 +139,25 @@ function hpv_p_entities(): array {
 				'owner_id'    => array( 'type' => 'ref', 'ref' => 'user', 'label' => 'Projektfelelős' ),
 				'color'       => array( 'type' => 'text', 'label' => 'Szín', 'default' => '#b8ff34' ),
 				'is_template' => array( 'type' => 'bool', 'label' => 'Sablon', 'default' => 0 ),
+				'kind'        => array(
+					'type'    => 'select',
+					'label'   => 'Típus',
+					'default' => 'web',
+					'options' => array(
+						'web'     => array( 'Weboldal', 'Website' ),
+						'seo'     => array( 'SEO', 'SEO' ),
+						'local'   => array( 'Helyi SEO és Cégprofil', 'Local SEO & Business Profile' ),
+						'content' => array( 'Tartalom', 'Content' ),
+						'ads'     => array( 'Hirdetéskezelés', 'Advertising' ),
+						'social'  => array( 'Közösségi média', 'Social media' ),
+						'audit'   => array( 'Audit', 'Audit' ),
+						'other'   => array( 'Egyéb', 'Other' ),
+					),
+				),
+				// Havi csomag (retainer): a sablon feladatai minden hónapban újra létrejönnek ebben a projektben.
+				'package_id'   => array( 'type' => 'ref', 'ref' => 'project', 'label' => 'Havi feladatcsomag (sablon)' ),
+				'package_day'  => array( 'type' => 'int', 'label' => 'A csomag napja a hónapban', 'default' => 1 ),
+				'last_package' => array( 'type' => 'text', 'label' => 'Utolsó havi csomag (ÉÉÉÉ-HH)', 'readonly' => true ),
 			),
 		),
 
@@ -184,6 +203,7 @@ function hpv_p_entities(): array {
 				'estimate'     => array( 'type' => 'int', 'label' => 'Becsült idő (perc)' ),
 				'created_by'   => array( 'type' => 'int', 'label' => 'Létrehozta' ),
 				'completed_at' => array( 'type' => 'datetime', 'label' => 'Lezárva', 'readonly' => true ),
+				'period'       => array( 'type' => 'text', 'label' => 'Hónap (havi csomag, ÉÉÉÉ-HH)' ),
 			),
 		),
 

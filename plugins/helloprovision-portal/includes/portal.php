@@ -440,7 +440,7 @@ function hpv_pv_overview( array $client, array $counts ) {
 				<p class="hpv-empty"><?php echo esc_html( hpv_t( 'No active projects.' ) ); ?></p>
 			<?php endif; ?>
 			<?php foreach ( $active as $p ) : ?>
-				<?php $progress = hpv_p_project_progress( hpv_p_portal_tasks( (int) $p['id'] ) ); ?>
+				<?php $progress = hpv_p_project_progress( hpv_retainer_current_tasks( $p ) ); ?>
 				<a class="hpv-mini-project" href="<?php echo esc_url( hpv_p_portal_link( 'projects', array( 'id' => $p['id'] ) ) ); ?>">
 					<span class="hpv-mini-project__top"><strong><?php echo esc_html( $p['name'] ); ?></strong><?php echo hpv_p_portal_badge( 'project', 'status', $p['status'] ); // phpcs:ignore ?></span>
 					<span class="hpv-bar"><span style="width:<?php echo (int) $progress; ?>%"></span></span>
@@ -474,7 +474,7 @@ function hpv_pv_projects( int $client_id ) {
 	}
 	echo '<div class="hpv-cards">';
 	foreach ( $projects as $p ) {
-		$progress = hpv_p_project_progress( hpv_p_portal_tasks( (int) $p['id'] ) );
+		$progress = hpv_p_project_progress( hpv_retainer_current_tasks( $p ) );
 		?>
 		<a class="hpv-card-link" href="<?php echo esc_url( hpv_p_portal_link( 'projects', array( 'id' => $p['id'] ) ) ); ?>">
 			<span class="hpv-mini-project__top"><strong><?php echo esc_html( $p['name'] ); ?></strong><?php echo hpv_p_portal_badge( 'project', 'status', $p['status'] ); // phpcs:ignore ?></span>
@@ -493,9 +493,23 @@ function hpv_pv_project( int $client_id, int $id ) {
 		hpv_p_portal_header( hpv_t( 'Project not found' ), '', hpv_p_portal_link( 'projects' ) );
 		return;
 	}
-	$tasks    = hpv_p_portal_tasks( $id );
+	$tasks   = hpv_p_portal_tasks( $id );
+	$periods = hpv_retainer_is( $project ) ? hpv_retainer_periods( $tasks ) : array();
+	$period  = '';
+	if ( $periods ) {
+		// Havidíjas projekt: hónaponként (alapból a legutóbbi hónap).
+		$period = in_array( $_GET['period'] ?? '', $periods, true ) ? sanitize_text_field( wp_unslash( $_GET['period'] ) ) : $periods[0];
+		$tasks  = hpv_retainer_filter( $tasks, $period );
+	}
 	$progress = hpv_p_project_progress( $tasks );
-	hpv_p_portal_header( $project['name'], '', hpv_p_portal_link( 'projects' ) );
+	hpv_p_portal_header( $project['name'], $period ? hpv_date( $period . '-01', 'month' ) : '', hpv_p_portal_link( 'projects' ) );
+	if ( count( $periods ) > 1 ) {
+		echo '<nav class="hpv-periods" aria-label="' . esc_attr( hpv_t( 'Month' ) ) . '">';
+		foreach ( array_slice( $periods, 0, 12 ) as $p ) {
+			printf( '<a href="%s" class="%s">%s</a>', esc_url( hpv_p_portal_link( 'projects', array( 'id' => $id, 'period' => $p ) ) ), $p === $period ? 'is-active' : '', esc_html( hpv_date( $p . '-01', 'month' ) ) );
+		}
+		echo '</nav>';
+	}
 	?>
 	<div class="hpv-panel hpv-project-meta">
 		<div><span><?php echo esc_html( hpv_t( 'Status' ) ); ?></span><?php echo hpv_p_portal_badge( 'project', 'status', $project['status'] ); // phpcs:ignore ?></div>

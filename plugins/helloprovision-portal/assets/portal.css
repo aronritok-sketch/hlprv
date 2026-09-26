@@ -1225,3 +1225,28 @@
 		padding: 0;
 	}
 }
+
+/* Havidíjas projekt: hónapválasztó */
+.hpv-periods {
+	display: flex;
+	gap: 6px;
+	margin: -8px 0 18px;
+	overflow-x: auto;
+}
+
+.hpv-periods a {
+	padding: 6px 12px;
+	border: 1px solid var(--p-line);
+	border-radius: 999px;
+	background: #fff;
+	color: var(--p-muted);
+	font-size: 13px;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.hpv-periods a.is-active {
+	border-color: var(--p-ink);
+	background: var(--p-ink);
+	color: #fff;
+}
