@@ -9,8 +9,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-const HPV_PORTAL_VERSION    = '0.5.0';
-const HPV_PORTAL_DB_VERSION = '5';
+const HPV_PORTAL_VERSION    = '0.6.0';
+const HPV_PORTAL_DB_VERSION = '6';
 const HPV_PORTAL_OPTION     = 'hpv_portal_settings';
 const HPV_PORTAL_FILE       = __FILE__;
 
@@ -22,6 +22,7 @@ require_once __DIR__ . '/includes/billing.php';
 require_once __DIR__ . '/includes/szamlazz.php';
 require_once __DIR__ . '/includes/stripe.php';
 require_once __DIR__ . '/includes/quickbooks.php';
+require_once __DIR__ . '/includes/recurring.php';
 require_once __DIR__ . '/includes/domains.php';
 require_once __DIR__ . '/includes/notify.php';
 require_once __DIR__ . '/includes/chat.php';
@@ -85,6 +86,9 @@ function hpv_p_maybe_upgrade() {
 		}
 		hpv_p_migrate_addresses();
 	}
+	if ( $from && $from < 6 ) {
+		hpv_recurring_migrate();
+	}
 }
 
 /**
@@ -121,6 +125,7 @@ function hpv_p_default_settings(): array {
 		'hu_vat_key'      => '27',
 		'hu_fizmod'       => 'Bankkártya',
 		'qbo_item_name'   => 'Services',
+		'recurring_mode'  => 'draft',
 	);
 }
 

@@ -145,7 +145,7 @@ function hpv_p_project_progress( array $tasks ): int {
 /**
  * Következő számlázási dátum egy előfizetésnél.
  */
-function hpv_p_next_billing_date( string $date, string $billing ): string {
+function hpv_p_next_billing_date( string $date, string $billing, int $anchor_day = 0 ): string {
 	$months = array(
 		'monthly'   => 1,
 		'quarterly' => 3,
@@ -156,9 +156,10 @@ function hpv_p_next_billing_date( string $date, string $billing ): string {
 	}
 
 	$d = new DateTimeImmutable( $date );
-	// A hónap végi dátumoknál ne ugorjon át a következő hónapba (jan 31 → feb 28).
+	// A hónap végi dátumoknál ne ugorjon át a következő hónapba (jan 31 → feb 28). Az $anchor_day (az előfizetés
+	// kezdőnapja) visszahúzza a napot: jan 31 → feb 28 → márc 31, nem márc 28.
 	$target = $d->modify( 'first day of +' . $months . ' month' );
-	$day    = min( (int) $d->format( 'j' ), (int) $target->format( 't' ) );
+	$day    = min( $anchor_day ?: (int) $d->format( 'j' ), (int) $target->format( 't' ) );
 
 	return $target->setDate( (int) $target->format( 'Y' ), (int) $target->format( 'n' ), $day )->format( 'Y-m-d' );
 }

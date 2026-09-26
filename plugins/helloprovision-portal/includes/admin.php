@@ -1106,6 +1106,7 @@ function hpv_p_sanitize_settings( $input ): array {
 		'hu_vat_key'      => '' !== (string) ( $input['hu_vat_key'] ?? '' ) && isset( hpv_p_entity( 'invoice' )['fields']['vat_key']['options'][ $input['hu_vat_key'] ] ) ? $input['hu_vat_key'] : '27',
 		'hu_fizmod'       => in_array( $input['hu_fizmod'] ?? '', array( 'Bankkártya', 'Átutalás', 'Készpénz' ), true ) ? $input['hu_fizmod'] : 'Bankkártya',
 		'qbo_item_name'   => sanitize_text_field( $input['qbo_item_name'] ?? '' ) ?: 'Services',
+		'recurring_mode'  => in_array( $input['recurring_mode'] ?? '', array( 'off', 'draft', 'send' ), true ) ? $input['recurring_mode'] : 'draft',
 	);
 }
 
@@ -1171,6 +1172,15 @@ function hpv_p_admin_settings_page() {
 					</select>
 				</td></tr>
 				<?php $f( 'qbo_item_name', 'QuickBooks tétel neve', 'text', 'Ezzel a QuickBooks termékkel/szolgáltatással kerülnek át a számlatételek (Sales → Products and services).' ); ?>
+				<tr><th><label for="hpv-s-recurring">Ismétlődő számlák</label></th><td>
+					<select id="hpv-s-recurring" name="<?php echo esc_attr( $n ); ?>[recurring_mode]">
+						<?php foreach ( array( 'draft' => 'Piszkozat készül, mi küldjük ki (javasolt)', 'send' => 'Automatikus kiküldés', 'off' => 'Kikapcsolva' ) as $k => $label ) : ?>
+							<option value="<?php echo esc_attr( $k ); ?>" <?php selected( $s['recurring_mode'], $k ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<p class="description">Az aktív előfizetésekből a „Következő számla” napján reggel 7-kor ügyfelenként egy számla készül, a csapat összefoglaló e-mailt kap.
+						<?php $last = get_option( 'hpv_recurring_last_run' ); echo $last ? esc_html( sprintf( 'Utolsó futás: %s, %d számla.', get_date_from_gmt( $last['at'], 'Y-m-d H:i' ), $last['count'] ) ) : ''; ?></p>
+				</td></tr>
 			</table>
 			<h2 class="title">Portál</h2>
 			<table class="form-table" role="presentation">
