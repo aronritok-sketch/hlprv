@@ -240,6 +240,10 @@ $r = hpv_bill_mark_paid( $inv_hu, array( 'provider' => 'teya', 'amount' => 10875
 it( 'teljes összeg: fizetve', 'paid' === $r['status'] && $r['paid_at'] );
 it( 'Teya befizetés bankkártyás jogcímmel', 'Bankkártya' === (string) simplexml_load_string( end( $GLOBALS['mock']['requests'] )['xml'] )->kifizetes->jogcim );
 it( 'online befizetésről értesítés a csapatnak', (bool) array_filter( $GLOBALS['hpv_it_mail'], fn( $m ) => false !== strpos( $m['subject'], 'Online befizetés' ) ) );
+$receipt = array_values( array_filter( mails_to( "maria_$suffix@kovacs.test" ), fn( $m ) => false !== strpos( $m['subject'], 'Befizetés megérkezett' ) ) );
+it( 'magyar ügyfél: magyar nyelvű visszaigazolás', 1 === count( $receipt ) && false !== strpos( $receipt[0]['message'], 'A számla teljesen kifizetve.' ) && false !== strpos( $receipt[0]['message'], 'Ügyfélportál' ) );
+$log = hpv_p_find( 'activity', array( 'client_id' => $hu, 'visible' => 1 ), array( 'limit' => 1 ) );
+it( 'magyar ügyfél: az idővonal is magyar', $log && false !== strpos( $log[0]['body'], 'befizetés érkezett' ) );
 hpv_bill_mark_paid( $inv_hu, array( 'provider' => 'teya', 'amount' => 10875000, 'reference' => 'teya-tx-1' ) );
 it( 'ugyanaz a tranzakció kétszer nem kerül be', 2 === count( hpv_p_find( 'payment', array( 'invoice_id' => $inv_hu ) ) ) );
 
@@ -338,7 +342,10 @@ hpv_p_update( 'invoice', $inv_hu3, array( 'payment_url' => 'https://pay.teya.tes
 $page = portal_as( $maria, array( 'view' => 'invoices', 'id' => $inv_hu3 ) );
 it( 'Magyar: hivatalos PDF és Teya link', false !== strpos( $page, 'hpv_invoice_pdf=' . $inv_hu3 ) && false !== strpos( $page, 'https://pay.teya.test/link/abc' ) && false !== strpos( $page, 'Ft' ) );
 it( 'Magyar: az amerikai cég adatai nem kerülnek a magyar számlára', false === strpos( $page, hpv_p_settings()['company_legal'] ) );
-it( 'másik ügyfél számlája nem látszik', false !== strpos( portal_as( $maria, array( 'view' => 'invoices', 'id' => $inv_us3 ) ), 'Invoice not found' ) );
+it( 'másik ügyfél számlája nem látszik', false !== strpos( portal_as( $maria, array( 'view' => 'invoices', 'id' => $inv_us3 ) ), 'A számla nem található' ) );
+it( 'magyar ügyfélnek magyar a portál', false !== strpos( $page, 'Számla letöltése (PDF)' ) && false !== strpos( $page, 'Áttekintés' ) && false !== strpos( $page, 'Kijelentkezés' ) && false === strpos( $page, 'Log out' ) );
+it( 'magyar ügyfélnek magyar dátum', (bool) preg_match( '/\d{4}\. (jan|febr|márc|ápr|máj|jún|júl|aug|szept|okt|nov|dec)\. \d{1,2}\./u', $page ) );
+it( 'amerikai ügyfélnek angol marad', false !== strpos( portal_as( $mia, array() ), 'Needs your attention' ) );
 it( 'egyenleg pénznemenként', false !== strpos( portal_as( $maria, array() ), 'Ft' ) );
 $staff = get_userdata( $staff_id );
 $prev  = portal_as( $staff, array( 'view' => 'invoices', 'preview_client' => $us ) );

@@ -248,7 +248,7 @@ function hpv_p_handle_pay() {
 	}
 	$url = hpv_stripe_checkout_url( $invoice );
 	if ( is_wp_error( $url ) ) {
-		wp_safe_redirect( add_query_arg( 'error', rawurlencode( 'We could not open the payment page. Please try again in a minute or message us.' ), $back ) );
+		wp_safe_redirect( add_query_arg( 'error', rawurlencode( hpv_with_client_lang( (int) $invoice['client_id'], fn() => hpv_t( 'We could not open the payment page. Please try again in a minute or message us.' ) ) ), $back ) );
 		exit;
 	}
 	wp_redirect( $url ); // phpcs:ignore WordPress.Security.SafeRedirect -- Stripe fizetőoldal

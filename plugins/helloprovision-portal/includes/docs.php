@@ -481,7 +481,7 @@ function hpv_doc_rest_send_contract( WP_REST_Request $request ) {
 	hpv_p_update( 'contract', (int) $c['id'], array( 'status' => 'sent', 'sent_at' => current_time( 'mysql', true ) ) );
 	$c = hpv_p_get( 'contract', (int) $c['id'] );
 	hpv_p_event_contract_sent( $c );
-	hpv_p_log( (int) $c['client_id'], 'system', sprintf( '"%s" is ready for your signature.', $c['title'] ), true, get_current_user_id() );
+	hpv_p_log_client( (int) $c['client_id'], '"%s" is ready for your signature.', array( $c['title'] ), get_current_user_id() );
 
 	return rest_ensure_response( hpv_doc_format_contract( $c, true ) );
 }

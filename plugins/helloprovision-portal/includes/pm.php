@@ -196,14 +196,17 @@ function hpv_pm_after_task_change( ?array $old, array $new ): void {
 	if ( 'client' === $new['status'] && $new['visible'] && ! $new['parent_id'] && ( ! $old || 'client' !== $old['status'] ) ) {
 		$project = hpv_p_get( 'project', (int) $new['project_id'] );
 		if ( $project && $project['visible'] && $project['client_id'] ) {
-			hpv_p_log( (int) $project['client_id'], 'system', sprintf( 'Action needed: %s (%s)', $new['title'], $project['name'] ), true, $me );
-			hpv_p_notify_client(
+			hpv_p_log_client( (int) $project['client_id'], 'Action needed: %s (%s)', array( $new['title'], $project['name'] ), $me );
+			hpv_with_client_lang(
 				(int) $project['client_id'],
-				sprintf( 'Action needed: %s', $new['title'] ),
-				'We need something from you',
-				sprintf( '<p><strong>%s</strong> in <em>%s</em> is waiting on you%s.</p>', esc_html( $new['title'] ), esc_html( $project['name'] ), $new['due_date'] ? ' — due ' . esc_html( mysql2date( 'M j', $new['due_date'] ) ) : '' ),
-				'Open project',
-				hpv_p_portal_url( array( 'view' => 'projects', 'id' => $project['id'] ) )
+				fn() => hpv_p_notify_client(
+					(int) $project['client_id'],
+					hpv_t( 'Action needed: %s', $new['title'] ),
+					hpv_t( 'We need something from you' ),
+					'<p>' . hpv_t( '<strong>%s</strong> in <em>%s</em> is waiting on you%s.', esc_html( $new['title'] ), esc_html( $project['name'] ), $new['due_date'] ? esc_html( hpv_t( ' — due %s', hpv_date( $new['due_date'], 'short' ) ) ) : '' ) . '</p>',
+					hpv_t( 'Open project' ),
+					hpv_p_portal_url( array( 'view' => 'projects', 'id' => $project['id'] ) )
+				)
 			);
 		}
 	}

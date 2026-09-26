@@ -217,7 +217,7 @@ function hpv_video_announce( array $call, int $user_id, bool $email ): void {
 			array(
 				'channel_id' => (int) $channel['id'],
 				'user_id'    => $user_id,
-				'body'       => 'Video call started: ' . $call['title'] . "\nJoin here: " . $link,
+				'body'       => hpv_with_client_lang( (int) $call['client_id'], fn() => hpv_t( 'Video call started: %s', $call['title'] ) . "\n" . hpv_t( 'Join here: %s', $link ) ),
 			)
 		);
 		hpv_chat_mark_read( (int) $channel['id'], $user_id, $msg );
@@ -225,14 +225,17 @@ function hpv_video_announce( array $call, int $user_id, bool $email ): void {
 
 	if ( $email ) {
 		$who = hpv_chat_user_label( $user_id )['name'];
-		hpv_p_notify_client(
+		hpv_with_client_lang(
 			(int) $call['client_id'],
-			'Video call: ' . $call['title'],
-			'Your video call is starting',
-			'<p>' . esc_html( $who ) . ' from ' . esc_html( hpv_p_settings()['company_name'] ) . ' started a video call with you: <strong>' . esc_html( $call['title'] ) . '</strong>.</p>'
-			. '<p>Join from your client portal. The call is recorded and transcribed so we can send you a summary; you will be asked to agree before joining.</p>',
-			'Join the call',
-			$link
+			fn() => hpv_p_notify_client(
+				(int) $call['client_id'],
+				hpv_t( 'Video call: %s', $call['title'] ),
+				hpv_t( 'Your video call is starting' ),
+				'<p>' . hpv_t( '%s from %s started a video call with you: <strong>%s</strong>.', esc_html( $who ), esc_html( hpv_p_settings()['company_name'] ), esc_html( $call['title'] ) ) . '</p>'
+				. '<p>' . esc_html( hpv_t( 'Join from your client portal. The call is recorded and transcribed so we can send you a summary; you will be asked to agree before joining.' ) ) . '</p>',
+				hpv_t( 'Join the call' ),
+				$link
+			)
 		);
 	}
 }
@@ -1120,18 +1123,19 @@ function hpv_video_portal_post() {
 	$call_id = absint( $_POST['call_id'] ?? 0 );
 	check_admin_referer( 'hpv_join_call_' . $call_id );
 	$back = hpv_p_portal_url( array( 'view' => 'meetings', 'id' => $call_id ) );
+	hpv_set_lang( hpv_doc_client_language( hpv_p_user_client_id( get_current_user_id() ) ) );
 
 	if ( hpv_p_is_staff() ) {
 		wp_redirect( hpv_p_crm_app_url( '/calls/' . $call_id ) ); // phpcs:ignore WordPress.Security.SafeRedirect
 		exit;
 	}
 	if ( empty( $_POST['agree'] ) ) {
-		wp_safe_redirect( add_query_arg( 'error', rawurlencode( 'Please confirm that you agree to the recording before joining.' ), $back ) );
+		wp_safe_redirect( add_query_arg( 'error', rawurlencode( hpv_t( 'Please confirm that you agree to the recording before joining.' ) ), $back ) );
 		exit;
 	}
 	$join = hpv_video_join( $call_id, wp_get_current_user() );
 	if ( is_wp_error( $join ) ) {
-		wp_safe_redirect( add_query_arg( 'error', rawurlencode( 'not_live' === $join->get_error_code() ? 'This call has ended.' : 'We could not connect you to the call. Please try again or message us.' ), $back ) );
+		wp_safe_redirect( add_query_arg( 'error', rawurlencode( 'not_live' === $join->get_error_code() ? hpv_t( 'This call has ended.' ) : hpv_t( 'We could not connect you to the call. Please try again or message us.' ) ), $back ) );
 		exit;
 	}
 	set_transient( 'hpv_video_join_' . get_current_user_id() . '_' . $call_id, $join, 5 * MINUTE_IN_SECONDS );
@@ -1141,9 +1145,9 @@ function hpv_video_portal_post() {
 
 function hpv_pv_meetings( int $client_id ) {
 	$calls = hpv_video_portal_calls( $client_id );
-	hpv_p_portal_header( 'Meetings', 'Video calls with your team, with a written summary of what we agreed.' );
+	hpv_p_portal_header( hpv_t( 'Meetings' ), hpv_t( 'Video calls with your team, with a written summary of what we agreed.' ) );
 	if ( ! $calls ) {
-		echo '<p class="hpv-empty hpv-panel">No meetings yet. When we start a video call with you, it appears here and you get an email with the link.</p>';
+		echo '<p class="hpv-empty hpv-panel">' . esc_html( hpv_t( 'No meetings yet. When we start a video call with you, it appears here and you get an email with the link.' ) ) . '</p>';
 		return;
 	}
 	echo '<div class="hpv-cards">';
@@ -1151,10 +1155,10 @@ function hpv_pv_meetings( int $client_id ) {
 		$live = 'live' === $c['status'];
 		?>
 		<a class="hpv-card-link<?php echo $live ? ' hpv-meeting--live' : ''; ?>" href="<?php echo esc_url( hpv_p_portal_link( 'meetings', array( 'id' => $c['id'] ) ) ); ?>">
-			<span class="hpv-mini-project__top"><strong><?php echo esc_html( $c['title'] ); ?></strong><?php echo $live ? '<span class="hpv-pill hpv-pill--live">Live now</span>' : ''; ?></span>
-			<small><?php echo esc_html( get_date_from_gmt( (string) $c['started_at'], 'M j, Y · g:i a' ) ); ?></small>
+			<span class="hpv-mini-project__top"><strong><?php echo esc_html( $c['title'] ); ?></strong><?php echo $live ? '<span class="hpv-pill hpv-pill--live">' . esc_html( hpv_t( 'Live now' ) ) . '</span>' : ''; ?></span>
+			<small><?php echo esc_html( hpv_date( (string) $c['started_at'], 'datetime', true ) ); ?></small>
 			<?php if ( ! $live ) : ?><span class="hpv-muted"><?php echo esc_html( wp_trim_words( (string) $c['summary'], 30 ) ); ?></span><?php endif; ?>
-			<?php if ( $live ) : ?><span class="hpv-btn hpv-btn--small">Join call</span><?php endif; ?>
+			<?php if ( $live ) : ?><span class="hpv-btn hpv-btn--small"><?php echo esc_html( hpv_t( 'Join call' ) ); ?></span><?php endif; ?>
 		</a>
 		<?php
 	}
@@ -1164,11 +1168,11 @@ function hpv_pv_meetings( int $client_id ) {
 function hpv_pv_meeting( int $client_id, int $id ) {
 	$call = hpv_p_get( 'call', $id );
 	if ( ! $call || (int) $call['client_id'] !== $client_id ) {
-		hpv_p_portal_header( 'Meeting not found', '', hpv_p_portal_link( 'meetings' ) );
+		hpv_p_portal_header( hpv_t( 'Meeting not found' ), '', hpv_p_portal_link( 'meetings' ) );
 		return;
 	}
 	$error = sanitize_text_field( wp_unslash( $_GET['error'] ?? '' ) );
-	hpv_p_portal_header( $call['title'], get_date_from_gmt( (string) $call['started_at'], 'l, M j, Y · g:i a' ), hpv_p_portal_link( 'meetings' ) );
+	hpv_p_portal_header( $call['title'], hpv_date( (string) $call['started_at'], 'full', true ), hpv_p_portal_link( 'meetings' ) );
 	if ( $error ) {
 		echo '<div class="hpv-alert hpv-alert--error">' . esc_html( $error ) . '</div>';
 	}
@@ -1186,8 +1190,8 @@ function hpv_pv_meeting( int $client_id, int $id ) {
 				'back'     => hpv_p_portal_link( 'meetings', array( 'id' => $id ) ),
 			);
 			?>
-			<div class="hpv-call" id="hpv-call"><p class="hpv-muted">Connecting…</p></div>
-			<p class="hpv-muted hpv-call__note">This call is being recorded and transcribed. Use the Leave button in the call to hang up.</p>
+			<div class="hpv-call" id="hpv-call"><p class="hpv-muted"><?php echo esc_html( hpv_t( 'Connecting…' ) ); ?></p></div>
+			<p class="hpv-muted hpv-call__note"><?php echo esc_html( hpv_t( 'This call is being recorded and transcribed. Use the Leave button in the call to hang up.' ) ); ?></p>
 			<script src="<?php echo esc_url( plugins_url( 'assets/video.js', HPV_PORTAL_FILE ) . '?ver=' . HPV_PORTAL_VERSION ); ?>"></script>
 			<script>
 				(function (cfg) {
@@ -1196,7 +1200,7 @@ function hpv_pv_meeting( int $client_id, int $id ) {
 					window.HPVCallMount(el, Object.assign({}, cfg, {
 						onLeft: function () { window.location.href = cfg.back; }
 					})).catch(function () {
-						el.innerHTML = '<p class="hpv-alert hpv-alert--error">We could not start the video. Please reload the page, or allow camera and microphone access.</p>';
+						el.innerHTML = '<p class="hpv-alert hpv-alert--error">' + <?php echo wp_json_encode( esc_html( hpv_t( 'We could not start the video. Please reload the page, or allow camera and microphone access.' ) ) ); ?> + '</p>';
 					});
 				})(<?php echo wp_json_encode( $config ); ?>);
 			</script>
@@ -1204,18 +1208,18 @@ function hpv_pv_meeting( int $client_id, int $id ) {
 			return;
 		}
 		if ( hpv_p_is_staff() ) {
-			echo '<div class="hpv-alert">Staff preview: the client joins here after agreeing to the recording.</div>';
+			echo '<div class="hpv-alert">' . esc_html( hpv_t( 'Staff preview: the client joins here after agreeing to the recording.' ) ) . '</div>';
 			return;
 		}
 		?>
 		<form method="post" class="hpv-panel hpv-join">
-			<h2>Join the video call</h2>
-			<p>We record and transcribe this call so we can send you a written summary of what we agreed. You can turn your camera off at any time.</p>
+			<h2><?php echo esc_html( hpv_t( 'Join the video call' ) ); ?></h2>
+			<p><?php echo esc_html( hpv_t( 'We record and transcribe this call so we can send you a written summary of what we agreed. You can turn your camera off at any time.' ) ); ?></p>
 			<input type="hidden" name="hpv_portal_action" value="join_call">
 			<input type="hidden" name="call_id" value="<?php echo (int) $id; ?>">
 			<?php wp_nonce_field( 'hpv_join_call_' . $id ); ?>
-			<label class="hpv-check"><input type="checkbox" name="agree" value="1" required> <span>I agree that this video call is recorded and transcribed, and that <?php echo esc_html( hpv_p_settings()['company_name'] ); ?> keeps the recording, the transcript and an AI-generated summary. (Florida law requires everyone's consent to record a conversation.)</span></label>
-			<button class="hpv-btn">Join call</button>
+			<label class="hpv-check"><input type="checkbox" name="agree" value="1" required> <span><?php echo esc_html( hpv_t( 'I agree that this video call is recorded and transcribed, and that %s keeps the recording, the transcript and an AI-generated summary. (Florida law requires everyone\'s consent to record a conversation.)', hpv_p_settings()['company_name'] ) ); ?></span></label>
+			<button class="hpv-btn"><?php echo esc_html( hpv_t( 'Join call' ) ); ?></button>
 		</form>
 		<?php
 		return;
@@ -1223,30 +1227,30 @@ function hpv_pv_meeting( int $client_id, int $id ) {
 
 	$ai = json_decode( (string) $call['ai_data'], true );
 	if ( empty( $call['shared'] ) || '' === (string) $call['summary'] ) {
-		echo '<p class="hpv-empty hpv-panel">This meeting has ended. A summary will appear here once your team shares it.</p>';
+		echo '<p class="hpv-empty hpv-panel">' . esc_html( hpv_t( 'This meeting has ended. A summary will appear here once your team shares it.' ) ) . '</p>';
 		return;
 	}
 	$mine   = array_filter( (array) ( $ai['action_items'] ?? array() ), fn( $a ) => 'client' === ( $a['owner'] ?? '' ) );
 	$theirs = array_filter( (array) ( $ai['action_items'] ?? array() ), fn( $a ) => 'client' !== ( $a['owner'] ?? '' ) );
 	?>
 	<section class="hpv-panel">
-		<h2>Summary</h2>
+		<h2><?php echo esc_html( hpv_t( 'Summary' ) ); ?></h2>
 		<p><?php echo nl2br( esc_html( (string) $call['summary'] ) ); ?></p>
 		<?php if ( ! empty( $ai['decisions'] ) ) : ?>
-			<h3>What we agreed</h3>
+			<h3><?php echo esc_html( hpv_t( 'What we agreed' ) ); ?></h3>
 			<ul><?php foreach ( $ai['decisions'] as $d ) : ?><li><?php echo esc_html( $d ); ?></li><?php endforeach; ?></ul>
 		<?php endif; ?>
 	</section>
 	<div class="hpv-columns">
 		<section class="hpv-panel">
-			<h2>Your next steps</h2>
-			<?php if ( ! $mine ) : ?><p class="hpv-empty">Nothing for you to do.</p><?php endif; ?>
-			<ul class="hpv-todo"><?php foreach ( $mine as $a ) : ?><li><strong><?php echo esc_html( $a['title'] ); ?></strong><?php echo $a['due'] ? '<span>Due ' . esc_html( mysql2date( 'M j', $a['due'] ) ) . '</span>' : ''; ?></li><?php endforeach; ?></ul>
+			<h2><?php echo esc_html( hpv_t( 'Your next steps' ) ); ?></h2>
+			<?php if ( ! $mine ) : ?><p class="hpv-empty"><?php echo esc_html( hpv_t( 'Nothing for you to do.' ) ); ?></p><?php endif; ?>
+			<ul class="hpv-todo"><?php foreach ( $mine as $a ) : ?><li><strong><?php echo esc_html( $a['title'] ); ?></strong><?php echo $a['due'] ? '<span>' . esc_html( hpv_t( 'Due %s', hpv_date( $a['due'], 'short' ) ) ) . '</span>' : ''; ?></li><?php endforeach; ?></ul>
 		</section>
 		<section class="hpv-panel">
-			<h2>What we'll do</h2>
-			<?php if ( ! $theirs ) : ?><p class="hpv-empty">No follow-ups for our team.</p><?php endif; ?>
-			<ul class="hpv-todo"><?php foreach ( $theirs as $a ) : ?><li><strong><?php echo esc_html( $a['title'] ); ?></strong><?php echo $a['due'] ? '<span>Due ' . esc_html( mysql2date( 'M j', $a['due'] ) ) . '</span>' : ''; ?></li><?php endforeach; ?></ul>
+			<h2><?php echo esc_html( hpv_t( "What we'll do" ) ); ?></h2>
+			<?php if ( ! $theirs ) : ?><p class="hpv-empty"><?php echo esc_html( hpv_t( 'No follow-ups for our team.' ) ); ?></p><?php endif; ?>
+			<ul class="hpv-todo"><?php foreach ( $theirs as $a ) : ?><li><strong><?php echo esc_html( $a['title'] ); ?></strong><?php echo $a['due'] ? '<span>' . esc_html( hpv_t( 'Due %s', hpv_date( $a['due'], 'short' ) ) ) . '</span>' : ''; ?></li><?php endforeach; ?></ul>
 		</section>
 	</div>
 	<?php

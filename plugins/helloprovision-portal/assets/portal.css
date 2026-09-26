@@ -919,11 +919,26 @@
 }
 
 .hpv-login__links,
-.hpv-login__help {
+.hpv-login__help,
+.hpv-login__lang {
 	margin: 8px 0 0;
 	color: var(--p-muted);
 	font-size: 13px;
 	text-align: center;
+}
+
+.hpv-login__lang {
+	margin-top: 16px;
+}
+
+.hpv-login__lang a {
+	color: var(--p-muted);
+}
+
+.hpv-login__lang a[aria-current] {
+	color: inherit;
+	font-weight: 600;
+	text-decoration: none;
 }
 
 .hpv-client-picker {

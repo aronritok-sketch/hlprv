@@ -950,7 +950,7 @@ function hpv_p_admin_save() {
 		hpv_p_update( 'contract', $id, array( 'status' => 'sent', 'sent_at' => current_time( 'mysql', true ) ) );
 		$row = hpv_p_get( 'contract', $id );
 		hpv_p_event_contract_sent( $row );
-		hpv_p_log( (int) $row['client_id'], 'system', sprintf( '"%s" is ready for your signature.', $row['title'] ), true, get_current_user_id() );
+		hpv_p_log_client( (int) $row['client_id'], '"%s" is ready for your signature.', array( $row['title'] ), get_current_user_id() );
 		$msg = 'sent';
 	}
 

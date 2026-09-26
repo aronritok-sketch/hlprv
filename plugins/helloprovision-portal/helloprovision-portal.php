@@ -15,6 +15,7 @@ const HPV_PORTAL_OPTION     = 'hpv_portal_settings';
 const HPV_PORTAL_FILE       = __FILE__;
 
 require_once __DIR__ . '/includes/schema.php';
+require_once __DIR__ . '/includes/i18n.php';
 require_once __DIR__ . '/includes/logic.php';
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/permissions.php';

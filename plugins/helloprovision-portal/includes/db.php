@@ -384,6 +384,13 @@ function hpv_p_sign_contract( int $contract_id, int $client_id, WP_User $user, s
 	return hpv_p_get( 'contract', $contract_id );
 }
 
+/**
+ * Az ügyfél is látja: a szöveg az ügyfél nyelvén kerül a naplóba (angol minta + hpv_t szótár).
+ */
+function hpv_p_log_client( int $client_id, string $format, array $args, int $user_id = 0 ): int {
+	return hpv_p_log( $client_id, 'system', hpv_with_client_lang( $client_id, fn() => hpv_t( $format, ...$args ) ), true, $user_id );
+}
+
 function hpv_p_log( int $client_id, string $type, string $body, bool $visible, int $user_id = 0 ): int {
 	return hpv_p_insert(
 		'activity',

@@ -75,8 +75,8 @@ function hpv_p_entities(): array {
 			'label'    => 'Szolgáltatás-katalógus',
 			'singular' => 'Szolgáltatás',
 			'fields'   => array(
-				'name'        => array( 'type' => 'text', 'label' => 'Név (angolul, az ügyfél is látja)', 'required' => true, 'list' => true ),
-				'description' => array( 'type' => 'textarea', 'label' => 'Leírás (angolul)' ),
+				'name'        => array( 'type' => 'text', 'label' => 'Név (az ügyfél nyelvén, ő is látja)', 'required' => true, 'list' => true ),
+				'description' => array( 'type' => 'textarea', 'label' => 'Leírás (az ügyfél nyelvén)' ),
 				'price'       => array( 'type' => 'money', 'label' => 'Alapár (USD)', 'list' => true ),
 				'billing'     => array( 'type' => 'select', 'label' => 'Számlázás', 'list' => true, 'default' => 'monthly', 'options' => $billing ),
 				'active'      => array( 'type' => 'bool', 'label' => 'Aktív (választható)', 'default' => 1, 'list' => true ),
@@ -91,8 +91,8 @@ function hpv_p_entities(): array {
 			'fields'   => array(
 				'client_id'         => array( 'type' => 'ref', 'ref' => 'client', 'label' => 'Ügyfél', 'required' => true ),
 				'service_id'        => array( 'type' => 'ref', 'ref' => 'service', 'label' => 'Katalógus szolgáltatás' ),
-				'name'              => array( 'type' => 'text', 'label' => 'Megnevezés (angolul)', 'required' => true, 'list' => true ),
-				'description'       => array( 'type' => 'textarea', 'label' => 'Mit tartalmaz (angolul, az ügyfél látja)' ),
+				'name'              => array( 'type' => 'text', 'label' => 'Megnevezés (az ügyfél nyelvén)', 'required' => true, 'list' => true ),
+				'description'       => array( 'type' => 'textarea', 'label' => 'Mit tartalmaz (az ügyfél nyelvén, ő is látja)' ),
 				'price'             => array( 'type' => 'money', 'label' => 'Ár (USD)', 'list' => true ),
 				'billing'           => array( 'type' => 'select', 'label' => 'Számlázás', 'list' => true, 'default' => 'monthly', 'options' => $billing ),
 				'status'            => array(
@@ -118,8 +118,8 @@ function hpv_p_entities(): array {
 			'parent'   => 'client',
 			'fields'   => array(
 				'client_id'   => array( 'type' => 'ref', 'ref' => 'client', 'label' => 'Ügyfél', 'required' => true ),
-				'name'        => array( 'type' => 'text', 'label' => 'Projekt neve (angolul)', 'required' => true, 'list' => true ),
-				'description' => array( 'type' => 'textarea', 'label' => 'Leírás (angolul, az ügyfél látja)' ),
+				'name'        => array( 'type' => 'text', 'label' => 'Projekt neve (az ügyfél nyelvén)', 'required' => true, 'list' => true ),
+				'description' => array( 'type' => 'textarea', 'label' => 'Leírás (az ügyfél nyelvén, ő is látja)' ),
 				'status'      => array(
 					'type'    => 'select',
 					'label'   => 'Státusz',
@@ -149,7 +149,7 @@ function hpv_p_entities(): array {
 			'parent'   => 'project',
 			'fields'   => array(
 				'project_id' => array( 'type' => 'ref', 'ref' => 'project', 'label' => 'Projekt', 'required' => true ),
-				'title'      => array( 'type' => 'text', 'label' => 'Feladat (angolul)', 'required' => true, 'list' => true ),
+				'title'      => array( 'type' => 'text', 'label' => 'Feladat (az ügyfél nyelvén)', 'required' => true, 'list' => true ),
 				'status'     => array(
 					'type'    => 'select',
 					'label'   => 'Státusz',

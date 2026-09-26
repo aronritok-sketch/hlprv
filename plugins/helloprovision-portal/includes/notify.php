@@ -14,14 +14,14 @@ function hpv_p_email_html( string $heading, string $body_html, string $cta_label
 
 	return '<div style="background:#f4f4f1;padding:24px 12px;font-family:Arial,Helvetica,sans-serif;color:#111">'
 		. '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden">'
-		. '<tr><td style="background:#0d0d0d;padding:22px 28px;color:#fff;font-size:18px;font-weight:bold">' . esc_html( $s['company_name'] ) . ' <span style="color:#B8FF34">Client Portal</span></td></tr>'
+		. '<tr><td style="background:#0d0d0d;padding:22px 28px;color:#fff;font-size:18px;font-weight:bold">' . esc_html( $s['company_name'] ) . ' <span style="color:#B8FF34">' . esc_html( hpv_t( 'Client Portal' ) ) . '</span></td></tr>'
 		. '<tr><td style="padding:28px">'
 		. '<h1 style="font-size:22px;margin:0 0 12px">' . esc_html( $heading ) . '</h1>'
 		. '<div style="font-size:15px;line-height:1.55">' . $body_html . '</div>'
 		. $cta
 		. '</td></tr>'
 		. '<tr><td style="padding:16px 28px 24px;font-size:12px;color:#888;border-top:1px solid #eee">'
-		. esc_html( $s['company_legal'] ) . ' · ' . nl2br( esc_html( str_replace( "\n", ', ', $s['company_address'] ) ) ) . '<br>'
+		. ( 'hu' === hpv_lang() ? '' : esc_html( $s['company_legal'] ) . ' · ' . nl2br( esc_html( str_replace( "\n", ', ', $s['company_address'] ) ) ) . '<br>' )
 		. esc_html( $s['company_email'] ) . ' · ' . esc_html( $s['company_phone'] )
 		. '</td></tr></table></div>';
 }
@@ -42,6 +42,7 @@ function hpv_p_send( $to, string $subject, string $html, string $reply_to = '' )
 
 /**
  * Levél az ügyfél összes portál-felhasználójának (ha nincs, a cég e-mail címére).
+ * A szövegeket a hívó az ügyfél nyelvén állítja össze (hpv_with_client_lang + hpv_t).
  */
 function hpv_p_notify_client( int $client_id, string $subject, string $heading, string $body_html, string $cta_label = '', string $cta_url = '' ): bool {
 	$emails = array_map( fn( $u ) => $u->user_email, hpv_p_client_users( $client_id ) );
@@ -68,28 +69,32 @@ function hpv_p_notify_staff( string $subject, string $body_html, string $link = 
 
 function hpv_p_event_invoice_sent( array $invoice ) {
 	$s = hpv_p_settings();
-	hpv_p_notify_client(
+	hpv_with_client_lang(
 		(int) $invoice['client_id'],
-		sprintf( 'Invoice %s from %s', $invoice['number'], $s['company_name'] ),
-		sprintf( 'Invoice %s', $invoice['number'] ),
-		sprintf(
-			'<p>A new invoice is ready in your client portal.</p><p><strong>Amount due:</strong> %s<br><strong>Due date:</strong> %s</p>',
-			esc_html( hpv_p_money( hpv_p_invoice_balance( $invoice ), hpv_p_invoice_currency( $invoice ) ) ),
-			esc_html( $invoice['due_date'] ? mysql2date( 'F j, Y', $invoice['due_date'] ) : 'upon receipt' )
-		),
-		'View & pay invoice',
-		hpv_p_portal_url( array( 'view' => 'invoices', 'id' => $invoice['id'] ) )
+		fn() => hpv_p_notify_client(
+			(int) $invoice['client_id'],
+			hpv_t( 'Invoice %s from %s', $invoice['number'], $s['company_name'] ),
+			hpv_t( 'Invoice %s', $invoice['number'] ),
+			'<p>' . esc_html( hpv_t( 'A new invoice is ready in your client portal.' ) ) . '</p><p><strong>' . esc_html( hpv_t( 'Amount due:' ) ) . '</strong> '
+				. esc_html( hpv_p_money( hpv_p_invoice_balance( $invoice ), hpv_p_invoice_currency( $invoice ) ) ) . '<br><strong>' . esc_html( hpv_t( 'Due date:' ) ) . '</strong> '
+				. esc_html( $invoice['due_date'] ? hpv_date( $invoice['due_date'], 'long' ) : hpv_t( 'upon receipt' ) ) . '</p>',
+			hpv_t( 'View & pay invoice' ),
+			hpv_p_portal_url( array( 'view' => 'invoices', 'id' => $invoice['id'] ) )
+		)
 	);
 }
 
 function hpv_p_event_contract_sent( array $contract ) {
-	hpv_p_notify_client(
+	hpv_with_client_lang(
 		(int) $contract['client_id'],
-		sprintf( 'Please review and sign: %s', $contract['title'] ),
-		$contract['title'],
-		'<p>A document is waiting for your review and signature in your client portal.</p>',
-		'Review & sign',
-		hpv_p_portal_url( array( 'view' => 'contracts', 'id' => $contract['id'] ) )
+		fn() => hpv_p_notify_client(
+			(int) $contract['client_id'],
+			hpv_t( 'Please review and sign: %s', $contract['title'] ),
+			$contract['title'],
+			'<p>' . esc_html( hpv_t( 'A document is waiting for your review and signature in your client portal.' ) ) . '</p>',
+			hpv_t( 'Review & sign' ),
+			hpv_p_portal_url( array( 'view' => 'contracts', 'id' => $contract['id'] ) )
+		)
 	);
 }
 
@@ -107,13 +112,16 @@ function hpv_p_event_contract_signed( array $contract, array $client ) {
 		),
 		admin_url( 'admin.php?page=hpv-crm&client=' . (int) $client['id'] )
 	);
-	hpv_p_notify_client(
+	hpv_with_client_lang(
 		(int) $client['id'],
-		sprintf( 'Signed: %s', $contract['title'] ),
-		'Thank you — your signature is recorded',
-		sprintf( '<p>You signed <strong>%s</strong> on %s (UTC). A copy is always available in your client portal.</p>', esc_html( $contract['title'] ), esc_html( $contract['signed_at'] ) ),
-		'View signed document',
-		hpv_p_portal_url( array( 'view' => 'contracts', 'id' => $contract['id'] ) )
+		fn() => hpv_p_notify_client(
+			(int) $client['id'],
+			hpv_t( 'Signed: %s', $contract['title'] ),
+			hpv_t( 'Thank you — your signature is recorded' ),
+			'<p>' . hpv_t( 'You signed <strong>%s</strong> on %s (UTC). A copy is always available in your client portal.', esc_html( $contract['title'] ), esc_html( $contract['signed_at'] ) ) . '</p>',
+			hpv_t( 'View signed document' ),
+			hpv_p_portal_url( array( 'view' => 'contracts', 'id' => $contract['id'] ) )
+		)
 	);
 }
 
@@ -171,19 +179,19 @@ function hpv_p_invite_user( int $client_id, string $name, string $email ) {
 	$link = network_site_url( 'wp-login.php?action=rp&key=' . rawurlencode( $key ) . '&login=' . rawurlencode( $user->user_login ), 'login' );
 	$s    = hpv_p_settings();
 
-	hpv_p_send(
-		$email,
-		sprintf( 'Your %s client portal', $s['company_name'] ),
-		hpv_p_email_html(
-			'Welcome to your client portal',
-			sprintf(
-				'<p>Hi %s,</p><p>We\'ve set up a client portal for <strong>%s</strong>. You can see your projects, invoices, contracts and services, and message our team — all in one place.</p><p>Click below to set your password. Your username is <strong>%s</strong>.</p>',
-				esc_html( sanitize_text_field( $name ) ?: 'there' ),
-				esc_html( $client['name'] ),
-				esc_html( $user->user_login )
-			),
-			'Set your password',
-			$link
+	hpv_with_client_lang(
+		$client_id,
+		fn() => hpv_p_send(
+			$email,
+			hpv_t( 'Your %s client portal', $s['company_name'] ),
+			hpv_p_email_html(
+				hpv_t( 'Welcome to your client portal' ),
+				'<p>' . esc_html( hpv_t( 'Hi %s,', sanitize_text_field( $name ) ?: hpv_t( 'there' ) ) ) . '</p><p>'
+					. hpv_t( "We've set up a client portal for <strong>%s</strong>. You can see your projects, invoices, contracts and services, and message our team — all in one place.", esc_html( $client['name'] ) ) . '</p><p>'
+					. hpv_t( 'Click below to set your password. Your username is <strong>%s</strong>.', esc_html( $user->user_login ) ) . '</p>',
+				hpv_t( 'Set your password' ),
+				$link
+			)
 		)
 	);
 

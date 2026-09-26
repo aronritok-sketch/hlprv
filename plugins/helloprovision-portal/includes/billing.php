@@ -163,7 +163,7 @@ function hpv_bill_send( int $invoice_id, int $user_id ) {
 			}
 			hpv_p_update( 'invoice', $invoice_id, $data );
 			$invoice = hpv_p_get( 'invoice', $invoice_id );
-			hpv_p_log( (int) $invoice['client_id'], 'system', sprintf( 'Invoice %s issued: %s.', $invoice['number'], hpv_p_money( $invoice['total'], $currency ) ), true, $user_id );
+			hpv_p_log_client( (int) $invoice['client_id'], 'Invoice %s issued: %s.', array( $invoice['number'], hpv_p_money( $invoice['total'], $currency ) ), $user_id );
 			return $invoice;
 		}
 		// Már kiállított számla: emlékeztető a portál linkjével.
@@ -183,7 +183,7 @@ function hpv_bill_send( int $invoice_id, int $user_id ) {
 	);
 	$invoice = hpv_p_get( 'invoice', $invoice_id );
 	hpv_p_event_invoice_sent( $invoice );
-	hpv_p_log( (int) $invoice['client_id'], 'system', sprintf( 'Invoice %s issued: %s.', $invoice['number'], hpv_p_money( $invoice['total'], $currency ) ), true, $user_id );
+	hpv_p_log_client( (int) $invoice['client_id'], 'Invoice %s issued: %s.', array( $invoice['number'], hpv_p_money( $invoice['total'], $currency ) ), $user_id );
 
 	if ( hpv_qbo_connected() && '' === (string) $invoice['external_id'] ) {
 		hpv_bill_sync_invoice( $invoice_id );
@@ -290,8 +290,21 @@ function hpv_bill_record_payment( array $invoice, array $p, string $reference ) 
 	hpv_p_update( 'invoice', $invoice_id, $data );
 	$invoice = hpv_p_get( 'invoice', $invoice_id );
 
-	hpv_p_log( (int) $invoice['client_id'], 'system', sprintf( 'Payment of %s received for invoice %s. Thank you!', hpv_p_money( $amount, $currency ), $invoice['number'] ), true, (int) ( $p['user_id'] ?? 0 ) );
+	hpv_p_log_client( (int) $invoice['client_id'], 'Payment of %s received for invoice %s. Thank you!', array( hpv_p_money( $amount, $currency ), $invoice['number'] ), (int) ( $p['user_id'] ?? 0 ) );
 	if ( in_array( $p['provider'] ?? '', array( 'stripe', 'teya' ), true ) ) {
+		// Visszaigazolás az ügyfélnek (a portál ígéri: „A receipt is on its way”).
+		hpv_with_client_lang(
+			(int) $invoice['client_id'],
+			fn() => hpv_p_notify_client(
+				(int) $invoice['client_id'],
+				hpv_t( 'Payment received: invoice %s', $invoice['number'] ),
+				hpv_t( 'Thank you for your payment' ),
+				'<p>' . esc_html( hpv_t( 'We received %s for invoice %s.', hpv_p_money( $amount, $currency ), $invoice['number'] ) ) . '</p><p>'
+					. esc_html( 'paid' === $invoice['status'] ? hpv_t( 'The invoice is now paid in full.' ) : hpv_t( 'Remaining balance: %s', hpv_p_money( hpv_p_invoice_balance( $invoice ), $currency ) ) ) . '</p>',
+				hpv_t( 'View invoice' ),
+				hpv_p_portal_url( array( 'view' => 'invoices', 'id' => $invoice_id ) )
+			)
+		);
 		hpv_p_notify_staff(
 			sprintf( 'Online befizetés: %s — %s', $invoice['number'], hpv_p_money( $amount, $currency ) ),
 			sprintf( '<p><strong>%s</strong> fizetett: %s (%s, %s számla).</p>', esc_html( hpv_p_client_name_safe( (int) $invoice['client_id'] ) ), esc_html( hpv_p_money( $amount, $currency ) ), esc_html( ucfirst( $p['provider'] ) ), esc_html( $invoice['number'] ) ),

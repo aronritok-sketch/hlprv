@@ -1158,9 +1158,9 @@ function hpv_prop_portal_list( int $client_id ): array {
 
 function hpv_pv_proposals( int $client_id ) {
 	$list = hpv_prop_portal_list( $client_id );
-	hpv_p_portal_header( 'Proposals', 'Proposals from your HelloProVision team.' );
+	hpv_p_portal_header( hpv_t( 'Proposals' ), hpv_t( 'Proposals from your HelloProVision team.' ) );
 	if ( ! $list ) {
-		echo '<p class="hpv-empty hpv-panel">No proposals yet.</p>';
+		echo '<p class="hpv-empty hpv-panel">' . esc_html( hpv_t( 'No proposals yet.' ) ) . '</p>';
 		return;
 	}
 	echo '<div class="hpv-cards">';
@@ -1170,9 +1170,9 @@ function hpv_pv_proposals( int $client_id ) {
 		$totals = hpv_prop_totals( hpv_prop_selected_items( $p ) );
 		?>
 		<a class="hpv-card-link" href="<?php echo esc_url( hpv_prop_public_url( $p ) ); ?>" target="_blank" rel="noopener">
-			<span class="hpv-mini-project__top"><strong><?php echo esc_html( $p['title'] ); ?></strong><span class="hpv-pill hpv-pill--<?php echo esc_attr( 'accepted' === $status ? 'paid' : ( in_array( $status, array( 'sent', 'viewed' ), true ) ? 'client' : 'void' ) ); ?>"><?php echo esc_html( $labels[ $status ] ?? $status ); ?></span></span>
-			<small><?php echo esc_html( $p['number'] ); ?><?php echo $p['valid_until'] ? ' · valid until ' . esc_html( mysql2date( 'M j, Y', $p['valid_until'] ) ) : ''; ?></small>
-			<span class="hpv-muted"><?php echo esc_html( implode( ' + ', array_filter( array( $totals['one_time'] ? hpv_p_money( $totals['one_time'], $p['currency'] ?: 'USD' ) : '', $totals['monthly'] ? hpv_p_money( $totals['monthly'], $p['currency'] ?: 'USD' ) . ' / month' : '' ) ) ) ); ?></span>
+			<span class="hpv-mini-project__top"><strong><?php echo esc_html( $p['title'] ); ?></strong><span class="hpv-pill hpv-pill--<?php echo esc_attr( 'accepted' === $status ? 'paid' : ( in_array( $status, array( 'sent', 'viewed' ), true ) ? 'client' : 'void' ) ); ?>"><?php echo esc_html( hpv_t( $labels[ $status ] ?? $status ) ); ?></span></span>
+			<small><?php echo esc_html( $p['number'] ); ?><?php echo $p['valid_until'] ? esc_html( hpv_t( ' · valid until %s', hpv_date( $p['valid_until'] ) ) ) : ''; ?></small>
+			<span class="hpv-muted"><?php echo esc_html( implode( ' + ', array_filter( array( $totals['one_time'] ? hpv_p_money( $totals['one_time'], $p['currency'] ?: 'USD' ) : '', $totals['monthly'] ? hpv_t( '%s / month', hpv_p_money( $totals['monthly'], $p['currency'] ?: 'USD' ) ) : '' ) ) ) ); ?></span>
 		</a>
 		<?php
 	}
