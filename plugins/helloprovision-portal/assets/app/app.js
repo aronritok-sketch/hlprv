@@ -2,7 +2,7 @@
  * HelloProVision CRM — webalkalmazás (crm.helloprovision.com).
  * Keret: oldalsáv, felső sáv (keresés, futó stopper), útválasztás, feladat panel.
  */
-import { html, render, useState, useEffect, useRef, useCallback, api, CFG, AppContext, useApp, useRoute, navigate, setParam, Icon, Avatar, Toasts, toast, clock, Spinner, Empty } from './ui.js';
+import { html, render, useState, useEffect, useRef, useCallback, api, CFG, AppContext, useApp, useRoute, navigate, setParam, Icon, Avatar, Toasts, toast, clock, Spinner, Empty, useExtensions } from './ui.js';
 import { Dashboard } from './views/dashboard.js';
 import { MyTasks } from './views/mytasks.js';
 import { Projects } from './views/projects.js';
@@ -169,8 +169,19 @@ const NAV = [
 	{ path: '/contracts', label: 'Szerződések', icon: 'doc', cap: 'contracts' },
 ];
 
+/** A beépített menü, kiegészítve a bővítések menüpontjaival (a megadott pont után). */
+function navItems(ext) {
+	const items = [...NAV];
+	ext.nav.forEach((n) => {
+		const at = items.findIndex((x) => x.path === n.after);
+		items.splice(at < 0 ? items.length : at + 1, 0, { ...n, badge: 'ext' });
+	});
+	return items;
+}
+
 function Sidebar({ path }) {
 	const { boot, unread } = useApp();
+	const ext = useExtensions();
 	const caps = boot.me.caps || {};
 	const legacy = [];
 	if (boot.me.is_admin) legacy.push({ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-settings'), label: 'Beállítások', icon: 'cog' });
@@ -179,12 +190,13 @@ function Sidebar({ path }) {
 		<aside class="side">
 			<a class="brand" href="#/">Hello<span>ProVision</span><small>CRM</small></a>
 			<nav class="nav">
-				${NAV.filter((n) => !n.cap || caps[n.cap]).map((n) => html`
+				${navItems(ext).filter((n) => !n.cap || caps[n.cap]).map((n) => html`
 					<a key=${n.path} href=${'#' + n.path} class=${isActive(n.path) ? 'is-active' : ''}>
 						<${Icon} name=${n.icon} /><span>${n.label}</span>
 						${n.badge === 'unread' && unread ? html`<em class="count">${unread}</em>` : null}
 						${n.badge === 'approvals' && boot.approvalsAttention ? html`<em class="count" title="Javítást kértek">${boot.approvalsAttention}</em>` : null}
 						${n.badge === 'sales' && boot.salesAttention ? html`<em class="count" title="Új érdeklődő, válaszra vár">${boot.salesAttention}</em>` : null}
+						${n.badge === 'ext' && ext.badges[n.path] ? html`<em class="count">${ext.badges[n.path]}</em>` : null}
 					</a>`)}
 			</nav>
 			${legacy.length || boot.me.is_admin || caps.contracts || caps.proposals ? html`<p class="nav-label">Pénzügy és admin</p>` : null}
@@ -207,6 +219,7 @@ function Sidebar({ path }) {
 
 function App() {
 	const route = useRoute();
+	const ext = useExtensions();
 	const [boot, setBoot] = useState(null);
 	const [timer, setTimer] = useState(null);
 	const [unread, setUnread] = useState(0);
@@ -275,6 +288,7 @@ function App() {
 	else if (path === '/contracts') page = html`<${Contracts} params=${params} />`;
 	else if ((m = path.match(/^\/contracts\/(\d+)$/))) page = html`<${ContractPage} key=${'ct' + m[1]} id=${Number(m[1])} />`;
 	else if (path === '/templates') page = html`<${Templates} key=${'tpl' + (params.type || '')} params=${params} />`;
+	else if ((m = ext.routes.find((r) => r.match(path)))) page = m.render(path, params);
 	else page = html`<${Empty} title="Az oldal nem található" />`;
 
 	return html`

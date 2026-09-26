@@ -330,15 +330,29 @@ def message_detail(db: Session, m: MailMessage, images: bool = False) -> dict[st
 
 
 def mark_seen(db: Session, m: MailMessage, seen: bool = True) -> None:
+    """Az olvasottság azonnal a CRM-ben; a levelezőszerveren a háttérben (ne várjon rá a felület)."""
     if m.seen == seen:
         return
     m.seen = seen
-    account = m.account
     if m.uid and m.folder == "inbox":
-        try:
-            transport.set_flag(account, "INBOX", m.uid, "\\Seen", seen)
-        except MailError as e:
-            log.warning("olvasottság jelölése nem sikerült (%s): %s", account.email, e)
+        from ...jobs import runner
+
+        db.flush()
+        runner.enqueue(db, "mail_flag", None, {"message_id": m.id, "seen": seen}, None)
+
+
+@handler("mail_flag")
+def job_flag(db: Session, job: Job, progress) -> dict[str, Any]:
+    m = db.get(MailMessage, int((job.payload or {}).get("message_id") or 0))
+    if m is None or not m.uid:
+        return {}
+    seen = bool((job.payload or {}).get("seen", True))
+    try:
+        transport.set_flag(m.account, "INBOX", m.uid, "\\Seen", seen)
+    except MailError as e:
+        log.warning("olvasottság jelölése nem sikerült (%s): %s", m.account.email, e)
+        return {"error": str(e)}
+    return {"ok": True}
 
 
 # ── Küldés ──────────────────────────────────────────────

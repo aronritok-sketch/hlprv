@@ -505,3 +505,16 @@ Screaming Froggal, gyártási feladatok a CRM-be, jóváhagyások az ügyfélpor
 - Bővítmény: `plugins/helloprovision-seo-os` · API és worker: `services/seo-os-api` · Screaming Frog ügynök: `services/seo-os-crawler`
 - Telepítés, Screaming Frog beállítás, üzemeltetés: [`docs/seo-os/TELEPITES.md`](docs/seo-os/TELEPITES.md)
 - Architektúra és módszertan: [`docs/seo-os/ARCHITECTURE.md`](docs/seo-os/ARCHITECTURE.md)
+
+## Levelezés a CRM-ben (`plugins/helloprovision-mail/`)
+
+Mindenki a CRM-ből levelezik (Levelezés menü), a saját postafiókjával és a közös fiókokkal (pl. info@):
+
+- **Beérkezett, olvasatlan, elküldött** levelek, keresés, szálak; a levelek 2 percenként szinkronizálódnak (IMAP), és a levelezőprogramban is ugyanúgy látszanak (olvasottság, Elküldöttek).
+- **Válasz, válasz mindenkinek, továbbítás, új levél** mellékletekkel; a küldés SMTP-n, a saját címről megy.
+- **Egységes aláírás:** az admin állítja be egy helyen (HTML sablon + munkatársanként név, beosztás, telefon), a munkatárs nem írhatja át.
+- **Feladat levélből** egy kattintással: projekt, felelős, határidő; a levél szövege a feladat leírásába kerül, az ügyfél idővonalára bejegyzés.
+- **Ügyfélhez kötés:** a CRM ügyfelek címe (és a céges domain) alapján magától; kézi hozzárendelésnél a feladót megjegyzi, a szál többi levele is odakerül. Az ügyfél összes levele egy kattintással.
+- **Biztonság:** a jelszavak titkosítva, a levelek HTML-je szűrve (szkript, követőpixel tiltva, a képek egy gombbal engedhetők).
+
+Beállítás (admin): CRM → Levelezés → Beállítások → Postafiók (Google Workspace: alkalmazásjelszó; Microsoft 365: IMAP/SMTP engedélyezése; tárhely levelezője: a szolgáltató IMAP/SMTP adatai), majd az aláírás és a munkatársak adatai. A levelezést az SEO OS szervere végzi, ezért a `helloprovision-seo-os` bővítmény is kell.

@@ -147,6 +147,7 @@ $project_b = hpv_p_insert( 'project', hpv_p_sanitize( 'project', array( 'client_
 $GLOBALS['hpv_it_mail'] = array();
 
 echo "Kulcs nélkül\n";
+$GLOBALS['mock']['requests'] = array(); // más bővítmények (SEO OS, levelezés) beállítási hívásai ne számítsanak
 $off = hpv_video_start_call( array( 'client_id' => $client_a ), $staff_id );
 it( 'Daily kulcs nélkül a hívás nem indul', is_wp_error( $off ) && 'video_off' === $off->get_error_code() );
 it( 'kulcs nélkül nincs kimenő kérés', ! $GLOBALS['mock']['requests'] );

@@ -14,6 +14,7 @@ function hpv_p_render_crm_app() {
 		'nonce'     => wp_create_nonce( 'wp_rest' ),
 		'adminUrl'  => admin_url( 'admin.php?page=hpv-crm' ),
 		'portalUrl' => hpv_p_portal_url(),
+		'ui'        => $base . 'app/ui.js', // a bővítések ugyanezt a modult importálják (verzió nélkül, hogy egy példány legyen)
 		'chat'      => hpv_chat_app_config( 'hu' ),
 		'video'     => array(
 			'enabled' => hpv_video_enabled(),
@@ -21,6 +22,8 @@ function hpv_p_render_crm_app() {
 			'daily'   => $base . 'vendor/daily.js?ver=0.92.2',
 		),
 	);
+	// Bővítések (pl. helloprovision-mail): [ [ 'script' => url, 'style' => url ], … ]
+	$extensions = (array) apply_filters( 'hpv_crm_app_extensions', array() );
 	nocache_headers();
 	?>
 <!doctype html>
@@ -32,6 +35,11 @@ function hpv_p_render_crm_app() {
 	<title>HelloProVision CRM</title>
 	<link rel="stylesheet" href="<?php echo esc_url( $base . 'chat.css?ver=' . $version ); ?>">
 	<link rel="stylesheet" href="<?php echo esc_url( $base . 'app/app.css?ver=' . $version ); ?>">
+	<?php foreach ( $extensions as $ext ) : ?>
+		<?php if ( ! empty( $ext['style'] ) ) : ?>
+	<link rel="stylesheet" href="<?php echo esc_url( $ext['style'] ); ?>">
+		<?php endif; ?>
+	<?php endforeach; ?>
 	<script>window.HPV_APP = <?php echo wp_json_encode( $config ); ?>;</script>
 </head>
 <body class="hpv-app-body">
@@ -40,6 +48,11 @@ function hpv_p_render_crm_app() {
 	<script src="<?php echo esc_url( $base . 'chat.js?ver=' . $version ); ?>"></script>
 	<script src="<?php echo esc_url( $base . 'video.js?ver=' . $version ); ?>"></script>
 	<script type="module" src="<?php echo esc_url( $base . 'app/app.js?ver=' . $version ); ?>"></script>
+	<?php foreach ( $extensions as $ext ) : ?>
+		<?php if ( ! empty( $ext['script'] ) ) : ?>
+	<script type="module" src="<?php echo esc_url( $ext['script'] ); ?>"></script>
+		<?php endif; ?>
+	<?php endforeach; ?>
 </body>
 </html>
 	<?php

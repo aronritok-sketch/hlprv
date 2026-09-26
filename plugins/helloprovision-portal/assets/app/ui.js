@@ -202,6 +202,34 @@ const ICONS = {
 	files: 'M8 3h8l4 4v12H8zM16 3v4h4M4 7v14h12',
 };
 
+/* ── Bővítések: más HelloProVision bővítmény (pl. levelezés) menüpontot és oldalt tehet a CRM-be ── */
+
+const extListeners = new Set();
+export const EXT = { nav: [], routes: [], badges: {} };
+
+/** nav: [{ path, label, icon, after }], routes: [{ match(path) → bool, render(path, params) → vnode }], icons: { név: 'svg path' } */
+export function registerExtension({ nav = [], routes = [], icons = {} } = {}) {
+	EXT.nav.push(...nav);
+	EXT.routes.push(...routes);
+	Object.assign(ICONS, icons);
+	extListeners.forEach((fn) => fn());
+}
+
+export function setExtensionBadge(path, count) {
+	EXT.badges[path] = count;
+	extListeners.forEach((fn) => fn());
+}
+
+export function useExtensions() {
+	const [, tick] = useState(0);
+	useEffect(() => {
+		const fn = () => tick((n) => n + 1);
+		extListeners.add(fn);
+		return () => extListeners.delete(fn);
+	}, []);
+	return EXT;
+}
+
 export function Icon({ name, size = 18 }) {
 	return html`<svg class="i" viewBox="0 0 24 24" width=${size} height=${size} fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${ICONS[name] || ''} /></svg>`;
 }

@@ -6,10 +6,10 @@ Ebben a repóban két munkamenet (chat) dolgozik párhuzamosan ugyanazon a rends
 
 | Ág | Terület |
 |---|---|
-| `claude/great-gauss-jba4b5` | SEO OS: `services/`, `plugins/helloprovision-seo-os/`, `docs/seo-os/`, `render.yaml`. **A Render ebből az ágból telepíti az SEO OS szervert** (minden push után magától). A CRM e-mail modulja is itt készül. |
+| `claude/great-gauss-jba4b5` | SEO OS: `services/`, `plugins/helloprovision-seo-os/`, `docs/seo-os/`, `render.yaml`. **A Render ebből az ágból telepíti az SEO OS szervert** (minden push után magától). A CRM levelezés modulja is itt készül (`plugins/helloprovision-mail/`, szerver: `services/seo-os-api/app/services/mail`). |
 | `claude/laughing-wozniak-dpwf28` (alapértelmezett ág) | CRM és ügyfélportál (`plugins/helloprovision-portal/`), weboldal bővítmények (`helloprovision-grader`, `helloprovision-reviews`), `mu-plugins/`, `README.md` |
 
-A két terület közti szerződés: `docs/integrations/seo-os.md` (portál ↔ SEO OS hookok, jóváhagyás, riport-mutatók).
+A két terület közti szerződés: `docs/integrations/seo-os.md` (portál ↔ SEO OS hookok, jóváhagyás, riport-mutatók) és `docs/integrations/crm-extensions.md` (a CRM bővítés-pontja: más bővítmény menüpontot és oldalt tehet a CRM-be).
 
 ## Munka előtt és után
 
