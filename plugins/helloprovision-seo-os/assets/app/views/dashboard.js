@@ -1,7 +1,12 @@
 /**
  * Vezérlőpult: aktív projektek, rám váró jóváhagyások, friss dokumentumok, esedékes tartalmak, hiányzó bekérések.
  */
-import { html, useApp, useLoad, navigate, fmt, Icon, Spinner, ErrorBox, Empty, StatusPill, Stepper, Progress, Stat, Pill, can } from '../ui.js';
+import { html, CFG, useApp, useLoad, navigate, fmt, Icon, Spinner, ErrorBox, Empty, StatusPill, Stepper, Progress, Stat, Pill, can } from '../ui.js';
+
+// Keresztnév a köszönéshez: a WordPress profil „Keresztnév” mezője, különben magyar névsorrendben a név utolsó tagja (Ritók Áron → Áron).
+function firstName(name) {
+	return (CFG.user && CFG.user.first) || String(name || '').trim().split(/\s+/).pop();
+}
 
 function Card({ title, icon, children, count, action }) {
 	return html`<section class="card">
@@ -26,7 +31,7 @@ export function Dashboard() {
 
 	return html`<div class="page">
 		<header class="page__head">
-			<div><h1>Jó munkát, ${me.name.split(' ')[0]}!</h1><p class="muted">${data.projects.length} aktív projekt</p></div>
+			<div><h1>Jó munkát, ${firstName(me.name)}!</h1><p class="muted">${data.projects.length} aktív projekt</p></div>
 		</header>
 
 		<div class="stats">

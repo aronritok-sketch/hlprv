@@ -67,6 +67,7 @@ function hpv_seo_render_app() {
 		'crmUrl'    => function_exists( 'hpv_p_crm_host' ) ? 'https://' . hpv_p_crm_host() . '/' : '',
 		'user'      => array(
 			'name'   => $user->display_name,
+			'first'  => (string) $user->first_name,
 			'role'   => hpv_seo_user_role( $user ),
 			'avatar' => get_avatar_url( $user->ID, array( 'size' => 64 ) ),
 		),

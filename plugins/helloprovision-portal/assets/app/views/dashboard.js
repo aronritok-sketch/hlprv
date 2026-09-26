@@ -63,7 +63,7 @@ export function Dashboard() {
 	return html`
 		<div class="page">
 			<header class="page__head">
-				<div><h1>${hello}, ${boot.me.name.split(' ')[0]}!</h1><p class="muted">${new Date().toLocaleDateString('hu-HU', { weekday: 'long', month: 'long', day: 'numeric' })}</p></div>
+				<div><h1>${hello}, ${boot.me.first || boot.me.name}!</h1><p class="muted">${new Date().toLocaleDateString('hu-HU', { weekday: 'long', month: 'long', day: 'numeric' })}</p></div>
 			</header>
 			<div class="kpis">${kpis.map(Kpi)}</div>
 			<div class="kpis kpis--money">${money_kpis.map(Kpi)}</div>

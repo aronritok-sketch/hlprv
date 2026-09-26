@@ -11,6 +11,19 @@ const HPV_PM_NS = 'hpv/v1';
 
 /* ─── Formázás ────────────────────────────────────────────── */
 
+/**
+ * Keresztnév a CRM köszönéséhez: a profil „Keresztnév” mezője, különben (a CRM magyar) a név utolsó tagja: Ritók Áron → Áron.
+ */
+function hpv_pm_first_name( WP_User $user ): string {
+	$first = trim( (string) $user->first_name );
+	if ( '' !== $first && $first !== $user->display_name ) {
+		return $first;
+	}
+	$parts = preg_split( '/\s+/', trim( (string) $user->display_name ) );
+
+	return (string) end( $parts );
+}
+
 function hpv_pm_user( int $user_id ): ?array {
 	if ( ! $user_id ) {
 		return null;
@@ -377,7 +390,7 @@ function hpv_pm_rest_bootstrap() {
 
 	return rest_ensure_response(
 		array(
-			'me'         => array_merge( hpv_pm_user( $me->ID ), array( 'is_admin' => current_user_can( 'manage_options' ), 'caps' => hpv_p_caps_for( $me->ID ) ) ),
+			'me'         => array_merge( hpv_pm_user( $me->ID ), array( 'first' => hpv_pm_first_name( $me ), 'is_admin' => current_user_can( 'manage_options' ), 'caps' => hpv_p_caps_for( $me->ID ) ) ),
 			'users'      => array_map( fn( $u ) => hpv_pm_user( $u->ID ), get_users( array( 'capability' => 'hpv_manage_crm', 'orderby' => 'display_name' ) ) ),
 			'clients'    => array_map(
 				fn( $c ) => array(
