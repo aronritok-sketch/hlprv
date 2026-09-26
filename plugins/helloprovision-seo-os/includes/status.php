@@ -51,6 +51,15 @@ function hpv_seo_wp_status() {
 	$add( 'wp_smtp', 'Levélküldés SMTP-n (WP Mail SMTP)', $smtp, '', 'Telepítsd / állítsd be a WP Mail SMTP bővítményt, különben a levelek spambe mehetnek.', 'warn' );
 	$add( 'wp_portal', 'CRM / ügyfélportál bővítmény aktív', $portal, '', 'A CRM feladatokhoz és az ügyfél-jóváhagyás portál-értesítéseihez a helloprovision-portal bővítmény kell.', 'warn' );
 	$add( 'wp_cron_real', 'Valódi cron (nem látogatásfüggő WP-Cron)', $cron_disabled, $cron_disabled ? 'DISABLE_WP_CRON' : 'WP-Cron csak látogatáskor fut', "define( 'DISABLE_WP_CRON', true ); + 5 percenkénti hívás: https://{$host}/wp-cron.php?doing_wp_cron (a tárhely cron-beállításában, vagy ingyenes külső szolgáltatással, pl. cron-job.org)", 'warn' );
+	$upd = class_exists( 'HPV_GitHub_Updater' ) ? HPV_GitHub_Updater::status() : array( 'configured' => false, 'error' => '', 'plugins' => array() );
+	$behind = array();
+	foreach ( $upd['plugins'] as $slug => $v ) {
+		if ( $v['latest'] && version_compare( $v['latest'], $v['installed'], '>' ) ) {
+			$behind[] = "$slug {$v['installed']} → {$v['latest']}";
+		}
+	}
+	$add( 'wp_updates', 'Automatikus bővítményfrissítés a GitHubról', $upd['configured'] && '' === $upd['error'], $upd['error'] ?: ( $behind ? 'Frissítés vár: ' . implode( ', ', $behind ) : ( $upd['configured'] ? 'naprakész' : '' ) ),
+		"define( 'HPV_GITHUB_TOKEN', 'github_pat_…' ); a wp-config.php-ba – GitHub → Settings → Developer settings → Fine-grained token, csak a hlprv repó, Contents: Read-only.", 'warn' );
 	$add( 'wp_team', 'Van SEO OS szerepkörrel rendelkező munkatárs az adminon kívül', count( $roles ) > 1, wp_json_encode( $roles ), 'Beállítások → Csapat: szerepkörök kiosztása.', 'warn' );
 
 	$api = $api_ok ? hpv_seo_api_json( 'GET', 'admin/status' ) : new WP_Error( 'hpv_seo_api', 'Az API nem érhető el.' );
@@ -69,6 +78,7 @@ function hpv_seo_wp_status() {
 				'next_outbox'    => wp_next_scheduled( 'hpv_seo_outbox' ) ? gmdate( 'c', wp_next_scheduled( 'hpv_seo_outbox' ) ) : null,
 				'next_daily'     => wp_next_scheduled( 'hpv_seo_daily' ) ? gmdate( 'c', wp_next_scheduled( 'hpv_seo_daily' ) ) : null,
 				'roles'          => $roles,
+				'updates'        => $upd,
 				'admin_email'    => wp_get_current_user()->user_email,
 			),
 			'checklist' => $items,

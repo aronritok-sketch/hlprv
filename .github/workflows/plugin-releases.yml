@@ -1,0 +1,63 @@
+# WordPress bővítmények kiadása: ha egy bővítmény verziója (a fő fájl „Version:” sora) még nincs kiadva,
+# a GitHub kiadást készít „<bővítmény>-v<verzió>” címkével és „<bővítmény>.zip” csatolmánnyal.
+# A telepített bővítmények ezt látják frissítésként (includes/github-updater.php), és maguktól frissülnek.
+name: Bővítmény kiadások
+
+on:
+  push:
+    branches:
+      - claude/great-gauss-jba4b5
+      - claude/laughing-wozniak-dpwf28
+    paths:
+      - "plugins/**"
+      - ".github/workflows/plugin-releases.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: plugin-releases
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: PHP szintaxis
+        run: find plugins -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
+
+      - name: Kiadások készítése
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for dir in plugins/*/; do
+            slug=$(basename "$dir")
+            main="$dir$slug.php"
+            [ -f "$main" ] || continue
+            version=$(grep -m1 -E '^[[:space:]]*\*[[:space:]]*Version:' "$main" | sed -E 's/.*Version:[[:space:]]*//' | tr -d '[:space:]')
+            if ! echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo "::warning::$slug: a verzió nem X.Y.Z alakú ($version), kimarad"; continue
+            fi
+            if [ ! -f "${dir}includes/github-updater.php" ]; then
+              echo "::warning::$slug: nincs benne includes/github-updater.php, nem tudna magától frissülni"
+            fi
+            tag="$slug-v$version"
+            if gh release view "$tag" > /dev/null 2>&1; then
+              echo "$tag: már kiadva"; continue
+            fi
+            prev=$(git tag -l "$slug-v*" --sort=-v:refname | head -1 || true)
+            if [ -n "$prev" ] && [ "$(printf '%s\n%s\n' "${prev#$slug-v}" "$version" | sort -V | tail -1)" != "$version" ]; then
+              echo "$tag: már van újabb kiadás ($prev), kimarad (ez az ág le van maradva)"; continue
+            fi
+            range=${prev:+$prev..HEAD}
+            notes=$(git log ${range:-HEAD} --no-merges --format='- %s' -- "$dir" | head -30)
+            (cd plugins && zip -qr "../$slug.zip" "$slug" -x "*/.DS_Store" "*/tests/*" "*/node_modules/*")
+            gh release create "$tag" "$slug.zip" --target "$GITHUB_SHA" --title "$slug $version" --notes "${notes:-Frissítés}"
+            echo "$tag: kiadva"
+          done

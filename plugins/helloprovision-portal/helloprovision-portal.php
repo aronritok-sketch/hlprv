@@ -2,14 +2,17 @@
 /**
  * Plugin Name: HelloProVision Client Portal & CRM
  * Description: Belső CRM (ügyfelek, szolgáltatások, projektek, számlák, szerződések, tevékenység) és ügyfélportál, ahol az ügyfél a saját adatainak a neki láthatóvá tett részét látja és kezeli. Portál shortcode: [hpv_portal]
- * Version:     0.5.0
+ * Version:     0.8.1
  * Author:      HelloProVision
  * Requires PHP: 7.4
  */
 
 defined( 'ABSPATH' ) || exit;
 
-const HPV_PORTAL_VERSION    = '0.8.0';
+require_once __DIR__ . '/includes/github-updater.php';
+HPV_GitHub_Updater::register( __FILE__, 'helloprovision-portal' );
+
+const HPV_PORTAL_VERSION    = '0.8.1';
 const HPV_PORTAL_DB_VERSION = '9';
 const HPV_PORTAL_OPTION     = 'hpv_portal_settings';
 const HPV_PORTAL_FILE       = __FILE__;

@@ -2,12 +2,15 @@
 /**
  * Plugin Name: HelloProVision Reviews
  * Description: Google értékelés-kérő rendszer: rövid link (/review/), e-mailes kérés és egyetlen automatikus emlékeztető, kattintáskövetés, QR-kód, shortcode-ok a térképhez és a profil linkjéhez.
- * Version:     1.0.0
+ * Version:     1.0.1
  * Author:      HelloProVision
  * Requires PHP: 7.4
  */
 
 defined( 'ABSPATH' ) || exit;
+
+require_once __DIR__ . '/includes/github-updater.php';
+HPV_GitHub_Updater::register( __FILE__, 'helloprovision-reviews' );
 
 const HPV_REVIEWS_OPTION   = 'hpv_reviews_settings';
 const HPV_REVIEWS_CLICKS   = 'hpv_reviews_general_clicks';

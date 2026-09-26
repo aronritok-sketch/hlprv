@@ -2,14 +2,17 @@
 /**
  * Plugin Name: HelloProVision Website Grader
  * Description: Ingyenes weboldal- és helyi SEO-elemző délnyugat-floridai cégeknek. Az ügyfél beírja az URL-jét, pontszámot kap sebességre, mobilra, SEO-ra, schemára és helyi cégadatokra; a javítási javaslatokat e-mail cím megadása után kapja meg. Shortcode: [hpv_grader]
- * Version:     1.0.0
+ * Version:     1.0.1
  * Author:      HelloProVision
  * Requires PHP: 7.4
  */
 
 defined( 'ABSPATH' ) || exit;
 
-const HPV_GRADER_VERSION  = '1.0.0';
+require_once __DIR__ . '/includes/github-updater.php';
+HPV_GitHub_Updater::register( __FILE__, 'helloprovision-grader' );
+
+const HPV_GRADER_VERSION  = '1.0.1';
 const HPV_GRADER_OPTION   = 'hpv_grader_settings';
 const HPV_GRADER_CPT      = 'hpv_grader_lead';
 const HPV_GRADER_NS       = 'hpv-grader/v1';

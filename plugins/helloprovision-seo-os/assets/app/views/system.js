@@ -120,6 +120,7 @@ export function SystemStatus() {
 				<dt>API cím</dt><dd class="url">${data.wp.api_url}</dd>
 				<dt>Közös titok</dt><dd>${data.wp.secret_source || html`<span class="danger">nincs</span>`}</dd>
 				<dt>Cron</dt><dd>${data.wp.cron_disabled ? 'szerver cron (DISABLE_WP_CRON)' : 'WP-Cron (látogatásfüggő)'}</dd>
+				<dt>Frissítések</dt><dd>${data.wp.updates && data.wp.updates.configured ? Object.entries(data.wp.updates.plugins).map(([s, v]) => s.replace('helloprovision-', '') + ' ' + v.installed + (v.latest && v.latest !== v.installed ? ' → ' + v.latest : '')).join(' · ') : html`<span class="danger">nincs GitHub token</span>`}</dd>
 				<dt>Szerepkörök</dt><dd>${Object.entries(data.wp.roles).map(([r, n]) => r + ': ' + n).join(' · ') || '–'}</dd>
 			</dl>
 		</section>
