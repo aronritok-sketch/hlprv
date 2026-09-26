@@ -11,6 +11,7 @@ const HPV_PORTAL_VIEWS = array(
 	'projects'  => 'Projects',
 	'messages'  => 'Messages',
 	'meetings'  => 'Meetings',
+	'proposals' => 'Proposals',
 	'invoices'  => 'Invoices',
 	'contracts' => 'Contracts',
 	'services'  => 'Services',
@@ -50,6 +51,7 @@ function hpv_p_portal_icon( string $name ): string {
 		'projects'  => 'M4 5h16v4H4zM4 11h10v4H4zM4 17h7v3H4z',
 		'messages'  => 'M4 5h16v11H8l-4 4z',
 		'meetings'  => 'M3 7h12v10H3zM15 10l6-3v10l-6-3',
+		'proposals' => 'M5 3h10l4 4v14H5zM14 3v5h5M9 13l2 2 4-4',
 		'invoices'  => 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6',
 		'contracts' => 'M6 3h9l3 3v15H6zM9 10h6M9 14h6M9 18h3',
 		'services'  => 'M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z',
@@ -189,7 +191,7 @@ function hpv_p_portal_app(): string {
 		<main class="hpv-main" id="main">
 			<?php
 			$id   = absint( $_GET['id'] ?? 0 );
-			$need = array( 'invoices' => 'invoices', 'services' => 'invoices', 'contracts' => 'contracts' )[ $view ] ?? '';
+			$need = array( 'invoices' => 'invoices', 'services' => 'invoices', 'contracts' => 'contracts', 'proposals' => 'proposals' )[ $view ] ?? '';
 			if ( $need && hpv_p_is_staff() && ! hpv_p_can( $need ) ) {
 				$view = 'no_access';
 				hpv_p_portal_header( HPV_PORTAL_VIEWS[ sanitize_key( $_GET['view'] ?? '' ) ] ?? '', '' );
@@ -215,6 +217,9 @@ function hpv_p_portal_app(): string {
 					break;
 				case 'meetings':
 					$id ? hpv_pv_meeting( $client_id, $id ) : hpv_pv_meetings( $client_id );
+					break;
+				case 'proposals':
+					hpv_pv_proposals( $client_id );
 					break;
 				case 'account':
 					hpv_pv_account( $client );
@@ -309,6 +314,16 @@ function hpv_pv_overview( array $client, array $counts ) {
 				'meta'  => 'Join now',
 				'url'   => hpv_p_portal_link( 'meetings', array( 'id' => $call['id'] ) ),
 				'alert' => true,
+			);
+		}
+	}
+	foreach ( hpv_prop_portal_list( (int) $client['id'] ) as $prop ) {
+		if ( in_array( $prop['status'], array( 'sent', 'viewed' ), true ) && ! hpv_prop_is_expired( $prop ) ) {
+			$todo[] = array(
+				'label' => 'Review proposal: ' . $prop['title'],
+				'meta'  => $prop['valid_until'] ? 'Valid until ' . mysql2date( 'M j', $prop['valid_until'] ) : '',
+				'url'   => hpv_prop_public_url( $prop ),
+				'alert' => false,
 			);
 		}
 	}

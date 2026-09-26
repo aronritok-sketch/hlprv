@@ -116,7 +116,7 @@ add_filter(
 		if ( 0 === strpos( $url, 'https://files.example.test/' ) ) {
 			return mock_response( 200, $m['vtt'] );
 		}
-		if ( HPV_VIDEO_AI_API === $url ) {
+		if ( HPV_AI_API === $url ) {
 			return 200 === $m['ai_status']
 				? mock_response( 200, array( 'content' => array( array( 'type' => 'text', 'text' => $m['ai_text'] ) ) ) )
 				: mock_response( $m['ai_status'], array( 'error' => array( 'message' => 'Overloaded' ) ) );

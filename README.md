@@ -129,7 +129,7 @@ Az érdeklődők a **Website Grader → Érdeklődők** menüben vannak: teljes 
 - A Google sebességmérése futásonként néhány pontot ingadozhat. Ez normális, az eszköz GYIK része is elmondja.
 - Ha a szerver Cloudflare vagy más proxy mögött van, a látogatónkénti korlát a proxy IP-címét látja. Ilyenkor a `hpv_grader_client_ip` filterrel állítható be a valódi IP.
 
-## `plugins/helloprovision-portal/` – Ügyfélportál, CRM, projektkezelő, videóhívás és számlázás (0.4)
+## `plugins/helloprovision-portal/` – Ügyfélportál, CRM, projektkezelő, videóhívás, számlázás, ajánlatok és szerződések (0.5)
 
 Egy WordPress bővítmény, két bejárattal:
 
@@ -189,7 +189,21 @@ Saját, gyors felület, nem a WordPress admin. Oldalújratöltés nélkül műk�
   - akinek nincs számlázási joga, a számlákat, a díjakat és a bevételi számokat sem látja (a vezérlőpulton, az ügyféllistán, az ügyfél adatlapján és a portál-előnézetben sem);
   - projekteket, chatet és hívásokat minden munkatárs kezelhet.
 
-A számla-, szerződés- és szolgáltatás-szerkesztők egyelőre a klasszikus CRM-ben vannak (WordPress admin). A webalkalmazás oldalsávja oda linkel.
+- **Minták:** a saját szerződés- és ajánlatmintáitok (angol és magyar), Wordből is bemásolhatók (a formázás-szemét lekerül), mintánként állandó utasítással az AI-nak (pl. „mindig 50% előleg”).
+- **Szerződések AI-val:**
+  - ügyfél + minta + (elfogadott ajánlat vagy aktív szolgáltatások) + utasítás → az AI megírja az ügyfél nyelvén, a minta szerkezetét és pontjait megtartva;
+  - amit nem tud, azt `[[TODO: …]]` jelöléssel hagyja (sárgán kiemelve); ilyen résszel a szerződés nem küldhető ki;
+  - szerkesztő, „Módosítás AI-val” (csak azt változtatja, amit kérsz), kiküldés aláírásra a portálon; az aláírt szerződés zárolt.
+- **Ajánlatok AI-val:**
+  - ügyfél vagy új érdeklődő + minta + brief + a hívás-összefoglalók → fejezetek, ütemterv, árak (választható tételekkel);
+  - szerkeszthető fejezetenként, soronként; „Módosítás AI-val”; automatikus mentés;
+  - kiküldés e-mailben: márkázott ajánlat oldal (angol vagy magyar), bejelentkezés nélkül nyitható link, nyomtatható PDF-be;
+  - követés: hányszor és mikor nyitották meg (az első megnyitásról e-mail);
+  - az ügyfél az oldalon bejelöli a választható tételeket, az összeg élőben frissül, és elfogadja (név, e-mail, időpont, IP, tartalom-lenyomat) vagy indokkal elutasítja;
+  - elfogadás után egy kattintással: **szerződés AI-val** az elfogadott tételekből, **előleg/számla piszkozat** (30/50/100%), **havi díjak előfizetésként**, **projekt** az ütemterv lépéseivel;
+  - az érdeklődő elfogadáskor aktív ügyfél lesz; az ügyfél a portálon a „Proposals” menüben is látja az ajánlatait.
+
+A számla- és szolgáltatás-szerkesztő egyelőre a klasszikus CRM-ben van (WordPress admin). A webalkalmazás oldalsávja oda linkel.
 
 **Számlázás és fizetés országonként** (az ügyfél adatlapján az „Ország” mező dönt):
 
@@ -278,9 +292,8 @@ A portál saját keretben fut, a WordPress témától függetlenül, mobilon is.
 
 ### Következő ütemek
 
-1. **Ajánlatok és szerződések AI-val:** a saját mintáitokból, az ügyfél és a szolgáltatások adataiból AI írja meg a szerződést és az ajánlatot; márkázott ajánlat oldal elfogadással.
-2. **Teya API** (automatikus magyar kártyás fizetés), ismétlődő számlák automatikus kiállítása.
-3. **Egyebek:** fájlmegosztás, Bitrix24 átköltöztetés, a számla- és szerződés-szerkesztő átköltözése a webalkalmazásba, magyar nyelvű portál a magyar ügyfeleknek.
+1. **Teya API** (automatikus magyar kártyás fizetés), ismétlődő számlák automatikus kiállítása.
+2. **Egyebek:** fájlmegosztás, Bitrix24 átköltöztetés, a számla-szerkesztő átköltözése a webalkalmazásba, magyar nyelvű portál a magyar ügyfeleknek.
 
 ## Tesztek
 
@@ -291,6 +304,7 @@ php tests/grader.php
 wp eval-file tests/portal-integration.php   # valódi WordPressen, a portál bővítménnyel
 wp eval-file tests/video-integration.php    # ugyanott, videó kulcsok nélkül (a Daily-t és az AI-t a teszt helyettesíti)
 wp eval-file tests/billing-integration.php  # ugyanott, számlázási kulcsok nélkül (Számlázz.hu, Stripe, QuickBooks helyettesítve)
+wp eval-file tests/docs-integration.php     # ugyanott, AI kulcs nélkül (az AI-t a teszt helyettesíti)
 ```
 
 Az első három WordPress nélkül fut. A portál teszt valódi WordPressen és adatbázison fut, és a projektkezelő API-t is végigpróbálja: sablonmásolás, átrendezés, függőségek, stopper, jogosultságok, törlés. A videó teszt a teljes hívás-folyamatot végigviszi: szoba, belépők, hozzájárulás, lezárás, leirat, AI-összefoglaló és hibakezelés, teendőből feladat, webhook, portál. Az SEO teszt az élő főoldal valódi schemáját, a grader teszt a főoldal megtisztított HTML-jét használja (`tests/fixtures/`).

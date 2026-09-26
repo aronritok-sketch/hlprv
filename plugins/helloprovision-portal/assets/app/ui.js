@@ -129,8 +129,11 @@ export function clock(seconds) {
 }
 
 export function money(cents, currency = 'USD') {
-	const symbol = { USD: '$', EUR: '€', HUF: 'Ft ' }[currency] || currency + ' ';
-	return symbol + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+	const v = (cents || 0) / 100;
+	if (currency === 'HUF') return Math.round(v).toLocaleString('hu-HU').replace(/\s/g, '\u00a0') + '\u00a0Ft';
+	const sym = { USD: '$', EUR: '€' }[currency] || currency + ' ';
+	const whole = Math.round(Math.abs(v) * 100) % 100 === 0;
+	return (v < 0 ? '-' : '') + sym + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 });
 }
 
 export const isOverdue = (t) => t.due_date && t.status !== 'done' && t.due_date < todayISO();
@@ -167,6 +170,14 @@ const ICONS = {
 	sub: 'M6 4v10a4 4 0 004 4h8M14 14l4 4-4 4',
 	block: 'M12 21a9 9 0 100-18 9 9 0 000 18zM5.6 5.6l12.8 12.8',
 	video: 'M3 7h12v10H3zM15 10l6-3v10l-6-3',
+	proposal: 'M5 3h10l4 4v14H5zM14 3v5h5M9 13l2 2 4-4',
+	template: 'M4 4h16v5H4zM4 13h7v7H4zM15 13h5M15 17h5M15 20h3',
+	sparkle: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z',
+	send: 'M4 12l16-8-6 16-2-6z',
+	copy: 'M8 8h12v12H8zM4 4h12v4M4 4v12h4',
+	up: 'M6 14l6-6 6 6',
+	down: 'M6 10l6 6 6-6',
+	eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6z',
 };
 
 export function Icon({ name, size = 18 }) {

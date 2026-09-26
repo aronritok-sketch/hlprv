@@ -10,6 +10,9 @@ import { ProjectPage } from './views/project.js';
 import { TaskDrawer } from './views/task.js';
 import { Calls, CallPage } from './views/calls.js';
 import { Team } from './views/team.js';
+import { Contracts, ContractPage } from './views/contracts.js';
+import { Proposals, ProposalPage } from './views/proposals.js';
+import { Templates } from './views/templates.js';
 
 /* ── Chat (a meglévő chat komponens beágyazva) ───── */
 
@@ -144,6 +147,8 @@ const NAV = [
 	{ path: '/chat', label: 'Chat', icon: 'chat', badge: 'unread' },
 	{ path: '/calls', label: 'Hívások', icon: 'video' },
 	{ path: '/clients', label: 'Ügyfelek', icon: 'users' },
+	{ path: '/proposals', label: 'Ajánlatok', icon: 'proposal', cap: 'proposals' },
+	{ path: '/contracts', label: 'Szerződések', icon: 'doc', cap: 'contracts' },
 ];
 
 function Sidebar({ path }) {
@@ -151,7 +156,6 @@ function Sidebar({ path }) {
 	const caps = boot.me.caps || {};
 	const legacy = [];
 	if (caps.invoices) legacy.push({ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-invoices'), label: 'Számlák', icon: 'receipt' });
-	if (caps.contracts) legacy.push({ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-contracts'), label: 'Szerződések', icon: 'doc' });
 	if (caps.invoices) legacy.push({ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-services'), label: 'Szolgáltatások', icon: 'tag' });
 	if (boot.me.is_admin) legacy.push({ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-settings'), label: 'Beállítások', icon: 'cog' });
 	const isActive = (p) => (p === '/' ? path === '/' : path.startsWith(p));
@@ -159,14 +163,15 @@ function Sidebar({ path }) {
 		<aside class="side">
 			<a class="brand" href="#/">Hello<span>ProVision</span><small>CRM</small></a>
 			<nav class="nav">
-				${NAV.map((n) => html`
+				${NAV.filter((n) => !n.cap || caps[n.cap]).map((n) => html`
 					<a key=${n.path} href=${'#' + n.path} class=${isActive(n.path) ? 'is-active' : ''}>
 						<${Icon} name=${n.icon} /><span>${n.label}</span>
 						${n.badge === 'unread' && unread ? html`<em class="count">${unread}</em>` : null}
 					</a>`)}
 			</nav>
-			${legacy.length || boot.me.is_admin ? html`<p class="nav-label">Pénzügy és admin</p>` : null}
+			${legacy.length || boot.me.is_admin || caps.contracts || caps.proposals ? html`<p class="nav-label">Pénzügy és admin</p>` : null}
 			<nav class="nav nav--secondary">
+				${caps.contracts || caps.proposals ? html`<a href="#/templates" class=${isActive('/templates') ? 'is-active' : ''}><${Icon} name="template" /><span>Minták</span></a>` : null}
 				${boot.me.is_admin ? html`<a href="#/team" class=${isActive('/team') ? 'is-active' : ''}><${Icon} name="users" /><span>Csapat és jogok</span></a>` : null}
 				${legacy.map((n) => html`<a key=${n.label} href=${n.href}><${Icon} name=${n.icon} /><span>${n.label}</span><${Icon} name="ext" size="13" /></a>`)}
 			</nav>
@@ -231,6 +236,11 @@ function App() {
 	else if ((m = path.match(/^\/calls\/(\d+)$/))) page = html`<${CallPage} key=${'call' + m[1]} id=${Number(m[1])} params=${params} />`;
 	else if (path === '/clients') page = html`<${Clients} />`;
 	else if (path === '/team') page = html`<${Team} />`;
+	else if (path === '/proposals') page = html`<${Proposals} params=${params} />`;
+	else if ((m = path.match(/^\/proposals\/(\d+)$/))) page = html`<${ProposalPage} key=${'prop' + m[1]} id=${Number(m[1])} />`;
+	else if (path === '/contracts') page = html`<${Contracts} params=${params} />`;
+	else if ((m = path.match(/^\/contracts\/(\d+)$/))) page = html`<${ContractPage} key=${'ct' + m[1]} id=${Number(m[1])} />`;
+	else if (path === '/templates') page = html`<${Templates} key=${'tpl' + (params.type || '')} params=${params} />`;
 	else page = html`<${Empty} title="Az oldal nem található" />`;
 
 	return html`

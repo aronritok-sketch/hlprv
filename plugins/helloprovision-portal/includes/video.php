@@ -17,7 +17,6 @@
 defined( 'ABSPATH' ) || exit;
 
 const HPV_VIDEO_DAILY_API  = 'https://api.daily.co/v1';
-const HPV_VIDEO_AI_API     = 'https://api.anthropic.com/v1/messages';
 const HPV_VIDEO_ROOM_HOURS = 4;    // ennyi ideig él a szoba és a belépő
 const HPV_VIDEO_IDLE_END   = 300;  // üres szoba ennyi mp után lezártnak számít
 const HPV_VIDEO_GIVE_UP    = 7200; // ennyi idő után leirat nélkül lezárjuk
@@ -28,11 +27,11 @@ function hpv_video_daily_key(): string {
 }
 
 function hpv_video_ai_key(): string {
-	return defined( 'HPV_AI_API_KEY' ) ? (string) HPV_AI_API_KEY : '';
+	return hpv_ai_key();
 }
 
 function hpv_video_ai_model(): string {
-	return defined( 'HPV_AI_MODEL' ) && HPV_AI_MODEL ? (string) HPV_AI_MODEL : 'claude-sonnet-5';
+	return hpv_ai_model();
 }
 
 function hpv_video_enabled(): bool {
@@ -483,44 +482,9 @@ function hpv_video_summarize( array $call, string $transcript ) {
 	$user   = 'Meeting: ' . $call['title'] . "\nClient: " . ( $client['name'] ?? '' ) . ( $project ? "\nProject: " . $project['name'] : '' )
 		. "\n\n<transcript>\n" . $transcript . "\n</transcript>";
 
-	$res = wp_remote_post(
-		HPV_VIDEO_AI_API,
-		array(
-			'timeout' => 90,
-			'headers' => array(
-				'x-api-key'         => hpv_video_ai_key(),
-				'anthropic-version' => '2023-06-01',
-				'content-type'      => 'application/json',
-			),
-			'body'    => wp_json_encode(
-				array(
-					'model'      => hpv_video_ai_model(),
-					'max_tokens' => 2000,
-					'system'     => $system,
-					'messages'   => array(
-						array(
-							'role'    => 'user',
-							'content' => $user,
-						),
-					),
-				)
-			),
-		)
-	);
-	if ( is_wp_error( $res ) ) {
-		return new WP_Error( 'ai_http', 'Az AI szolgáltatás nem érhető el: ' . $res->get_error_message() );
-	}
-	$code = (int) wp_remote_retrieve_response_code( $res );
-	$data = json_decode( (string) wp_remote_retrieve_body( $res ), true );
-	if ( 200 !== $code || ! is_array( $data ) ) {
-		$msg = is_array( $data ) ? (string) ( $data['error']['message'] ?? '' ) : '';
-		return new WP_Error( 'ai_error', 'AI hiba (' . $code . ')' . ( $msg ? ': ' . $msg : '' ) );
-	}
-	$text = '';
-	foreach ( (array) ( $data['content'] ?? array() ) as $block ) {
-		if ( 'text' === ( $block['type'] ?? '' ) ) {
-			$text .= (string) $block['text'];
-		}
+	$text = hpv_ai_complete( $system, $user, 2000, 90 );
+	if ( is_wp_error( $text ) ) {
+		return $text;
 	}
 
 	return hpv_video_parse_ai( $text );
