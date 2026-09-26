@@ -213,6 +213,9 @@ function hpv_p_delete( string $entity, int $id ) {
 	if ( 'file' === $entity ) {
 		hpv_files_unlink( $id );
 	}
+	if ( 'invoice' === $entity && function_exists( 'hpv_time_release' ) ) {
+		hpv_time_release( $id );
+	}
 	if ( 'project' === $entity ) {
 		// A projekt fájljai megmaradnak az ügyfél általános fájljai között.
 		foreach ( hpv_p_find( 'file', array( 'project_id' => $id ), array( 'limit' => 2000 ) ) as $f ) {

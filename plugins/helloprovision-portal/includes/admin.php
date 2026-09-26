@@ -1107,6 +1107,13 @@ function hpv_p_sanitize_settings( $input ): array {
 		'hu_fizmod'       => in_array( $input['hu_fizmod'] ?? '', array( 'Bankkártya', 'Átutalás', 'Készpénz' ), true ) ? $input['hu_fizmod'] : 'Bankkártya',
 		'qbo_item_name'   => sanitize_text_field( $input['qbo_item_name'] ?? '' ) ?: 'Services',
 		'report_auto'     => ! empty( $input['report_auto'] ),
+		'payment_reminders' => ! empty( $input['payment_reminders'] ),
+		'review_request'  => ! empty( $input['review_request'] ),
+		'review_delay_days' => min( 60, absint( $input['review_delay_days'] ?? 3 ) ),
+		'review_countries' => implode( ',', array_intersect( array( 'US', 'HU' ), array_map( 'trim', explode( ',', strtoupper( (string) ( $input['review_countries'] ?? 'US' ) ) ) ) ) ),
+		'reminder_days'   => implode( ',', array_slice( array_values( array_unique( array_filter( array_map( 'absint', explode( ',', (string) ( $input['reminder_days'] ?? '3,7,14' ) ) ) ) ) ), 0, 5 ) ) ?: '3,7,14',
+		'hourly_rate_usd' => hpv_p_cents_to_decimal( hpv_p_to_cents( $input['hourly_rate_usd'] ?? 0 ) ),
+		'hourly_rate_huf' => hpv_p_cents_to_decimal( hpv_p_to_cents( $input['hourly_rate_huf'] ?? 0 ) ),
 		'report_day'      => min( 28, max( 1, absint( $input['report_day'] ?? 3 ) ) ),
 		'recurring_mode'  => in_array( $input['recurring_mode'] ?? '', array( 'off', 'draft', 'send' ), true ) ? $input['recurring_mode'] : 'draft',
 	);
@@ -1182,6 +1189,20 @@ function hpv_p_admin_settings_page() {
 					</select>
 					<p class="description">Az aktív előfizetésekből a „Következő számla” napján reggel 7-kor ügyfelenként egy számla készül, a csapat összefoglaló e-mailt kap.
 						<?php $last = get_option( 'hpv_recurring_last_run' ); echo $last ? esc_html( sprintf( 'Utolsó futás: %s, %d számla.', get_date_from_gmt( $last['at'], 'Y-m-d H:i' ), $last['count'] ) ) : ''; ?></p>
+				</td></tr>
+				<tr><th><label for="hpv-s-reminder_days">Fizetési emlékeztetők</label></th><td>
+					<label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[payment_reminders]" value="1" <?php checked( ! empty( $s['payment_reminders'] ) ); ?>> Emlékeztető a lejárt számlákról az ügyfélnek (az ügyfél nyelvén)</label><br>
+					a lejárat után ennyi nappal: <input type="text" id="hpv-s-reminder_days" name="<?php echo esc_attr( $n ); ?>[reminder_days]" value="<?php echo esc_attr( $s['reminder_days'] ); ?>" style="width:100px"> <span class="description">(vesszővel, pl. 3,7,14; az utolsó „végső emlékeztető”)</span>
+				</td></tr>
+				<tr><th><label for="hpv-s-review_delay_days">Google értékelés kérése</label></th><td>
+					<label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[review_request]" value="1" <?php checked( ! empty( $s['review_request'] ) ); ?>> Kész projekt után automatikusan (a Reviews bővítményen keresztül)</label><br>
+					a lezárás után <input type="number" min="0" max="60" id="hpv-s-review_delay_days" name="<?php echo esc_attr( $n ); ?>[review_delay_days]" value="<?php echo (int) $s['review_delay_days']; ?>" style="width:60px"> nappal, ezeknek az országoknak: <input type="text" name="<?php echo esc_attr( $n ); ?>[review_countries]" value="<?php echo esc_attr( $s['review_countries'] ); ?>" style="width:70px"> <span class="description">(US, HU)</span>
+					<p class="description">Külön telepítésnél a wp-config.php-ba: HPV_SITE_URL és HPV_BRIDGE_SECRET (a marketing oldalon is ugyanez a titok). Ugyanaz a titok viszi a Website Grader érdeklődőit is a CRM-be. <?php echo hpv_bridge_secret() ? '✔ titok beállítva' : '✘ nincs HPV_BRIDGE_SECRET'; ?></p>
+				</td></tr>
+				<tr><th>Óradíj (munkaidő-számlázás)</th><td>
+					USD <input type="text" name="<?php echo esc_attr( $n ); ?>[hourly_rate_usd]" value="<?php echo esc_attr( $s['hourly_rate_usd'] ); ?>" style="width:90px">
+					&nbsp; HUF <input type="text" name="<?php echo esc_attr( $n ); ?>[hourly_rate_huf]" value="<?php echo esc_attr( $s['hourly_rate_huf'] ); ?>" style="width:110px">
+					<p class="description">Ügyfelenként felülírható az adatlapon („Óradíj”).</p>
 				</td></tr>
 				<tr><th><label for="hpv-s-report_day">Havi riportok</label></th><td>
 					<label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[report_auto]" value="1" <?php checked( ! empty( $s['report_auto'] ) ); ?>> Az előző hónap riport-piszkozata magától elkészül a havidíjas / marketinges ügyfeleknek</label><br>

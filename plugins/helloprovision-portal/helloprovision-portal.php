@@ -26,6 +26,7 @@ require_once __DIR__ . '/includes/quickbooks.php';
 require_once __DIR__ . '/includes/recurring.php';
 require_once __DIR__ . '/includes/retainer.php';
 require_once __DIR__ . '/includes/invoices-api.php';
+require_once __DIR__ . '/includes/dunning.php';
 require_once __DIR__ . '/includes/domains.php';
 require_once __DIR__ . '/includes/notify.php';
 require_once __DIR__ . '/includes/chat.php';
@@ -33,6 +34,7 @@ require_once __DIR__ . '/includes/files.php';
 require_once __DIR__ . '/includes/approvals.php';
 require_once __DIR__ . '/includes/reports.php';
 require_once __DIR__ . '/includes/connectors.php';
+require_once __DIR__ . '/includes/bridge.php';
 require_once __DIR__ . '/includes/bitrix.php';
 require_once __DIR__ . '/includes/pm.php';
 require_once __DIR__ . '/includes/ai.php';
@@ -135,6 +137,13 @@ function hpv_p_default_settings(): array {
 		'qbo_item_name'   => 'Services',
 		'recurring_mode'  => 'draft',
 		'report_auto'     => true,
+		'payment_reminders' => true,
+		'review_request'  => true,
+		'review_delay_days' => 3,
+		'review_countries' => 'US',
+		'reminder_days'   => '3,7,14',
+		'hourly_rate_usd' => '0',
+		'hourly_rate_huf' => '0',
 		'report_day'      => 3,
 	);
 }

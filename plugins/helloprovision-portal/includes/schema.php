@@ -54,6 +54,7 @@ function hpv_p_entities(): array {
 				'billing_email' => array( 'type' => 'email', 'label' => 'Számlázási e-mail', 'help' => 'Ide megy a számla. Üresen a fenti e-mail cím.' ),
 				'address'      => array( 'type' => 'textarea', 'label' => 'Számlázási cím (régi, szabad szöveg)', 'hidden' => true ),
 				'external_customer_id' => array( 'type' => 'text', 'label' => 'QuickBooks ügyfél azonosító', 'readonly' => true ),
+				'hourly_rate'     => array( 'type' => 'money', 'label' => 'Óradíj (az ügyfél pénznemében)', 'help' => 'Üresen a beállításokban megadott óradíj. A munkaidő-számlázáshoz.' ),
 				'gsc_property'    => array( 'type' => 'text', 'label' => 'Search Console tulajdon', 'help' => 'pl. sc-domain:pelda.hu vagy https://pelda.hu/ — a havi riporthoz' ),
 				'ga4_property'    => array( 'type' => 'text', 'label' => 'GA4 tulajdon azonosító', 'help' => 'Számok, pl. 412345678 (GA4 → Adminisztráció → Tulajdon részletei)' ),
 				'gads_customer'   => array( 'type' => 'text', 'label' => 'Google Ads ügyfélazonosító', 'help' => 'pl. 123-456-7890' ),
@@ -162,6 +163,8 @@ function hpv_p_entities(): array {
 				'package_id'   => array( 'type' => 'ref', 'ref' => 'project', 'label' => 'Havi feladatcsomag (sablon)' ),
 				'package_day'  => array( 'type' => 'int', 'label' => 'A csomag napja a hónapban', 'default' => 1 ),
 				'last_package' => array( 'type' => 'text', 'label' => 'Utolsó havi csomag (ÉÉÉÉ-HH)', 'readonly' => true ),
+				'completed_at'        => array( 'type' => 'datetime', 'label' => 'Lezárva', 'readonly' => true ),
+				'review_requested_at' => array( 'type' => 'datetime', 'label' => 'Értékeléskérés', 'readonly' => true ),
 			),
 		),
 
@@ -248,6 +251,7 @@ function hpv_p_entities(): array {
 				'work_date'  => array( 'type' => 'date', 'label' => 'Nap' ),
 				'note'       => array( 'type' => 'text', 'label' => 'Megjegyzés' ),
 				'started_at' => array( 'type' => 'int', 'label' => 'Futó stopper indítása (unix idő)' ),
+				'invoice_id' => array( 'type' => 'ref', 'ref' => 'invoice', 'label' => 'Kiszámlázva (számla)', 'readonly' => true ),
 			),
 		),
 
@@ -335,6 +339,8 @@ function hpv_p_entities(): array {
 					),
 				),
 				'sync_error'  => array( 'type' => 'text', 'label' => 'Szinkron hiba', 'readonly' => true ),
+				'reminders_sent'   => array( 'type' => 'int', 'label' => 'Kiküldött fizetési emlékeztetők', 'readonly' => true ),
+				'last_reminder_at' => array( 'type' => 'datetime', 'label' => 'Utolsó emlékeztető', 'readonly' => true ),
 				'pdf_file'    => array( 'type' => 'text', 'label' => 'Számla PDF (Számlázz.hu)', 'readonly' => true ),
 			),
 		),

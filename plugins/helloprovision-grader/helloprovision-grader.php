@@ -479,6 +479,51 @@ function hpv_grader_send_pending_emails( string $id ) {
 	hpv_grader_send_report_email( $report, $lead );
 	hpv_grader_send_notification( $report, $lead, $lead_id );
 	update_post_meta( $lead_id, '_hpv_emailed_at', time() );
+	hpv_grader_push_to_crm( $report, $lead, $lead_id );
+}
+
+/**
+ * Az érdeklődő a CRM-be (helloprovision-portal): ha ugyanazon a WordPressen fut, közvetlenül; ha külön telepítésen,
+ * aláírt kéréssel. A marketing oldal wp-config.php-jába:
+ *   define( 'HPV_CRM_URL', 'https://crm.helloprovision.com' ); define( 'HPV_BRIDGE_SECRET', '…' );  // a CRM-ben is ugyanez a titok
+ */
+function hpv_grader_push_to_crm( array $report, array $lead, int $lead_id ): void {
+	$issues = array_values( array_map( fn( $c ) => $c['title'], array_filter( $report['checks'], fn( $c ) => 'fail' === $c['status'] ) ) );
+	$data   = array(
+		'source'     => 'grader',
+		'name'       => $lead['name'],
+		'email'      => $lead['email'],
+		'business'   => $lead['business'],
+		'website'    => $report['url'],
+		'score'      => (int) $report['overall'],
+		'grade'      => (string) $report['grade'],
+		'issues'     => array_slice( $issues, 0, 10 ),
+		'report_url' => admin_url( 'admin.php?page=' . HPV_GRADER_PAGE . '&lead=' . $lead_id ),
+	);
+	if ( function_exists( 'hpv_leads_ingest' ) ) {
+		$res = hpv_leads_ingest( $data );
+		update_post_meta( $lead_id, '_hpv_crm', is_wp_error( $res ) ? 'error: ' . $res->get_error_message() : 'ok' );
+		return;
+	}
+	if ( ! defined( 'HPV_CRM_URL' ) || ! defined( 'HPV_BRIDGE_SECRET' ) || strlen( (string) HPV_BRIDGE_SECRET ) < 16 ) {
+		return;
+	}
+	$body = wp_json_encode( $data );
+	$ts   = time();
+	$res  = wp_remote_post(
+		untrailingslashit( HPV_CRM_URL ) . '/wp-json/hpv/v1/bridge/lead',
+		array(
+			'timeout' => 8,
+			'headers' => array(
+				'Content-Type'    => 'application/json',
+				'X-HPV-Timestamp' => (string) $ts,
+				'X-HPV-Signature' => hash_hmac( 'sha256', $ts . '.' . $body, (string) HPV_BRIDGE_SECRET ),
+			),
+			'body'    => $body,
+		)
+	);
+	$code = is_wp_error( $res ) ? 0 : (int) wp_remote_retrieve_response_code( $res );
+	update_post_meta( $lead_id, '_hpv_crm', 200 === $code ? 'ok' : 'error: ' . ( is_wp_error( $res ) ? $res->get_error_message() : 'HTTP ' . $code ) );
 }
 
 function hpv_grader_update_lead_report( array $report ) {

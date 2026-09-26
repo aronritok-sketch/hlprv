@@ -798,3 +798,5 @@ button.convert:hover { border-color: var(--ink); }
 	.grid-row--list2 { grid-template-columns: minmax(0, 1fr) 32px; }
 	.grid-row--list2 > :nth-child(2) { display: none; }
 }
+.time-list { display: grid; gap: 6px; max-height: 320px; overflow-y: auto; }
+.time-total { display: block; padding-top: 8px; font-size: 18px; }

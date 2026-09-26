@@ -161,6 +161,7 @@ export function InvoicePage({ id }) {
 	const [dirty, setDirty] = useState(false);
 	const [busy, setBusy] = useState('');
 	const [paying, setPaying] = useState(false);
+	const [timing, setTiming] = useState(false);
 	const [settings, setSettings] = useState(null);
 	const [link, setLink] = useState('');
 
@@ -245,6 +246,7 @@ export function InvoicePage({ id }) {
 								</select>
 							</label>` : null}
 						<${ItemsEditor} items=${form.items} currency=${inv.currency} taxRate=${taxRate} onChange=${(items) => edit({ items })} />
+						<button type="button" class="link" onClick=${async () => { if (dirty) { await api('/billing/invoices/' + inv.id, { method: 'POST', body: form }).then(take); } setTiming(true); }}><${Icon} name="clock" size="15" /> Rögzített munkaidő hozzáadása</button>
 						<label class="field"><span>Megjegyzés a számlán</span><textarea rows="2" value=${form.notes} onInput=${(e) => edit({ notes: e.target.value })}></textarea></label>
 						<footer class="inv-foot">
 							${!inv.external_id ? html`<button class="link danger" onClick=${remove}>Piszkozat törlése</button>` : null}
@@ -291,8 +293,51 @@ export function InvoicePage({ id }) {
 					<p class="hint"><a class="link" href=${inv.admin_url}>Megnyitás a klasszikus CRM-ben</a></p>
 				</aside>
 			</div>
+			${timing ? html`<${TimeModal} inv=${inv} onClose=${() => setTiming(false)} onDone=${(d) => { setTiming(false); take(d); }} />` : null}
 			${paying ? html`<${PaymentModal} inv=${inv} onClose=${() => setPaying(false)} onDone=${(d) => { setPaying(false); take(d); }} />` : null}
 		</div>`;
+}
+
+function TimeModal({ inv, onClose, onDone }) {
+	const [data, setData] = useState(null);
+	const [pick, setPick] = useState([]);
+	const [group, setGroup] = useState('project');
+	const [rate, setRate] = useState('');
+	const [range, setRange] = useState({ from: '', to: '' });
+	const [busy, setBusy] = useState(false);
+	useEffect(() => {
+		const q = new URLSearchParams({ client_id: inv.client_id, ...range });
+		api('/billing/time?' + q).then((d) => { setData(d); setPick(d.entries.map((e) => e.id)); if (!rate) setRate(d.rate ? String(d.rate) : ''); }).catch((e) => toast(e.message, 'error'));
+	}, [range.from, range.to]);
+	const mins = data ? data.entries.filter((e) => pick.includes(e.id)).reduce((a, e) => a + e.minutes, 0) : 0;
+	const hours = Math.round((mins / 60) * 100) / 100;
+	const submit = () => {
+		setBusy(true);
+		api('/billing/invoices/' + inv.id + '/time', { method: 'POST', body: { entry_ids: pick, group, rate: Number(rate) || 0 } })
+			.then((d) => { toast(hours + ' óra a számlán.'); onDone(d); })
+			.catch((e) => { toast(e.message, 'error'); setBusy(false); });
+	};
+	return html`
+		<${Modal} title="Munkaidő a számlára" onClose=${onClose} wide>
+			${!data ? html`<${Spinner} />` : html`
+				<div class="form">
+					<div class="row row--3">
+						<label class="field"><span>Ettől</span><input type="date" value=${range.from} onInput=${(e) => setRange({ ...range, from: e.target.value })} /></label>
+						<label class="field"><span>Eddig</span><input type="date" value=${range.to} onInput=${(e) => setRange({ ...range, to: e.target.value })} /></label>
+						<label class="field"><span>Tételek</span><select value=${group} onChange=${(e) => setGroup(e.target.value)}><option value="project">projektenként</option><option value="task">feladatonként</option></select></label>
+					</div>
+					${data.entries.length ? html`
+						<div class="time-list">${data.entries.map((e) => html`
+							<label key=${e.id} class="check-item"><input type="checkbox" checked=${pick.includes(e.id)} onChange=${(ev) => setPick(ev.target.checked ? [...pick, e.id] : pick.filter((x) => x !== e.id))} />
+								<span><strong>${e.project}</strong> · ${e.task}<br /><small class="muted">${e.date} · ${e.user} · ${Math.floor(e.minutes / 60)} ó ${e.minutes % 60} p${e.note ? ' · ' + e.note : ''}</small></span></label>`)}
+						</div>` : html`<p class="hint">Nincs ki nem számlázott munkaidő ennél az ügyfélnél ebben az időszakban.</p>`}
+					<div class="row">
+						<label class="field"><span>Óradíj (${data.currency})</span><input type="number" step="0.01" min="0" value=${rate} onInput=${(e) => setRate(e.target.value)} placeholder="ügyfél / beállítás szerint" /></label>
+						<div class="field"><span>Összesen</span><strong class="time-total">${hours} óra · ${money(Math.round(hours * (Number(rate) || 0) * 100), data.currency)}</strong></div>
+					</div>
+					<footer class="form__foot"><button type="button" class="btn btn--ghost" onClick=${onClose}>Mégse</button><button class="btn" disabled=${busy || !pick.length || !(Number(rate) > 0)} onClick=${submit}>Hozzáadás a számlához</button></footer>
+				</div>`}
+		</${Modal}>`;
 }
 
 /* ── Előfizetések ────────────────────────────────── */

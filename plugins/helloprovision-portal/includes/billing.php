@@ -372,6 +372,7 @@ function hpv_bill_void( int $invoice_id, int $user_id ) {
 		}
 	}
 	hpv_p_update( 'invoice', $invoice_id, array( 'status' => 'void' ) );
+	hpv_time_release( $invoice_id ); // az érvénytelen számla munkaideje újra számlázható
 
 	return hpv_p_get( 'invoice', $invoice_id );
 }

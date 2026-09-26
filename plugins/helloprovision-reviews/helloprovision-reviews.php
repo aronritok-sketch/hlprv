@@ -431,13 +431,21 @@ function hpv_reviews_handle_send() {
 	$project = sanitize_text_field( wp_unslash( $_POST['hpv_project'] ?? '' ) );
 	$force   = ! empty( $_POST['hpv_force'] );
 
+	wp_safe_redirect( add_query_arg( 'hpv_msg', hpv_reviews_create_request( $name, $email, $project, $force ), $back ) );
+	exit;
+}
+
+/**
+ * Értékeléskérés létrehozása és kiküldése (az admin űrlap és a CRM híd is ezt hívja).
+ *
+ * @return string sent | invalid | no_url | duplicate | error | mail_failed
+ */
+function hpv_reviews_create_request( string $name, string $email, string $project = '', bool $force = false ): string {
 	if ( '' === $name || ! is_email( $email ) ) {
-		wp_safe_redirect( add_query_arg( 'hpv_msg', 'invalid', $back ) );
-		exit;
+		return 'invalid';
 	}
 	if ( ! hpv_reviews_is_valid_review_url( hpv_reviews_settings()['review_url'] ) ) {
-		wp_safe_redirect( add_query_arg( 'hpv_msg', 'no_url', $back ) );
-		exit;
+		return 'no_url';
 	}
 
 	// Ugyanannak az ügyfélnek 90 napon belül ne menjen két kérés (hacsak nem kérjük kifejezetten).
@@ -462,8 +470,7 @@ function hpv_reviews_handle_send() {
 		)
 	);
 	if ( $recent && ! $force ) {
-		wp_safe_redirect( add_query_arg( 'hpv_msg', 'duplicate', $back ) );
-		exit;
+		return 'duplicate';
 	}
 
 	$id = wp_insert_post(
@@ -475,8 +482,7 @@ function hpv_reviews_handle_send() {
 		true
 	);
 	if ( is_wp_error( $id ) ) {
-		wp_safe_redirect( add_query_arg( 'hpv_msg', 'error', $back ) );
-		exit;
+		return 'error';
 	}
 
 	$token = strtolower( wp_generate_password( 16, false, false ) );
@@ -489,13 +495,46 @@ function hpv_reviews_handle_send() {
 
 	if ( ! $sent ) {
 		wp_delete_post( $id, true );
-		wp_safe_redirect( add_query_arg( 'hpv_msg', 'mail_failed', $back ) );
-		exit;
+		return 'mail_failed';
 	}
 
 	update_post_meta( $id, '_hpv_sent_at', time() );
-	wp_safe_redirect( add_query_arg( 'hpv_msg', 'sent', $back ) );
-	exit;
+
+	return 'sent';
+}
+
+/* ─── Híd a CRM felől (külön WordPress telepítés) ─────────── */
+
+/**
+ * A CRM egy aláírt kéréssel kér értékelést egy kész projekt után. Mindkét wp-config.php-ban ugyanaz a titok:
+ * define( 'HPV_BRIDGE_SECRET', '…' ); A 90 napos duplikáció-védelem itt is érvényes.
+ */
+add_action( 'rest_api_init', 'hpv_reviews_bridge_routes' );
+
+function hpv_reviews_bridge_routes() {
+	register_rest_route(
+		'hpv-reviews/v1',
+		'/request',
+		array(
+			'methods'             => 'POST',
+			'permission_callback' => 'hpv_reviews_bridge_verify',
+			'callback'            => function ( WP_REST_Request $r ) {
+				$status = hpv_reviews_create_request( sanitize_text_field( (string) $r['name'] ), sanitize_email( (string) $r['email'] ), sanitize_text_field( (string) $r['project'] ) );
+				return rest_ensure_response( array( 'status' => $status ) );
+			},
+		)
+	);
+}
+
+function hpv_reviews_bridge_verify( WP_REST_Request $r ): bool {
+	$secret = defined( 'HPV_BRIDGE_SECRET' ) ? (string) HPV_BRIDGE_SECRET : '';
+	$ts     = (int) $r->get_header( 'x_hpv_timestamp' );
+	$sig    = (string) $r->get_header( 'x_hpv_signature' );
+	if ( strlen( $secret ) < 16 || abs( time() - $ts ) > 300 || '' === $sig ) {
+		return false;
+	}
+
+	return hash_equals( hash_hmac( 'sha256', $ts . '.' . $r->get_body(), $secret ), $sig );
 }
 
 function hpv_reviews_handle_delete() {

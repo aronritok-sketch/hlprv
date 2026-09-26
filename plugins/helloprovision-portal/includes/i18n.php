@@ -476,6 +476,13 @@ function hpv_i18n_hu(): array {
 		'Leads'                              => 'Érdeklődők',
 		'Cost per lead'                      => 'Költség / érdeklődő',
 
+		// Fizetési emlékeztető
+		'This is a friendly reminder that invoice %s was due on %s and is still open.' => 'Szeretnénk emlékeztetni, hogy a(z) %s számla fizetési határideje %s volt, és még nyitott.',
+		'If you have already paid, thank you — please ignore this email. If something is wrong with the invoice, just reply and we will sort it out.' => 'Ha már fizettél, köszönjük, és tekintsd tárgytalannak ezt a levelet. Ha valami nem stimmel a számlával, válaszolj erre a levélre, és rendezzük.',
+		'Final reminder: invoice %s is overdue' => 'Végső emlékeztető: lejárt a(z) %s számla',
+		'Reminder: invoice %s is overdue'    => 'Emlékeztető: lejárt a(z) %s számla',
+		'Payment reminder'                   => 'Fizetési emlékeztető',
+
 		// Fájlok
 		'Documents and assets shared between you and our team.' => 'A köztünk megosztott dokumentumok és anyagok.',
 		'No files yet.'                      => 'Még nincs fájl.',
