@@ -179,14 +179,28 @@ function hpv_p_insert( string $entity, array $data ): int {
 	$data['created_at'] = $now;
 	$data['updated_at'] = $now;
 
-	return false === $wpdb->insert( hpv_p_table( $entity ), $data ) ? 0 : (int) $wpdb->insert_id;
+	if ( false === $wpdb->insert( hpv_p_table( $entity ), $data ) ) {
+		return 0;
+	}
+	$id = (int) $wpdb->insert_id;
+	do_action( "hpv_p_inserted_{$entity}", $id, $data );
+
+	return $id;
 }
 
 function hpv_p_update( string $entity, int $id, array $data ): bool {
 	global $wpdb;
 	$data['updated_at'] = current_time( 'mysql', true );
+	$hook               = "hpv_p_updated_{$entity}";
+	$old                = has_action( $hook ) ? hpv_p_get( $entity, $id ) : null;
+	if ( false === $wpdb->update( hpv_p_table( $entity ), $data, array( 'id' => $id ) ) ) {
+		return false;
+	}
+	if ( $old ) {
+		do_action( $hook, $id, $data, $old );
+	}
 
-	return false !== $wpdb->update( hpv_p_table( $entity ), $data, array( 'id' => $id ) );
+	return true;
 }
 
 /**
@@ -208,6 +222,19 @@ function hpv_p_delete( string $entity, int $id ) {
 			hpv_p_delete( 'task', (int) $sub['id'] );
 		}
 		$wpdb->delete( hpv_p_table( 'task_link' ), array( 'depends_on' => $id ) );
+	}
+
+	if ( 'file' === $entity ) {
+		hpv_files_unlink( $id );
+	}
+	if ( 'invoice' === $entity && function_exists( 'hpv_time_release' ) ) {
+		hpv_time_release( $id );
+	}
+	if ( 'project' === $entity ) {
+		// A projekt fájljai megmaradnak az ügyfél általános fájljai között.
+		foreach ( hpv_p_find( 'file', array( 'project_id' => $id ), array( 'limit' => 2000 ) ) as $f ) {
+			hpv_p_update( 'file', (int) $f['id'], array( 'project_id' => 0 ) );
+		}
 	}
 
 	$wpdb->delete( hpv_p_table( $entity ), array( 'id' => $id ) );
@@ -382,6 +409,13 @@ function hpv_p_sign_contract( int $contract_id, int $client_id, WP_User $user, s
 	);
 
 	return hpv_p_get( 'contract', $contract_id );
+}
+
+/**
+ * Az ügyfél is látja: a szöveg az ügyfél nyelvén kerül a naplóba (angol minta + hpv_t szótár).
+ */
+function hpv_p_log_client( int $client_id, string $format, array $args, int $user_id = 0 ): int {
+	return hpv_p_log( $client_id, 'system', hpv_with_client_lang( $client_id, fn() => hpv_t( $format, ...$args ) ), true, $user_id );
 }
 
 function hpv_p_log( int $client_id, string $type, string $body, bool $visible, int $user_id = 0 ): int {

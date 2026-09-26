@@ -765,6 +765,7 @@
 }
 
 .hpv-field input,
+.hpv-field select,
 .hpv-login input[type=text],
 .hpv-login input[type=password] {
 	width: 100%;
@@ -782,6 +783,86 @@
 .hpv-login input:focus {
 	border-color: #999;
 	outline: 3px solid rgba(184, 255, 52, .5);
+}
+
+/* Fájlok */
+.hpv-upload {
+	display: grid;
+	gap: 12px;
+}
+
+.hpv-upload h2 {
+	margin: 0;
+}
+
+.hpv-upload__row {
+	display: grid;
+	grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+	gap: 12px;
+}
+
+.hpv-upload .hpv-muted {
+	margin: 0;
+}
+
+.hpv-upload .hpv-btn {
+	justify-self: start;
+}
+
+.hpv-field input[type=file] {
+	padding: 10px 12px;
+	font-size: 14px;
+}
+
+.hpv-files td small {
+	font-size: 12px;
+}
+
+.hpv-files__actions {
+	white-space: nowrap;
+}
+
+.hpv-files__actions form {
+	display: inline;
+	margin-left: 12px;
+}
+
+.hpv-link-btn {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--p-muted);
+	font: inherit;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+@media (max-width: 720px) {
+	.hpv-upload__row {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	/* Telefonon: fájlnév, méret, műveletek; a feladó és a dátum elfér a név alatt is. */
+	.hpv-files th:nth-child(2),
+	.hpv-files td:nth-child(2),
+	.hpv-files th:nth-child(3),
+	.hpv-files td:nth-child(3) {
+		display: none;
+	}
+
+	.hpv-files td:first-child {
+		word-break: break-word;
+	}
+
+	.hpv-files__actions {
+		white-space: normal;
+		text-align: right;
+	}
+
+	.hpv-files__actions form {
+		display: block;
+		margin: 6px 0 0;
+	}
 }
 
 .hpv-check {
@@ -919,11 +1000,26 @@
 }
 
 .hpv-login__links,
-.hpv-login__help {
+.hpv-login__help,
+.hpv-login__lang {
 	margin: 8px 0 0;
 	color: var(--p-muted);
 	font-size: 13px;
 	text-align: center;
+}
+
+.hpv-login__lang {
+	margin-top: 16px;
+}
+
+.hpv-login__lang a {
+	color: var(--p-muted);
+}
+
+.hpv-login__lang a[aria-current] {
+	color: inherit;
+	font-weight: 600;
+	text-decoration: none;
 }
 
 .hpv-client-picker {
@@ -1015,7 +1111,7 @@
 
 @media (max-width: 900px) {
 	.hpv-portal {
-		grid-template-columns: 1fr;
+		grid-template-columns: minmax(0, 1fr);
 	}
 
 	.hpv-side {
@@ -1128,4 +1224,197 @@
 		box-shadow: none;
 		padding: 0;
 	}
+}
+
+/* Havidíjas projekt: hónapválasztó */
+.hpv-periods {
+	display: flex;
+	gap: 6px;
+	margin: -8px 0 18px;
+	overflow-x: auto;
+}
+
+.hpv-periods a {
+	padding: 6px 12px;
+	border: 1px solid var(--p-line);
+	border-radius: 999px;
+	background: #fff;
+	color: var(--p-muted);
+	font-size: 13px;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.hpv-periods a.is-active {
+	border-color: var(--p-ink);
+	background: var(--p-ink);
+	color: #fff;
+}
+
+/* Jóváhagyások */
+.hpv-card-link--attention {
+	border-color: #e9d25b;
+	box-shadow: inset 4px 0 0 #e9d25b;
+}
+
+.hpv-approval__img {
+	margin: 0 0 16px;
+}
+
+.hpv-approval__img img {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	border-radius: 10px;
+}
+
+.hpv-decide {
+	display: grid;
+	gap: 12px;
+}
+
+.hpv-decide h2 {
+	margin: 0;
+}
+
+.hpv-field textarea,
+.hpv-comment-form textarea {
+	width: 100%;
+	padding: 10px 14px;
+	border: 1px solid var(--p-line);
+	border-radius: 12px;
+	font: inherit;
+	font-size: 16px;
+}
+
+.hpv-decide__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.hpv-thread {
+	display: grid;
+	gap: 12px;
+	margin: 0 0 16px;
+	padding: 0;
+	list-style: none;
+}
+
+.hpv-thread li {
+	padding: 10px 14px;
+	border-radius: 12px;
+	background: var(--p-bg);
+}
+
+.hpv-thread li p {
+	margin: 4px 0 0;
+}
+
+.hpv-thread__approved {
+	box-shadow: inset 3px 0 0 #7bc043;
+}
+
+.hpv-thread__changes {
+	box-shadow: inset 3px 0 0 #d93025;
+}
+
+.hpv-thread span {
+	margin-left: 8px;
+	font-size: 12px;
+}
+
+.hpv-comment-form {
+	display: grid;
+	gap: 8px;
+}
+
+.hpv-comment-form .hpv-btn {
+	justify-self: start;
+}
+
+/* Havi riport */
+.hpv-report h2 {
+	margin: 32px 0 12px;
+	font-size: 18px;
+}
+
+.hpv-report__head h1 {
+	margin: 8px 0 4px;
+}
+
+.hpv-report__highlights {
+	display: grid;
+	gap: 8px;
+	margin: 20px 0;
+	padding: 16px 20px 16px 36px;
+	border-radius: 14px;
+	background: #f4ffe0;
+}
+
+.hpv-metrics {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+	gap: 12px;
+}
+
+.hpv-metric {
+	display: grid;
+	gap: 4px;
+	padding: 14px 16px;
+	border: 1px solid var(--p-line);
+	border-radius: 14px;
+	break-inside: avoid;
+}
+
+.hpv-metric > span {
+	color: var(--p-muted);
+	font-size: 13px;
+}
+
+.hpv-metric strong {
+	font-size: 24px;
+	letter-spacing: -.02em;
+}
+
+.hpv-delta {
+	color: var(--p-muted);
+	font-size: 12px;
+}
+
+.hpv-delta.is-good {
+	color: #2e7d1f;
+}
+
+.hpv-delta.is-bad {
+	color: #b3261e;
+}
+
+.hpv-bars {
+	display: flex;
+	align-items: flex-end;
+	gap: 3px;
+	height: 32px;
+	margin-top: 6px;
+}
+
+.hpv-bars span {
+	flex: 1;
+	border-radius: 3px 3px 0 0;
+	background: #e3e3dc;
+}
+
+.hpv-bars span.is-last {
+	background: #0d0d0d;
+}
+
+.hpv-report__list {
+	display: grid;
+	gap: 6px;
+	padding-left: 20px;
+}
+
+.hpv-report__foot {
+	margin-top: 32px;
+	font-size: 13px;
 }

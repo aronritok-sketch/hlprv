@@ -9,6 +9,17 @@ import { Projects } from './views/projects.js';
 import { ProjectPage } from './views/project.js';
 import { TaskDrawer } from './views/task.js';
 import { Calls, CallPage } from './views/calls.js';
+import { Team } from './views/team.js';
+import { Contracts, ContractPage } from './views/contracts.js';
+import { Proposals, ProposalPage } from './views/proposals.js';
+import { Templates } from './views/templates.js';
+import { Files } from './views/files.js';
+import { Content, ContentPage } from './views/content.js';
+import { Reports, ReportPage, DataSourcesModal } from './views/reports.js';
+import { ClientPage, NewClientModal, Services } from './views/client.js';
+import { Sales } from './views/sales.js';
+import { ImportPage } from './views/import.js';
+import { Invoices, InvoicePage, Subscriptions } from './views/invoices.js';
 
 /* ── Chat (a meglévő chat komponens beágyazva) ───── */
 
@@ -32,38 +43,46 @@ function ChatView({ channel, client }) {
 	return html`<div class="page page--chat"><div class="hpv-chat hpv-chat--app" ref=${ref}></div></div>`;
 }
 
-/* ── Ügyfelek (gyors lista; a részletes szerkesztés még a klasszikus CRM-ben) ── */
+/* ── Ügyfelek ─────────────────────────────────────── */
 
 function Clients() {
 	const { boot } = useApp();
 	const [q, setQ] = useState('');
+	const [sources, setSources] = useState(null);
+	const [creating, setCreating] = useState(false);
 	const list = boot.clients.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()));
 	const labels = { lead: 'Érdeklődő', active: 'Aktív', paused: 'Szünetel', former: 'Korábbi' };
 	return html`
 		<div class="page">
 			<header class="page__head">
 				<div><h1>Ügyfelek</h1><p class="muted">${boot.clients.length} ügyfél</p></div>
-				<a class="btn" href=${CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm&action=edit&entity=client')}><${Icon} name="plus" /> Új ügyfél</a>
+				<button class="btn" onClick=${() => setCreating(true)}><${Icon} name="plus" /> Új ügyfél</button>
 			</header>
 			<input class="search-input" placeholder="Keresés…" value=${q} onInput=${(e) => setQ(e.target.value)} />
 			<div class="card table-card">
 				<table class="table">
-					<thead><tr><th>Ügyfél</th><th>Státusz</th><th></th></tr></thead>
+					<thead><tr><th>Ügyfél</th><th>Ország</th><th>Státusz</th><th></th></tr></thead>
 					<tbody>
 						${list.map((c) => html`
 							<tr key=${c.id}>
-								<td><strong>${c.name}</strong></td>
+								<td><a class="link" href=${'#/clients/' + c.id}><strong>${c.name}</strong></a></td>
+								<td>${c.country === 'HU' ? 'Magyarország' : 'USA'}</td>
 								<td><span class=${'pill pill--' + c.status}>${labels[c.status] || c.status}</span></td>
 								<td class="right">
 									<a class="link" href=${'#/projects?client=' + c.id}>Projektek</a>
 									<a class="link" href=${'#/chat?client=' + c.id}>Chat</a>
 									<a class="link" href=${'#/calls?client=' + c.id}>Hívások</a>
-									<a class="link" href=${CFG.adminUrl + '&client=' + c.id}>Adatlap, számlák, szerződések <${Icon} name="ext" size="13" /></a>
+									<a class="link" href=${'#/files?client=' + c.id}>Fájlok</a>
+									<button class="link" onClick=${() => setSources(c)}>Riport adatok</button>
+									${boot.me.caps && boot.me.caps.invoices ? html`<a class="link" href=${'#/invoices?client=' + c.id}>Számlák</a>` : null}
+									<a class="link" href=${'#/clients/' + c.id}>Adatlap</a>
 								</td>
 							</tr>`)}
 					</tbody>
 				</table>
 			</div>
+			${sources ? html`<${DataSourcesModal} client=${sources} onClose=${() => setSources(null)} />` : null}
+			${creating ? html`<${NewClientModal} onClose=${() => setCreating(false)} />` : null}
 		</div>`;
 }
 
@@ -141,30 +160,41 @@ const NAV = [
 	{ path: '/projects', label: 'Projektek', icon: 'folder' },
 	{ path: '/chat', label: 'Chat', icon: 'chat', badge: 'unread' },
 	{ path: '/calls', label: 'Hívások', icon: 'video' },
+	{ path: '/content', label: 'Tartalom', icon: 'proposal', badge: 'approvals' },
+	{ path: '/reports', label: 'Riportok', icon: 'gantt' },
+	{ path: '/files', label: 'Fájlok', icon: 'files' },
+	{ path: '/sales', label: 'Értékesítés', icon: 'flag', badge: 'sales' },
 	{ path: '/clients', label: 'Ügyfelek', icon: 'users' },
+	{ path: '/proposals', label: 'Ajánlatok', icon: 'proposal', cap: 'proposals' },
+	{ path: '/contracts', label: 'Szerződések', icon: 'doc', cap: 'contracts' },
 ];
 
 function Sidebar({ path }) {
 	const { boot, unread } = useApp();
-	const legacy = [
-		{ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-invoices'), label: 'Számlák', icon: 'receipt' },
-		{ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-contracts'), label: 'Szerződések', icon: 'doc' },
-		{ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-services'), label: 'Szolgáltatások', icon: 'tag' },
-	];
+	const caps = boot.me.caps || {};
+	const legacy = [];
 	if (boot.me.is_admin) legacy.push({ href: CFG.adminUrl.replace('page=hpv-crm', 'page=hpv-crm-settings'), label: 'Beállítások', icon: 'cog' });
 	const isActive = (p) => (p === '/' ? path === '/' : path.startsWith(p));
 	return html`
 		<aside class="side">
 			<a class="brand" href="#/">Hello<span>ProVision</span><small>CRM</small></a>
 			<nav class="nav">
-				${NAV.map((n) => html`
+				${NAV.filter((n) => !n.cap || caps[n.cap]).map((n) => html`
 					<a key=${n.path} href=${'#' + n.path} class=${isActive(n.path) ? 'is-active' : ''}>
 						<${Icon} name=${n.icon} /><span>${n.label}</span>
 						${n.badge === 'unread' && unread ? html`<em class="count">${unread}</em>` : null}
+						${n.badge === 'approvals' && boot.approvalsAttention ? html`<em class="count" title="Javítást kértek">${boot.approvalsAttention}</em>` : null}
+						${n.badge === 'sales' && boot.salesAttention ? html`<em class="count" title="Új érdeklődő, válaszra vár">${boot.salesAttention}</em>` : null}
 					</a>`)}
 			</nav>
-			<p class="nav-label">Pénzügy és admin</p>
+			${legacy.length || boot.me.is_admin || caps.contracts || caps.proposals ? html`<p class="nav-label">Pénzügy és admin</p>` : null}
 			<nav class="nav nav--secondary">
+				${caps.invoices ? html`<a href="#/invoices" class=${isActive('/invoices') ? 'is-active' : ''}><${Icon} name="receipt" /><span>Számlák</span></a>` : null}
+				${caps.invoices ? html`<a href="#/subscriptions" class=${isActive('/subscriptions') ? 'is-active' : ''}><${Icon} name="clock" /><span>Előfizetések</span></a>` : null}
+				${caps.invoices ? html`<a href="#/services" class=${isActive('/services') ? 'is-active' : ''}><${Icon} name="tag" /><span>Szolgáltatások</span></a>` : null}
+				${caps.contracts || caps.proposals ? html`<a href="#/templates" class=${isActive('/templates') ? 'is-active' : ''}><${Icon} name="template" /><span>Minták</span></a>` : null}
+				${boot.me.is_admin ? html`<a href="#/team" class=${isActive('/team') ? 'is-active' : ''}><${Icon} name="users" /><span>Csapat és jogok</span></a>` : null}
+				${boot.me.is_admin ? html`<a href="#/import" class=${isActive('/import') ? 'is-active' : ''}><${Icon} name="down" /><span>Import (Bitrix24)</span></a>` : null}
 				${legacy.map((n) => html`<a key=${n.label} href=${n.href}><${Icon} name=${n.icon} /><span>${n.label}</span><${Icon} name="ext" size="13" /></a>`)}
 			</nav>
 			<div class="side__user">
@@ -227,10 +257,28 @@ function App() {
 	else if (path === '/calls') page = html`<${Calls} params=${params} />`;
 	else if ((m = path.match(/^\/calls\/(\d+)$/))) page = html`<${CallPage} key=${'call' + m[1]} id=${Number(m[1])} params=${params} />`;
 	else if (path === '/clients') page = html`<${Clients} />`;
+	else if ((m = path.match(/^\/clients\/(\d+)$/))) page = html`<${ClientPage} key=${'cl-' + m[1]} id=${Number(m[1])} />`;
+	else if (path === '/services') page = html`<${Services} />`;
+	else if (path === '/sales') page = html`<${Sales} params=${params} />`;
+	else if (path === '/content') page = html`<${Content} params=${params} />`;
+	else if ((m = path.match(/^\/content\/(\d+)$/))) page = html`<${ContentPage} key=${'ct-' + m[1]} id=${Number(m[1])} />`;
+	else if (path === '/reports') page = html`<${Reports} params=${params} />`;
+	else if ((m = path.match(/^\/reports\/(\d+)$/))) page = html`<${ReportPage} key=${'rep-' + m[1]} id=${Number(m[1])} />`;
+	else if (path === '/files') page = html`<${Files} key=${'files' + (params.client || '')} params=${params} />`;
+	else if (path === '/team') page = html`<${Team} />`;
+	else if (path === '/import') page = html`<${ImportPage} />`;
+	else if (path === '/invoices') page = html`<${Invoices} params=${params} />`;
+	else if ((m = path.match(/^\/invoices\/(\d+)$/))) page = html`<${InvoicePage} key=${'inv' + m[1]} id=${Number(m[1])} />`;
+	else if (path === '/subscriptions') page = html`<${Subscriptions} />`;
+	else if (path === '/proposals') page = html`<${Proposals} params=${params} />`;
+	else if ((m = path.match(/^\/proposals\/(\d+)$/))) page = html`<${ProposalPage} key=${'prop' + m[1]} id=${Number(m[1])} />`;
+	else if (path === '/contracts') page = html`<${Contracts} params=${params} />`;
+	else if ((m = path.match(/^\/contracts\/(\d+)$/))) page = html`<${ContractPage} key=${'ct' + m[1]} id=${Number(m[1])} />`;
+	else if (path === '/templates') page = html`<${Templates} key=${'tpl' + (params.type || '')} params=${params} />`;
 	else page = html`<${Empty} title="Az oldal nem található" />`;
 
 	return html`
-		<${AppContext.Provider} value=${{ boot, timer, setTimer, refreshTimer, unread, setUnread }}>
+		<${AppContext.Provider} value=${{ boot, setBoot, timer, setTimer, refreshTimer, unread, setUnread }}>
 			<div class="app">
 				<${Sidebar} path=${path} />
 				<div class="main">

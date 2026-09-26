@@ -104,6 +104,7 @@ function hpv_pm_format_task( array $t, array $stats = array() ): array {
 		'sort'         => (int) $t['sort'],
 		'estimate'     => (int) $t['estimate'],
 		'completed_at' => $t['completed_at'],
+		'period'       => (string) ( $t['period'] ?? '' ),
 		'stats'        => $s,
 	);
 }
@@ -122,6 +123,10 @@ function hpv_pm_format_project( array $p, bool $with_counts = true ): array {
 		'due_date'    => $p['due_date'],
 		'visible'     => (bool) $p['visible'],
 		'is_template' => (bool) $p['is_template'],
+		'kind'        => $p['kind'] ?: 'web',
+		'package_id'  => (int) $p['package_id'],
+		'package_day' => max( 1, (int) $p['package_day'] ),
+		'last_package' => (string) $p['last_package'],
 	);
 	if ( $with_counts ) {
 		$tasks           = hpv_p_find( 'task', array( 'project_id' => $p['id'], 'parent_id' => 0 ), array( 'limit' => 2000 ) );
@@ -147,7 +152,7 @@ function hpv_pm_update_task( int $id, array $input ): ?array {
 	if ( ! $task ) {
 		return null;
 	}
-	$allowed = array( 'title', 'status', 'priority', 'assignee_id', 'start_date', 'due_date', 'visible', 'description', 'estimate', 'parent_id', 'project_id', 'sort' );
+	$allowed = array( 'title', 'status', 'priority', 'assignee_id', 'start_date', 'due_date', 'visible', 'description', 'estimate', 'parent_id', 'project_id', 'sort', 'period' );
 	$data    = hpv_p_sanitize( 'task', array_intersect_key( $input, array_flip( $allowed ) ) );
 
 	if ( isset( $data['parent_id'] ) && $data['parent_id'] === $id ) {
@@ -196,14 +201,17 @@ function hpv_pm_after_task_change( ?array $old, array $new ): void {
 	if ( 'client' === $new['status'] && $new['visible'] && ! $new['parent_id'] && ( ! $old || 'client' !== $old['status'] ) ) {
 		$project = hpv_p_get( 'project', (int) $new['project_id'] );
 		if ( $project && $project['visible'] && $project['client_id'] ) {
-			hpv_p_log( (int) $project['client_id'], 'system', sprintf( 'Action needed: %s (%s)', $new['title'], $project['name'] ), true, $me );
-			hpv_p_notify_client(
+			hpv_p_log_client( (int) $project['client_id'], 'Action needed: %s (%s)', array( $new['title'], $project['name'] ), $me );
+			hpv_with_client_lang(
 				(int) $project['client_id'],
-				sprintf( 'Action needed: %s', $new['title'] ),
-				'We need something from you',
-				sprintf( '<p><strong>%s</strong> in <em>%s</em> is waiting on you%s.</p>', esc_html( $new['title'] ), esc_html( $project['name'] ), $new['due_date'] ? ' — due ' . esc_html( mysql2date( 'M j', $new['due_date'] ) ) : '' ),
-				'Open project',
-				hpv_p_portal_url( array( 'view' => 'projects', 'id' => $project['id'] ) )
+				fn() => hpv_p_notify_client(
+					(int) $project['client_id'],
+					hpv_t( 'Action needed: %s', $new['title'] ),
+					hpv_t( 'We need something from you' ),
+					'<p>' . hpv_t( '<strong>%s</strong> in <em>%s</em> is waiting on you%s.', esc_html( $new['title'] ), esc_html( $project['name'] ), $new['due_date'] ? esc_html( hpv_t( ' — due %s', hpv_date( $new['due_date'], 'short' ) ) ) : '' ) . '</p>',
+					hpv_t( 'Open project' ),
+					hpv_p_portal_url( array( 'view' => 'projects', 'id' => $project['id'] ) )
+				)
 			);
 		}
 	}
@@ -219,10 +227,10 @@ function hpv_pm_next_sort( int $project_id, string $status ): int {
  * Új projekt sablonból: a feladatok (és alfeladatok, ellenőrzőlisták) átmásolódnak,
  * a dátumok a sablon kezdőnapjához képest eltolva.
  */
-function hpv_pm_copy_template( int $template_id, int $project_id, string $start ): void {
+function hpv_pm_copy_template( int $template_id, int $project_id, string $start ): array {
 	$template = hpv_p_get( 'project', $template_id );
 	if ( ! $template ) {
-		return;
+		return array();
 	}
 	$base  = $template['start_date'] ?: current_time( 'Y-m-d' );
 	$shift = function ( ?string $date ) use ( $base, $start ): ?string {
@@ -263,6 +271,8 @@ function hpv_pm_copy_template( int $template_id, int $project_id, string $start 
 			);
 		}
 	}
+
+	return array_values( $map );
 }
 
 /**
@@ -367,18 +377,22 @@ function hpv_pm_rest_bootstrap() {
 
 	return rest_ensure_response(
 		array(
-			'me'         => array_merge( hpv_pm_user( $me->ID ), array( 'is_admin' => current_user_can( 'manage_options' ) ) ),
+			'me'         => array_merge( hpv_pm_user( $me->ID ), array( 'is_admin' => current_user_can( 'manage_options' ), 'caps' => hpv_p_caps_for( $me->ID ) ) ),
 			'users'      => array_map( fn( $u ) => hpv_pm_user( $u->ID ), get_users( array( 'capability' => 'hpv_manage_crm', 'orderby' => 'display_name' ) ) ),
 			'clients'    => array_map(
 				fn( $c ) => array(
-					'id'     => (int) $c['id'],
-					'name'   => $c['name'],
-					'status' => $c['status'],
+					'id'      => (int) $c['id'],
+					'name'    => $c['name'],
+					'status'  => $c['status'],
+					'country' => 'HU' === $c['country'] ? 'HU' : 'US',
 				),
 				hpv_p_find( 'client', array(), array( 'orderby' => 'name', 'order' => 'ASC', 'limit' => 2000 ) )
 			),
 			'statuses'   => hpv_pm_statuses(),
 			'priorities' => array_map( fn( $k, $v ) => array( 'key' => $k, 'label' => $v[0] ), array_keys( hpv_p_entity( 'task' )['fields']['priority']['options'] ), hpv_p_entity( 'task' )['fields']['priority']['options'] ),
+			'approvalsAttention' => count( hpv_p_find( 'approval', array( 'status' => 'changes' ), array( 'limit' => 500 ) ) ),
+			'salesAttention'     => count( hpv_p_find( 'client', array( 'status' => 'lead', 'lead_stage' => 'new' ), array( 'limit' => 500 ) ) ),
+			'projectKinds'    => array_map( fn( $k, $v ) => array( 'key' => $k, 'label' => $v[0] ), array_keys( hpv_p_entity( 'project' )['fields']['kind']['options'] ), hpv_p_entity( 'project' )['fields']['kind']['options'] ),
 			'projectStatuses' => array_map( fn( $k, $v ) => array( 'key' => $k, 'label' => $v[0] ), array_keys( hpv_p_entity( 'project' )['fields']['status']['options'] ), hpv_p_entity( 'project' )['fields']['status']['options'] ),
 			'timer'      => hpv_pm_format_timer( hpv_pm_running_timer( $me->ID ) ),
 			'unread'     => hpv_chat_total_unread( $me->ID ),
@@ -401,7 +415,9 @@ function hpv_pm_rest_dashboard() {
 	$team_minutes = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT SUM(minutes) FROM ' . hpv_p_table( 'time_entry' ) . ' WHERE work_date >= %s', $week ) ); // phpcs:ignore WordPress.DB.PreparedSQL
 	$done_week    = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . hpv_p_table( 'task' ) . ' WHERE completed_at >= %s', $week . ' 00:00:00' ) ); // phpcs:ignore WordPress.DB.PreparedSQL
 
-	$open_invoices = hpv_p_find( 'invoice', array( 'status' => 'sent' ), array( 'limit' => 2000 ) );
+	$money         = hpv_p_can( 'invoices' );
+	$open_invoices = $money ? hpv_p_find( 'invoice', array( 'status' => 'sent' ), array( 'limit' => 2000 ) ) : array();
+	$currency      = hpv_p_settings()['currency'];
 	$active        = hpv_p_find( 'project', array( 'status' => array( 'planning', 'in_progress', 'review' ), 'is_template' => 0 ), array( 'orderby' => 'due_date', 'order' => 'ASC', 'limit' => 50 ) );
 
 	return rest_ensure_response(
@@ -418,10 +434,13 @@ function hpv_pm_rest_dashboard() {
 			'team_minutes' => $team_minutes,
 			'done_week'    => $done_week,
 			'projects'     => array_map( 'hpv_pm_format_project', $active ),
-			'mrr'          => hpv_p_mrr( hpv_p_find( 'subscription', array( 'status' => 'active' ), array( 'limit' => 2000 ) ) ),
-			'outstanding'  => array_sum( array_map( fn( $i ) => hpv_p_to_cents( $i['total'] ), $open_invoices ) ),
-			'overdue_invoices' => count( array_filter( $open_invoices, fn( $i ) => hpv_p_invoice_is_overdue( $i, $today ) ) ),
-			'contracts_waiting' => count( hpv_p_find( 'contract', array( 'status' => 'sent' ), array( 'limit' => 2000 ) ) ),
+			// Bevételi számok csak számlázási joggal, pénznemenként összesítve.
+			'money'        => $money ? array(
+				'mrr'              => hpv_p_money_multi( hpv_p_mrr_by_currency( hpv_p_find( 'subscription', array( 'status' => 'active' ), array( 'limit' => 2000 ) ) ), $currency ),
+				'outstanding'      => hpv_p_money_multi( hpv_p_outstanding_by_currency( $open_invoices ), $currency ),
+				'overdue_invoices' => count( array_filter( $open_invoices, fn( $i ) => hpv_p_invoice_is_overdue( $i, $today ) ) ),
+			) : null,
+			'contracts_waiting' => hpv_p_can( 'contracts' ) ? count( hpv_p_find( 'contract', array( 'status' => 'sent' ), array( 'limit' => 2000 ) ) ) : null,
 			'active_clients' => count( hpv_p_find( 'client', array( 'status' => 'active' ), array( 'limit' => 2000 ) ) ),
 		)
 	);
@@ -478,8 +497,17 @@ function hpv_pm_rest_update_project( WP_REST_Request $request ) {
 	if ( ! $project ) {
 		return hpv_pm_not_found();
 	}
-	$allowed = array( 'name', 'description', 'status', 'client_id', 'owner_id', 'color', 'start_date', 'due_date', 'visible', 'is_template' );
+	$allowed = array( 'name', 'description', 'status', 'client_id', 'owner_id', 'color', 'start_date', 'due_date', 'visible', 'is_template', 'kind', 'package_id', 'package_day' );
 	$data    = hpv_p_sanitize( 'project', array_intersect_key( $request->get_params(), array_flip( $allowed ) ) );
+	if ( isset( $data['package_id'] ) && $data['package_id'] ) {
+		$tpl = hpv_p_get( 'project', (int) $data['package_id'] );
+		if ( ! $tpl || ! (int) $tpl['is_template'] || (int) $tpl['id'] === (int) $project['id'] ) {
+			return new WP_Error( 'package', 'A havi csomag csak egy projektsablon lehet.', array( 'status' => 400 ) );
+		}
+	}
+	if ( isset( $data['package_day'] ) ) {
+		$data['package_day'] = min( 28, max( 1, (int) $data['package_day'] ) );
+	}
 	if ( isset( $data['name'] ) && '' === trim( $data['name'] ) ) {
 		unset( $data['name'] );
 	}

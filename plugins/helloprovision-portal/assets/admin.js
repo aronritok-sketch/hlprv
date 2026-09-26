@@ -10,6 +10,16 @@
 	}
 	var body = table.querySelector('tbody');
 	var taxInput = document.getElementById('hpv-f-tax_rate');
+	var vatSelect = document.getElementById('hpv-f-vat_key'); // magyar számla: ÁFA kulcs (27, 5, AAM …)
+	var currency = table.getAttribute('data-currency') || 'USD';
+
+	function taxRate() {
+		if (vatSelect) {
+			var key = vatSelect.value || table.getAttribute('data-default-vat') || '0';
+			return /^\d+(\.\d+)?$/.test(key) ? parseFloat(key) : 0;
+		}
+		return parseFloat(taxInput ? taxInput.value : 0) || 0;
+	}
 
 	function cents(value) {
 		var n = parseFloat(String(value).replace(/[^0-9.\-]/g, ''));
@@ -17,7 +27,11 @@
 	}
 
 	function money(c) {
-		return (c < 0 ? '-$' : '$') + (Math.abs(c) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+		var sign = c < 0 ? '-' : '';
+		if (currency === 'HUF') {
+			return sign + Math.round(Math.abs(c) / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0') + '\u00a0Ft';
+		}
+		return sign + (currency === 'EUR' ? '€' : '$') + (Math.abs(c) / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 	}
 
 	function renumber() {
@@ -35,7 +49,7 @@
 			row.querySelector('[data-amount]').textContent = money(amount);
 			subtotal += amount;
 		});
-		var tax = Math.round(subtotal * (parseFloat(taxInput ? taxInput.value : 0) || 0) / 100);
+		var tax = Math.round(subtotal * taxRate() / 100);
 		table.querySelector('[data-subtotal]').textContent = money(subtotal);
 		table.querySelector('[data-tax]').textContent = money(tax);
 		table.querySelector('[data-total]').textContent = money(subtotal + tax);
@@ -77,6 +91,9 @@
 	table.addEventListener('input', recalc);
 	if (taxInput) {
 		taxInput.addEventListener('input', recalc);
+	}
+	if (vatSelect) {
+		vatSelect.addEventListener('change', recalc);
 	}
 	recalc();
 })();

@@ -42,6 +42,38 @@ Minden beállítás az admin felületen szerkeszthető, kódot nem kell írni. A
 
 Ha valamit hibásan adsz meg (pl. rossz link, ismeretlen város, a nyitásnál korábbi zárás), a mentés után figyelmeztetés jelenik meg, és a hibás elem kimarad.
 
+## `mu-plugins/helloprovision-leads.php` – a weboldal űrlapjai a CRM-be
+
+A marketing weboldalra kerül. Aki kitölt egy űrlapot, „Érdeklődő” ügyfélként bekerül a CRM-be (a CRM oldali részt lásd lent a portálnál).
+
+- **A téma „Project Brief” űrlapja** (és minden más, ami a téma `form_submit` kezelőjén megy át): a téma kódja nem változik, a látogató ugyanazt a választ kapja. A CRM-be küldés a válasz után, a háttérben történik, és csak akkor, ha a téma sikeresnek jelezte a beküldést (amit a téma elutasít, pl. spam vagy hibás e-mail, az nem megy át).
+- **Űrlap-bővítmények**, ha később ilyet használtok: Contact Form 7, WPForms, Gravity Forms, Elementor Pro, Fluent Forms. A mezőket név szerint ismeri fel (név, e-mail, telefon, cég, weboldal, üzenet), a többi kérdés „kérdés: válasz” formában kerül a jegyzetbe.
+- E-mail nélküli beküldés nem megy át. Egy IP-címről óránként legfeljebb 5 kitöltés kerül a CRM-be.
+- Ha a CRM épp nem érhető el, a kitöltés sorba kerül, és óránként újrapróbálja. Ha 3 nap alatt sem sikerül, az oldal adminja e-mailben megkapja, hogy kézzel fel lehessen vinni.
+- A Grader is ezen keresztül küld, ha a mu-plugin telepítve van (így az ő érdeklődői sem vesznek el).
+
+### Telepítés
+
+1. Másold a fájlt a weboldal `wp-content/mu-plugins/` mappájába (bekapcsolni nem kell).
+2. A `wp-config.php`-ba (ugyanaz a titok, mint a CRM-ben):
+   ```php
+   define( 'HPV_CRM_URL', 'https://crm.helloprovision.com' );
+   define( 'HPV_BRIDGE_SECRET', '…' );
+   ```
+3. Próba: töltsd ki az űrlapot egy saját e-mail címmel; azonnal megjelenik a CRM Ügyfelek listájában „Érdeklődő” státusszal, és a csapat e-mailt kap.
+
+Egy űrlap kihagyása (pl. hírlevél): `add_filter( 'hpv_leads_capture', fn( $lead ) => 'Newsletter' === $lead['form'] ? false : $lead );`
+
+**Forrásmérés:** egy kis szkript megjegyzi (`hpv_attr` süti, 90 napig), honnan jött a látogató:
+- az első látogatás és az utolsó kampányos vagy más oldalról érkező látogatás;
+- UTM-paraméterek, Google/Meta/Microsoft kattintás-azonosító, hivatkozó oldal, érkezési oldal.
+
+Kitöltéskor ez is a CRM-be megy, így a Források kimutatás megmutatja, melyik csatorna és kampány hozza az ügyfeleket. Személyes adatot nem tárol, gyorsítótárazott oldalon is működik. Kikapcsolás: `define( 'HPV_LEADS_ATTRIBUTION', false );`. Ha az oldalon süti-hozzájárulás kezelő van, ezt a sütit a statisztikai kategóriába érdemes sorolni.
+
+A saját kampánylinkekbe tegyetek UTM-et, pl. Google Cégprofil: `?utm_source=google&utm_medium=organic&utm_campaign=gbp`, hírlevél: `?utm_source=newsletter&utm_medium=email&utm_campaign=2026-10`. A Google Ads és a Meta a saját kattintás-azonosítóját magától hozzáteszi.
+
+A téma űrlapja mellett a téma valószínűleg most is küld e-mailt az info@ címre; ha a CRM levele elég, azt a témában ki lehet kapcsolni.
+
 ## `plugins/helloprovision-reviews/` – Google értékelés-kérő rendszer
 
 A Google-profil helyezésére az általatok befolyásolható tényezők közül az értékelések rendszeres érkezése hat a legjobban. Ez a bővítmény ezt automatizálja.
@@ -129,7 +161,7 @@ Az érdeklődők a **Website Grader → Érdeklődők** menüben vannak: teljes 
 - A Google sebességmérése futásonként néhány pontot ingadozhat. Ez normális, az eszköz GYIK része is elmondja.
 - Ha a szerver Cloudflare vagy más proxy mögött van, a látogatónkénti korlát a proxy IP-címét látja. Ilyenkor a `hpv_grader_client_ip` filterrel állítható be a valódi IP.
 
-## `plugins/helloprovision-portal/` – Ügyfélportál, CRM, projektkezelő és videóhívás (0.3)
+## `plugins/helloprovision-portal/` – Ügyfélportál, CRM, projektkezelő, videóhívás, számlázás, ajánlatok, szerződések, marketing és SEO ügyfelek, értékesítés (0.8)
 
 Egy WordPress bővítmény, két bejárattal:
 
@@ -172,6 +204,11 @@ Saját, gyors felület, nem a WordPress admin. Oldalújratöltés nélkül műk�
   - ha egy látható feladat „Ügyfélre vár” lesz, az ügyfél is értesítést kap.
 - **Keresés (Ctrl+K):** projektek, feladatok és ügyfelek egy helyen.
 - **Chat:** csoportok és ügyfél-csatornák, olvasatlan-számlálóval; a projekt fejlécéből egy kattintással nyílik az ügyfél csatornája.
+- **Fájlok:**
+  - ügyfelenként (Fájlok menü) vagy projektenként (a projekt „Fájlok” füle), húzással feltölthető, több fájl egyszerre;
+  - fájlonként kapcsolható, hogy az ügyfél látja-e (belső fájl is lehet), feltöltéskor kérhető e-mail az ügyfélnek;
+  - amit az ügyfél a portálon feltölt, arról a csapat e-mailt kap;
+  - a fájlok védett mappában vannak, csak jogosultsággal tölthetők le; futtatható és szkriptet tartalmazó típusok (php, html, svg, js…) nem tölthetők fel.
 - **Videóhívás (Daily.co):**
   - indítás a Hívások oldalról vagy a projekt fejlécéből („Hívás”);
   - a csatlakozási link bekerül az ügyfél chat-csatornájába, kérésre e-mail meghívó is megy;
@@ -184,7 +221,115 @@ Saját, gyors felület, nem a WordPress admin. Oldalújratöltés nélkül műk�
   - kereshető leirat, felvétel letöltése, e-mail a hívást indítónak, ha kész.
 - **Hozzájárulás a rögzítéshez:** Floridában minden fél beleegyezése kell. Az ügyfél csak a hozzájárulás bejelölése után léphet be; a rendszer naplózza, ki, mikor, milyen IP-címről fogadta el.
 
-A számla-, szerződés- és szolgáltatás-szerkesztők egyelőre a klasszikus CRM-ben vannak (WordPress admin). A webalkalmazás oldalsávja oda linkel.
+- **Csapat és jogok** (csak az adminisztrátor látja):
+  - munkatársanként kapcsolható: **Számlázás**, **Szerződések**, **Ajánlatok**;
+  - akinek nincs számlázási joga, a számlákat, a díjakat és a bevételi számokat sem látja (a vezérlőpulton, az ügyféllistán, az ügyfél adatlapján és a portál-előnézetben sem);
+  - projekteket, chatet és hívásokat minden munkatárs kezelhet.
+
+- **Minták:** a saját szerződés- és ajánlatmintáitok (angol és magyar), Wordből is bemásolhatók (a formázás-szemét lekerül), mintánként állandó utasítással az AI-nak (pl. „mindig 50% előleg”).
+- **Szerződések AI-val:**
+  - ügyfél + minta + (elfogadott ajánlat vagy aktív szolgáltatások) + utasítás → az AI megírja az ügyfél nyelvén, a minta szerkezetét és pontjait megtartva;
+  - amit nem tud, azt `[[TODO: …]]` jelöléssel hagyja (sárgán kiemelve); ilyen résszel a szerződés nem küldhető ki;
+  - szerkesztő, „Módosítás AI-val” (csak azt változtatja, amit kérsz), kiküldés aláírásra a portálon; az aláírt szerződés zárolt.
+- **Ajánlatok AI-val:**
+  - ügyfél vagy új érdeklődő + minta + brief + a hívás-összefoglalók → fejezetek, ütemterv, árak (választható tételekkel);
+  - szerkeszthető fejezetenként, soronként; „Módosítás AI-val”; automatikus mentés;
+  - kiküldés e-mailben: márkázott ajánlat oldal (angol vagy magyar), bejelentkezés nélkül nyitható link, nyomtatható PDF-be;
+  - követés: hányszor és mikor nyitották meg (az első megnyitásról e-mail);
+  - az ügyfél az oldalon bejelöli a választható tételeket, az összeg élőben frissül, és elfogadja (név, e-mail, időpont, IP, tartalom-lenyomat) vagy indokkal elutasítja;
+  - elfogadás után egy kattintással: **szerződés AI-val** az elfogadott tételekből, **előleg/számla piszkozat** (30/50/100%), **havi díjak előfizetésként**, **projekt** az ütemterv lépéseivel;
+  - az érdeklődő elfogadáskor aktív ügyfél lesz; az ügyfél a portálon a „Proposals” menüben is látja az ajánlatait.
+
+- **Számlák** (számlázási joggal):
+  - lista: kintlévőség, lejárt, e havi befolyt összeg és havi ismétlődő bevétel pénznemenként; szűrés (piszkozat, nyitott, lejárt, fizetve, érvénytelen), keresés;
+  - szerkesztő: tételek élő összesítéssel, magyar ügyfélnél ÁFA-kulcs;
+  - műveletek: kiküldés (USA) / kiállítás a Számlázz.hu-ban (Magyarország), befizetés rögzítése (részletben is), érvénytelenítés vagy sztornó, újraszinkron, Teya fizetési link, PDF, portál-előnézet.
+- **Előfizetések:** a következő 30 nap esedékes számlái, „Esedékesek elkészítése most”, szüneteltetés és a következő számla dátuma soron belül, új előfizetés a szolgáltatás-katalógusból.
+- **Ismétlődő számlák:** az aktív előfizetésekből a „Következő számla” napján reggel 7-kor ügyfelenként egy számla készül, az időszak megnevezésével („Karbantartás — 2026. október”). Beállítás: piszkozat (ti nézitek át és külditek ki, ez az alapértelmezés), automatikus kiküldés vagy kikapcsolva. A csapat összefoglaló e-mailt kap.
+- **Import (Bitrix24)** (csak az adminisztrátor): cégek, kapcsolatok, érdeklődők, üzletek, munkacsoportok és feladatok átköltöztetése, lásd lent.
+- **Ügyfelek és ügyfél-adatlap:**
+  - új ügyfél egy ablakban (név, ország, státusz, kapcsolattartó);
+  - adatlap: alapadatok, számlázási adatok és óradíj (csak számlázási joggal), riport-adatforrások;
+  - belső jegyzetek és a teljes idővonal;
+  - portál-hozzáférés: meghívás, visszavonás, utolsó belépés;
+  - pénzügy (kintlévőség, havi díjak, utolsó számlák, előfizetések), projektek, fájlok, tartalom, riportok, szerződések;
+  - amerikai ügyfélnél „Google értékelés kérése” gomb.
+- **Szolgáltatás-katalógus** (számlázási joggal): név, leírás, alapár, számlázási gyakoriság, hány aktív előfizetés használja; archiválható.
+- **Értékesítés (0.8):**
+  - **Tölcsér:** minden érdeklődő egy táblán, szakaszokkal: Új → Felvettük a kapcsolatot → Igényfelmérés → Ajánlat kint → Megnyert / Elveszett.
+    - Bárhonnan jön (weboldal űrlap, Grader, Bitrix24 import, kézi felvitel, ajánlat ablak), automatikusan bekerül.
+    - Húzással vagy a kártya választójával mozgatható; kattintásra nyílik az adatlap.
+    - Elvesztésnél kötelező az ok (túl drága, mást választott, nem reagál…); ha később újra jelentkezik, magától visszakerül az elejére.
+  - **Automatikus lépések:** az ajánlat kiküldése „Ajánlat kint” (és ha nincs becsült érték, az ajánlat első évi értéke), az elfogadása vagy az ügyfél aktívvá tétele „Megnyert”.
+  - **Kártyánként:** csatorna, űrlap, kampány, becsült érték (első év), következő lépés határidővel, felelős; az új érdeklődőn, hogy mióta vár válaszra.
+  - **Mutatók:** válaszra vár (és ebből mennyi késik), új érdeklődők és átlagos első válaszidő (30 nap), nyerési arány (90 nap), a nyitott tölcsér értéke.
+  - **Források:** időszakra (30 nap, 90 nap, idei év, 12 hónap), csatornánként, kampányonként vagy űrlaponként:
+    - érdeklődő, ajánlat, megnyert, elveszett, nyerési arány, átlagos első válasz, havi grafikon;
+    - számlázási joggal a megnyertek eddigi befizetései és havi díjai is: így látszik, melyik marketing éri meg.
+  - **Figyelmeztetések:** ha egy új érdeklődő 2 óránál (állítható) tovább vár válaszra, a felelőse e-mailt kap; reggelente összefoglaló az esedékes következő lépésekről.
+  - **Az adatlapon:** értékesítési panel (szakasz, következő lépés, érték, felelős, csatorna, kampány) és „Honnan jött”: az első látogatás és az utolsó kampány UTM-adatai, kattintás-azonosítója, hivatkozó és érkezési oldala.
+  - **Csatornák:** Google Ads, Meta hirdetés, egyéb hirdetés, organikus kereső, Google Cégprofil, közösségi média, e-mail, hivatkozó oldal, egyéb kampány, közvetlen, személyes / ajánlás, Bitrix24 import. A weboldali érdeklődőnél az első látogatásból számolja; kézzel felülírható.
+
+**Marketing és SEO ügyfelek (0.7):**
+
+- **Projekt típusa:** weboldal, SEO, helyi SEO, tartalom, hirdetés, közösségi média, audit, egyéb. A típus a projektlistán és a riportnál számít.
+- **Havi csomagok (retainer):**
+  - a projekthez sablon rendelhető „havi csomagként”, és egy nap (1–28);
+  - minden hónapban azon a napon a sablon feladatai bekerülnek a projektbe, a hónap jelölésével („2026-10”);
+  - a projektben hónapra lehet szűrni, és a „+ hónap” gombbal kézzel is hozzáadható egy hónap csomagja;
+  - a portálon az ügyfél hónapról hónapra lapoz.
+- **Tartalom jóváhagyása:**
+  - a Tartalom menüben naptár és lista: blogcikk, közösségi poszt, Google Business Profile poszt, hirdetés, hírlevél, oldal, dokumentum;
+  - egy tétel: cím, szöveg, csatorna, link, csatolt fájlok, megjelenés napja, határidő;
+  - kiküldés után az ügyfél a portálon jóváhagyja, vagy javítást kér megjegyzéssel;
+  - a jóváhagyott szöveg zárolt; 3 nap után egy emlékeztető megy, ha az ügyfél nem válaszolt;
+  - a „Megjelent” jelölés bekerül a havi riportba.
+  - Az SEO OS ugyanezt a felületet használja (`docs/integrations/seo-os.md`).
+- **Havi riport:**
+  - minden hónap beállított napján (alap: 3.) piszkozat készül azoknak az ügyfeleknek, akiknek havi csomagjuk vagy nem weboldal-projektjük van;
+  - tartalma:
+    - mutatók az előző hónaphoz képest, 6 havi grafikonnal;
+    - elvégzett munka (kész látható feladatok és megjelent tartalmak) és a jövő havi terv;
+    - AI-összefoglaló, amely csak a megadott számokból dolgozik;
+  - szerkeszthető, újraépíthető, csak ellenőrzés után küldhető ki (üres vagy `[[TODO]]`-s összefoglalóval nem);
+  - a portálon grafikonokkal jelenik meg, nyomtatható (PDF), az ügyfél e-mailt kap róla.
+- **Adatforrások:**
+  - Google Search Console (kattintás, megjelenés, CTR, átlagos pozíció);
+  - Google Analytics 4 (felhasználók, munkamenetek, konverziók, csatornánként);
+  - Google Ads és Meta Ads (költés a hirdetési fiók pénznemében, kattintás, konverzió, CPA);
+  - ügyfelenként az adatlapon vagy az Ügyfelek lista „Riport adatok” gombjával, legördülőből választva.
+- **Fizetési emlékeztetők:**
+  - lejárt számláról a 3., 7. és 14. napon (állítható) e-mail az ügyfélnek, a nyelvén, fizetési linkkel;
+  - az utolsó „végső emlékeztető”; egy futásban számlánként legfeljebb egy levél;
+  - a csapat összefoglalót kap.
+- **Munkaidő a számlára:**
+  - a számla szerkesztőjében „Rögzített munkaidő hozzáadása”: a még nem számlázott idő időszakra szűrve, projektenként vagy feladatonként egy tétellel;
+  - óradíj: az ügyfél adatlapjáról, különben a beállításokból (USD és HUF külön);
+  - a kiszámlázott idő nem kerülhet kétszer számlára; a piszkozat törlése vagy a számla érvénytelenítése felszabadítja.
+- **Weboldal → CRM (érdeklődők):**
+  - aki a weboldalon kitölti a kapcsolati űrlapot („Project Brief”) vagy a Website Gradert, „Érdeklődő” ügyfélként bekerül a CRM-be;
+  - az üzenet, a telefonszám, az oldal, ahol kitöltötte, és a többi válasz (vagy a Grader pontszáma és hibái) belső jegyzetbe kerül;
+  - ugyanarra az e-mailre nem lesz dupla ügyfél: a meglévő ügyfélnél új jegyzet lesz, a hiányzó adatai kitöltődnek;
+  - a csapat e-mailt kap, amire válaszolva közvetlenül az érdeklődőnek írsz; a levélben link van az ügyfél adatlapjára.
+  - Részletek: `mu-plugins/helloprovision-leads.php`, lent.
+- **Google értékelés kérése a kész projekt után:**
+  - a „Kész” státuszú, ügyfél által látható projekt után (alap: 3 nap múlva) a Reviews bővítmény értékelést kér;
+  - csak a beállított országoknak (alap: USA, mert a Google-profil a floridai cégé), projektenként egyszer, és a Reviews szabálya szerint ügyfelenként 90 naponta egyszer.
+
+**Számlázás és fizetés országonként** (az ügyfél adatlapján az „Ország” mező dönt):
+
+| | USA | Magyarország |
+|---|---|---|
+| Pénznem | USD | HUF |
+| Számla | a CRM-ben, saját sorszámmal (HPV-1001) | a **Számlázz.hu** állítja ki: sorszám, PDF, NAV-jelentés, e-mail a vevőnek |
+| Könyvelés | **QuickBooks**: ügyfél, számla és befizetés automatikusan átkerül | a Számlázz.hu-ban (a befizetés automatikusan rögzül rajta) |
+| Fizetés | **Stripe**: „Pay now” a portálon (kártya, és ha a Stripe fiókban be van kapcsolva, ACH, Apple Pay, Google Pay); a számla magától „Fizetve” lesz | **Teya**: egyelőre a Teya appban készült fizetési link a portálon, a befizetést kézzel kell jelölni; az automatikus Teya API a fejlesztő következő feladata |
+
+- A kiállított magyar számla nem módosítható, csak sztornózható (a Számlázz.hu sztornó számlát készít).
+- Befizetés részletekben is rögzíthető; ugyanaz az online tranzakció csak egyszer kerül be.
+- Ha a QuickBooks vagy a Számlázz.hu nem érhető el, a számla „Szinkron: Hiba” jelzést kap, és egy gombbal újrapróbálható.
+- A kintlévőség és a havi bevétel pénznemenként látszik (pl. „$7,224.50 · 523 900 Ft”).
+- A magyar számla PDF-je védett mappában van, csak az ügyfél és a számlázási joggal rendelkező munkatárs töltheti le.
 
 **A klasszikus CRM-ben (WordPress admin, magyar felület):**
 - **Ügyfelek:** kulcsszámok (aktív ügyfelek, havi ismétlődő bevétel, kintlévőség, lejárt számlák, aláírásra váró szerződések), ügyfél-adatlap.
@@ -206,13 +351,19 @@ A számla-, szerződés- és szolgáltatás-szerkesztők egyelőre a klasszikus 
   - e-mail értesítés, ha a címzett 2 perce nem nézte a csatornát, csatornánként legfeljebb 15 percenként egy.
 - **Tevékenység:** belső jegyzetek és rendszeresemények idővonala.
 
-**A portálon (angol felület):**
-- **Overview:** egyenleg, teendők (fizetendő számla, aláírandó szerződés, „Waiting on you” feladat, olvasatlan üzenet), friss hírek.
+**A portálon (amerikai ügyfélnek angolul, magyar ügyfélnek magyarul):**
+
+A nyelv az ügyfél országától függ: a magyar ügyfél a portált, a leveleket, a dátumokat („2026. szept. 26.”) és az idővonalat is magyarul kapja. A bejelentkezés előtt a böngésző nyelve dönt, és lent át lehet váltani. A magyar szövegek tegező hangnemben vannak, egy fájlban (`includes/i18n.php`), ha magázásra váltanátok.
+
+- **Overview:** egyenleg, teendők (fizetendő számla, aláírandó szerződés, „Waiting on you” feladat, új fájl, olvasatlan üzenet), friss hírek.
 - **Projects:** haladás és feladattábla.
 - **Messages:** chat a csapattal.
 - **Meetings:** élő hívásba belépés (hozzájárulás után), és a megosztott hívás-összefoglalók: „Your next steps” és „What we'll do”.
 - **Invoices:** nyomtatható számlakép, „Pay now” gomb, „Download PDF” (böngészős nyomtatás).
 - **Contracts:** elolvasás és aláírás.
+- **Approvals (Jóváhagyások):** a jóváhagyásra váró tartalmak, jóváhagyás vagy javításkérés megjegyzéssel, hozzászólások.
+- **Reports (Riportok):** havi riportok grafikonokkal, nyomtatható.
+- **Files:** a megosztott fájlok, feltöltés (projekthez is), a saját feltöltés törölhető.
 - **Services, Account.**
 
 A portál saját keretben fut, a WordPress témától függetlenül, mobilon is.
@@ -234,7 +385,17 @@ A portál saját keretben fut, a WordPress témától függetlenül, mobilon is.
 5. **CRM → Beállítások:** cégadatok, számlaszám előtag, fizetési határidő, értesítési cím.
 6. **Levélküldés:** WP Mail SMTP, az e-mail útmutató szerint.
 7. **Munkatársak:** felhasználóként, „Munkatárs (CRM)” szerepkörrel. Ők csak a CRM-et és a profiljukat látják.
-8. **Videóhívás:**
+8. **Számlázás és fizetés** (kulcsok a `wp-config.php`-ba, a részletes lépések a fejlesztői dokumentációban):
+   ```php
+   define( 'HPV_SZAMLAZZ_AGENT_KEY', '…' );      // Számlázz.hu → Beállítások → Számla Agent kulcsok
+   define( 'HPV_STRIPE_SECRET_KEY', 'sk_live_…' );
+   define( 'HPV_STRIPE_WEBHOOK_SECRET', 'whsec_…' );
+   define( 'HPV_QBO_CLIENT_ID', '…' );
+   define( 'HPV_QBO_CLIENT_SECRET', '…' );
+   ```
+   Utána: CRM → Beállítások → „QuickBooks összekapcsolása”, és a Stripe-ban a webhook felvétele (a címet a Beállítások oldal mutatja).
+   Munkatársak jogai: a CRM webalkalmazásban „Csapat és jogok”. **Frissítés után a munkatársaknak nincs számlázási és szerződés-joga, az adminisztrátornak kell bekapcsolnia.**
+9. **Videóhívás:**
    - Daily.co fiók → Developers → API key;
    - AI kulcs az összefoglalóhoz: Anthropic Console → API keys.
    - A `wp-config.php`-ba:
@@ -245,13 +406,54 @@ A portál saját keretben fut, a WordPress témától függetlenül, mobilon is.
      ```
    - CRM → Beállítások → Videóhívás: „Kapcsolat tesztelése”, majd „Webhook regisztrálása”.
    - Valódi cron kell (5 percenként): a leirat feldolgozása háttérben fut.
+10. **Ismétlődő számlák:** CRM → Beállítások → „Ismétlődő számlák” (alapból piszkozat). **Frissítéskor** a múltbeli „Következő számla” dátumok a következő jövőbeli napra lépnek, így semmi nem számlázódik utólag.
+11. **Riport-adatforrások** (a lépések a fejlesztői dokumentációban):
+    ```php
+    define( 'HPV_GOOGLE_CLIENT_ID', '…' );                   // Google Cloud → OAuth kliens (webalkalmazás)
+    define( 'HPV_GOOGLE_CLIENT_SECRET', '…' );
+    define( 'HPV_GOOGLE_ADS_DEVELOPER_TOKEN', '…' );         // csak Google Ads-hez, jóváhagyás kell
+    define( 'HPV_GOOGLE_ADS_LOGIN_CUSTOMER_ID', '1234567890' ); // a kezelői (MCC) fiók, kötőjel nélkül
+    define( 'HPV_META_ACCESS_TOKEN', '…' );                  // Business Manager rendszerfelhasználó, ads_read
+    ```
+    Az OAuth kliens átirányítási címe: `https://crm.helloprovision.com/wp-admin/admin-post.php?action=hpv_google_callback`. Utána: CRM → Beállítások → „Google összekapcsolása” az ügynökség Google fiókjával (amelyik hozzáfér az ügyfelek Search Console-, GA4- és Ads-fiókjaihoz).
+12. **Híd a marketing weboldalhoz** (űrlapok és Grader → CRM, CRM → Reviews): mindkét WordPress `wp-config.php`-jába ugyanaz a titok, legalább 16 karakter:
+    ```php
+    define( 'HPV_BRIDGE_SECRET', '…' );
+    // a CRM-be:          define( 'HPV_SITE_URL', 'https://helloprovision.com' );
+    // a weboldalra:      define( 'HPV_CRM_URL', 'https://crm.helloprovision.com' );
+    ```
+13. **Automatizmusok:** CRM → Beállítások: havi riport napja, fizetési emlékeztetők napjai, óradíjak (USD, HUF), értékeléskérés (késleltetés, országok), értékesítés (az új érdeklődő felelőse, válaszidő-figyelmeztetés órában, reggeli összefoglaló). A napiak reggel futnak, a válaszidő-figyelés óránként; valódi cron kell.
+    **Frissítéskor** a meglévő érdeklődők a tölcsér „Új” oszlopába kerülnek, válaszidő-figyelmeztetés nélkül.
+14. **Fájlok:** a feltöltési korlát a PHP `upload_max_filesize` és `post_max_size` beállításától függ (legfeljebb 100 MB). nginx alatt a `wp-content/uploads/hpv-private/` mappát tiltani kell (lásd a fejlesztői dokumentációt).
+
+### Átköltözés a Bitrix24-ből
+
+1. Bitrix24: **Fejlesztői erőforrások → Egyéb → Bejövő webhook**, jogok: `crm`, `task`, `sonet_group`, `user`. Másold ki a „Webhook a REST hívásához” címet.
+2. CRM app → **Import (Bitrix24)** → a cím bemásolása → „Kapcsolódás”.
+3. **Próbafuttatás:** semmit nem ír, csak megmutatja, mi jönne át (új, meglévő, kiegészített, kihagyott).
+4. **Importálás.** Lépésenként fut, a haladás látszik; ha a Bitrix24 lassít, kivár.
+
+Mi hova kerül:
+
+| Bitrix24 | Itt |
+|---|---|
+| Cég | ügyfél (név, e-mail, telefon, web, cím; az ország a címből, a +36-os telefonból vagy a .hu e-mailből) |
+| Kapcsolat céggel | a cég kapcsolattartója (csak ha még üres) |
+| Kapcsolat cég nélkül | magánszemély ügyfél |
+| Érdeklődő (nem átalakított) | „Érdeklődő” státuszú ügyfél |
+| Üzlet | belső jegyzet az ügyfélnél (állapot, összeg, zárás); a megnyert üzlet ügyfele aktív lesz |
+| Munkacsoport | projekt, rejtve (ha a neve egy ügyfél nevével kezdődik, ahhoz kötve) |
+| Feladat | feladat a projektben (státusz, prioritás, határidő, felelős e-mail alapján, alfeladatok); csoport nélküli feladatok egy gyűjtőprojektbe |
+
+Többször is futtatható: ami már átjött, nem lesz dupla; a már meglévő (kézzel felvitt) ügyfeleket név vagy e-mail alapján megtalálja, és csak az üres mezőiket tölti ki. Levelet nem küld, portál-hozzáférést nem ad. A Bitrix24 idővonal-hozzászólásai és fájljai nem jönnek át. Import után a webhook törölhető.
 
 ### Következő ütemek
 
-1. **Pénzügy és egyebek:**
-   - Stripe fizetés automatikus „fizetve” jelöléssel, ismétlődő számlák automatikus kiállítása;
-   - fájlmegosztás, Bitrix24 átköltöztetés;
-   - a számla- és szerződés-szerkesztő átköltözése a webalkalmazásba.
+1. **Teya API** (automatikus magyar kártyás fizetés): a fejlesztő feladata, a lépések a fejlesztői dokumentációban.
+2. **Élő próba** a valódi fiókokkal: Google (Search Console, GA4, Ads), Meta, Grader → CRM és CRM → Reviews híd. Az API-hívásokat most helyettesített válaszokkal teszteltük; a lépések a fejlesztői dokumentációban.
+3. **Biztonság:** kétlépcsős belépés a csapatnak, audit napló, rendszeres adatbázis- és fájlmentés.
+4. **GDPR:** ügyféladatok exportja és törlése kérésre.
+5. **Időpontfoglalás:** naptár, amelyből az ügyfél hívást foglalhat.
 
 ## Tesztek
 
@@ -261,9 +463,23 @@ php tests/reviews.php
 php tests/grader.php
 wp eval-file tests/portal-integration.php   # valódi WordPressen, a portál bővítménnyel
 wp eval-file tests/video-integration.php    # ugyanott, videó kulcsok nélkül (a Daily-t és az AI-t a teszt helyettesíti)
+wp eval-file tests/billing-integration.php  # ugyanott, számlázási kulcsok nélkül (Számlázz.hu, Stripe, QuickBooks helyettesítve)
+wp eval-file tests/docs-integration.php     # ugyanott, AI kulcs nélkül (az AI-t a teszt helyettesíti)
+wp eval-file tests/recurring-integration.php     # ismétlődő számlák
+wp eval-file tests/files-integration.php         # fájlmegosztás
+wp eval-file tests/bitrix-integration.php        # Bitrix24 import (a Bitrix24-et a teszt helyettesíti)
+wp eval-file tests/invoices-api-integration.php  # számlák a CRM appban (Számlázz.hu helyettesítve)
+wp eval-file tests/retainer-integration.php      # havi csomagok
+wp eval-file tests/approvals-integration.php     # tartalom jóváhagyása
+wp eval-file tests/reports-integration.php       # havi riport (Google, Meta és AI helyettesítve)
+wp eval-file tests/automation-integration.php    # emlékeztetők, munkaidő, Grader és Reviews híd
+wp eval-file tests/clients-integration.php       # ügyfél-adatlap és szolgáltatás-katalógus
+HPV_TEST_SITE_URL=https://teszt.oldal wp eval-file tests/leads-integration.php  # weboldal űrlapjai → CRM (a leads mu-pluginnal)
+wp eval-file tests/sales-integration.php         # értékesítési tölcsér és forrásmérés
+php tests/i18n.php                               # minden magyar fordítás megvan-e
 ```
 
-Az első három WordPress nélkül fut. A portál teszt valódi WordPressen és adatbázison fut, és a projektkezelő API-t is végigpróbálja: sablonmásolás, átrendezés, függőségek, stopper, jogosultságok, törlés. A videó teszt a teljes hívás-folyamatot végigviszi: szoba, belépők, hozzájárulás, lezárás, leirat, AI-összefoglaló és hibakezelés, teendőből feladat, webhook, portál. Az SEO teszt az élő főoldal valódi schemáját, a grader teszt a főoldal megtisztított HTML-jét használja (`tests/fixtures/`).
+Az első három és az i18n WordPress nélkül fut. A portál teszt valódi WordPressen és adatbázison fut, és a projektkezelő API-t is végigpróbálja: sablonmásolás, átrendezés, függőségek, stopper, jogosultságok, törlés. A videó teszt a teljes hívás-folyamatot végigviszi: szoba, belépők, hozzájárulás, lezárás, leirat, AI-összefoglaló és hibakezelés, teendőből feladat, webhook, portál. Az SEO teszt az élő főoldal valódi schemáját, a grader teszt a főoldal megtisztított HTML-jét használja (`tests/fixtures/`).
 
 ## Amit a plugin nem tud javítani (admin felületen kell)
 

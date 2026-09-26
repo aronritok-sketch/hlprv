@@ -20,9 +20,9 @@ function hpv_p_admin_menu() {
 	$unread = hpv_chat_total_unread( get_current_user_id() );
 	add_submenu_page( 'hpv-crm', 'Chat', 'Chat' . ( $unread ? ' <span class="awaiting-mod">' . (int) $unread . '</span>' : '' ), 'hpv_manage_crm', 'hpv-crm-chat', 'hpv_p_admin_chat_page' );
 	add_submenu_page( 'hpv-crm', 'Projektek', 'Projektek', 'hpv_manage_crm', 'hpv-crm-projects', fn() => hpv_p_admin_list_page( 'project' ) );
-	add_submenu_page( 'hpv-crm', 'Számlák', 'Számlák', 'hpv_manage_crm', 'hpv-crm-invoices', fn() => hpv_p_admin_list_page( 'invoice' ) );
-	add_submenu_page( 'hpv-crm', 'Szerződések', 'Szerződések', 'hpv_manage_crm', 'hpv-crm-contracts', fn() => hpv_p_admin_list_page( 'contract' ) );
-	add_submenu_page( 'hpv-crm', 'Szolgáltatás-katalógus', 'Szolgáltatások', 'hpv_manage_crm', 'hpv-crm-services', fn() => hpv_p_admin_list_page( 'service' ) );
+	add_submenu_page( 'hpv-crm', 'Számlák', 'Számlák', 'hpv_invoices', 'hpv-crm-invoices', fn() => hpv_p_admin_list_page( 'invoice' ) );
+	add_submenu_page( 'hpv-crm', 'Szerződések', 'Szerződések', 'hpv_contracts', 'hpv-crm-contracts', fn() => hpv_p_admin_list_page( 'contract' ) );
+	add_submenu_page( 'hpv-crm', 'Szolgáltatás-katalógus', 'Szolgáltatások', 'hpv_invoices', 'hpv-crm-services', fn() => hpv_p_admin_list_page( 'service' ) );
 	add_submenu_page( 'hpv-crm', 'CRM beállítások', 'Beállítások', 'manage_options', 'hpv-crm-settings', 'hpv_p_admin_settings_page' );
 }
 
@@ -96,6 +96,11 @@ function hpv_p_admin_notice() {
 		'locked'   => array( 'error', 'Aláírt szerződés szövege nem módosítható.' ),
 		'error'    => array( 'error', sanitize_text_field( wp_unslash( $_GET['error'] ?? 'Hiba történt.' ) ) ),
 		'daily_ok' => array( 'success', 'A Daily kapcsolat működik.' ),
+		'voided_ok' => array( 'success', 'Érvénytelenítve.' ),
+		'payment'  => array( 'success', 'Befizetés rögzítve.' ),
+		'synced'   => array( 'success', 'Szinkronizálva.' ),
+		'qbo_ok'   => array( 'success', 'QuickBooks összekapcsolva.' ),
+		'conn_ok'  => array( 'success', 'A kapcsolat működik.' ),
 		'webhook'  => array( 'success', 'A Daily webhook regisztrálva.' ),
 	);
 	$key      = sanitize_key( $_GET['hpv_msg'] ?? '' );
@@ -122,6 +127,10 @@ function hpv_p_admin_page() {
 	hpv_p_admin_notice();
 
 	if ( 'edit' === $action && isset( hpv_p_entities()[ $entity ] ) ) {
+		if ( ! hpv_p_can_entity( $entity ) ) {
+			echo '<p>Ehhez nincs jogosultságod. Az adminisztrátor a CRM → Csapat oldalon adhat hozzáférést.</p></div>';
+			return;
+		}
 		hpv_p_admin_edit( $entity, absint( $_GET['id'] ?? 0 ) );
 	} elseif ( ! empty( $_GET['client'] ) ) {
 		hpv_p_admin_client( absint( $_GET['client'] ) );
@@ -142,15 +151,17 @@ function hpv_p_admin_clients() {
 	$s       = hpv_p_settings();
 	$today   = current_time( 'Y-m-d' );
 
-	$open    = hpv_p_find( 'invoice', array( 'status' => 'sent' ), array( 'limit' => 2000 ) );
+	$money   = hpv_p_can( 'invoices' );
+	$open    = $money ? hpv_p_find( 'invoice', array( 'status' => 'sent' ), array( 'limit' => 2000 ) ) : array();
 	$overdue = array_filter( $open, fn( $i ) => hpv_p_invoice_is_overdue( $i, $today ) );
-	$mrr     = hpv_p_mrr( hpv_p_find( 'subscription', array( 'status' => 'active' ), array( 'limit' => 2000 ) ) );
+	$mrr     = $money ? hpv_p_mrr_by_currency( hpv_p_find( 'subscription', array( 'status' => 'active' ), array( 'limit' => 2000 ) ) ) : array();
 	$active  = count( hpv_p_find( 'client', array( 'status' => 'active' ), array( 'limit' => 2000 ) ) );
 	$waiting = count( hpv_p_find( 'contract', array( 'status' => 'sent' ), array( 'limit' => 2000 ) ) );
 
 	$balance_by_client = array();
 	foreach ( $open as $invoice ) {
-		$balance_by_client[ $invoice['client_id'] ] = ( $balance_by_client[ $invoice['client_id'] ] ?? 0 ) + hpv_p_to_cents( $invoice['total'] );
+		$cur = hpv_p_invoice_currency( $invoice );
+		$balance_by_client[ $invoice['client_id'] ][ $cur ] = ( $balance_by_client[ $invoice['client_id'] ][ $cur ] ?? 0 ) + hpv_p_invoice_balance( $invoice );
 	}
 	?>
 	<h1 class="wp-heading-inline">Ügyfelek</h1>
@@ -160,10 +171,14 @@ function hpv_p_admin_clients() {
 
 	<div class="hpv-kpis">
 		<div class="hpv-kpi"><span>Aktív ügyfelek</span><strong><?php echo (int) $active; ?></strong></div>
-		<div class="hpv-kpi"><span>Havi ismétlődő bevétel</span><strong><?php echo esc_html( hpv_p_money( $mrr, $s['currency'] ) ); ?></strong></div>
-		<div class="hpv-kpi"><span>Kintlévőség</span><strong><?php echo esc_html( hpv_p_money( array_sum( $balance_by_client ), $s['currency'] ) ); ?></strong></div>
-		<div class="hpv-kpi<?php echo $overdue ? ' is-alert' : ''; ?>"><span>Lejárt számla</span><strong><?php echo count( $overdue ); ?></strong></div>
-		<div class="hpv-kpi"><span>Aláírásra vár</span><strong><?php echo (int) $waiting; ?></strong></div>
+		<?php if ( $money ) : ?>
+			<div class="hpv-kpi"><span>Havi ismétlődő bevétel</span><strong><?php echo esc_html( hpv_p_money_multi( $mrr, $s['currency'] ) ); ?></strong></div>
+			<div class="hpv-kpi"><span>Kintlévőség</span><strong><?php echo esc_html( hpv_p_money_multi( hpv_p_outstanding_by_currency( $open ), $s['currency'] ) ); ?></strong></div>
+			<div class="hpv-kpi<?php echo $overdue ? ' is-alert' : ''; ?>"><span>Lejárt számla</span><strong><?php echo count( $overdue ); ?></strong></div>
+		<?php endif; ?>
+		<?php if ( hpv_p_can( 'contracts' ) ) : ?>
+			<div class="hpv-kpi"><span>Aláírásra vár</span><strong><?php echo (int) $waiting; ?></strong></div>
+		<?php endif; ?>
 	</div>
 
 	<form method="get" class="hpv-filter">
@@ -179,18 +194,21 @@ function hpv_p_admin_clients() {
 	</form>
 
 	<table class="widefat striped hpv-table">
-		<thead><tr><th>Cégnév</th><th>Kapcsolattartó</th><th>E-mail</th><th>Státusz</th><th>Nyitott számlák</th></tr></thead>
+		<thead><tr><th>Cégnév</th><th>Ország</th><th>Kapcsolattartó</th><th>E-mail</th><th>Státusz</th><?php echo $money ? '<th>Nyitott számlák</th>' : ''; ?></tr></thead>
 		<tbody>
 		<?php if ( ! $clients ) : ?>
-			<tr><td colspan="5">Nincs ügyfél. <a href="<?php echo esc_url( hpv_p_edit_url( 'client' ) ); ?>">Az első ügyfél felvétele →</a></td></tr>
+			<tr><td colspan="6">Nincs ügyfél. <a href="<?php echo esc_url( hpv_p_edit_url( 'client' ) ); ?>">Az első ügyfél felvétele →</a></td></tr>
 		<?php endif; ?>
 		<?php foreach ( $clients as $c ) : ?>
 			<tr>
 				<td><a href="<?php echo esc_url( hpv_p_admin_url( array( 'client' => $c['id'] ) ) ); ?>"><strong><?php echo esc_html( $c['name'] ); ?></strong></a></td>
+				<td><?php echo 'HU' === $c['country'] ? 'HU' : 'US'; ?></td>
 				<td><?php echo esc_html( $c['contact_name'] ); ?></td>
 				<td><?php echo esc_html( $c['email'] ); ?></td>
 				<td><?php echo hpv_p_badge( 'client', 'status', $c['status'] ); // phpcs:ignore WordPress.Security.EscapeOutput ?></td>
-				<td><?php echo isset( $balance_by_client[ $c['id'] ] ) ? esc_html( hpv_p_money( $balance_by_client[ $c['id'] ], $s['currency'] ) ) : '—'; ?></td>
+				<?php if ( $money ) : ?>
+					<td><?php echo isset( $balance_by_client[ $c['id'] ] ) ? esc_html( hpv_p_money_multi( $balance_by_client[ $c['id'] ] ) ) : '—'; ?></td>
+				<?php endif; ?>
 			</tr>
 		<?php endforeach; ?>
 		</tbody>
@@ -214,8 +232,8 @@ function hpv_p_admin_client( int $id ) {
 	$contracts = hpv_p_find( 'contract', array( 'client_id' => $id ) );
 	$activity = hpv_p_find( 'activity', array( 'client_id' => $id ), array( 'limit' => 50 ) );
 	$users    = hpv_p_client_users( $id );
-	$open     = array_filter( $invoices, fn( $i ) => 'sent' === $i['status'] );
-	$balance  = array_sum( array_map( fn( $i ) => hpv_p_to_cents( $i['total'] ), $open ) );
+	$money    = hpv_p_can( 'invoices' );
+	$currency = hpv_p_client_currency( $id );
 	$new      = fn( $entity ) => hpv_p_edit_url( $entity, 0, array( 'client_id' => $id ) );
 	?>
 	<p><a href="<?php echo esc_url( hpv_p_admin_url() ); ?>">← Ügyfelek</a></p>
@@ -223,6 +241,7 @@ function hpv_p_admin_client( int $id ) {
 		<div>
 			<h1><?php echo esc_html( $client['name'] ); ?> <?php echo hpv_p_badge( 'client', 'status', $client['status'] ); // phpcs:ignore ?></h1>
 			<p class="hpv-muted">
+				<?php echo 'HU' === $client['country'] ? '🇭🇺 Magyarország · Számlázz.hu + Teya · ' : '🇺🇸 USA · QuickBooks + Stripe · '; ?>
 				<?php echo esc_html( implode( ' · ', array_filter( array( $client['contact_name'], $client['email'], $client['phone'] ) ) ) ); ?>
 				<?php if ( $client['website'] ) : ?> · <a href="<?php echo esc_url( $client['website'] ); ?>" target="_blank" rel="noopener"><?php echo esc_html( wp_parse_url( $client['website'], PHP_URL_HOST ) ); ?></a><?php endif; ?>
 			</p>
@@ -235,8 +254,10 @@ function hpv_p_admin_client( int $id ) {
 	</div>
 
 	<div class="hpv-kpis">
-		<div class="hpv-kpi"><span>Nyitott egyenleg</span><strong><?php echo esc_html( hpv_p_money( $balance, $s['currency'] ) ); ?></strong></div>
-		<div class="hpv-kpi"><span>Havi díj (MRR)</span><strong><?php echo esc_html( hpv_p_money( hpv_p_mrr( $subs ), $s['currency'] ) ); ?></strong></div>
+		<?php if ( $money ) : ?>
+			<div class="hpv-kpi"><span>Nyitott egyenleg</span><strong><?php echo esc_html( hpv_p_money_multi( hpv_p_outstanding_by_currency( $invoices ), $currency ) ); ?></strong></div>
+			<div class="hpv-kpi"><span>Havi díj (MRR)</span><strong><?php echo esc_html( hpv_p_money( hpv_p_mrr( $subs ), $currency ) ); ?></strong></div>
+		<?php endif; ?>
 		<div class="hpv-kpi"><span>Aktív projektek</span><strong><?php echo count( array_filter( $projects, fn( $p ) => in_array( $p['status'], array( 'planning', 'in_progress', 'review' ), true ) ) ); ?></strong></div>
 		<div class="hpv-kpi"><span>Portál felhasználók</span><strong><?php echo count( $users ); ?></strong></div>
 	</div>
@@ -247,25 +268,31 @@ function hpv_p_admin_client( int $id ) {
 
 	<div class="hpv-grid">
 		<div class="hpv-col">
+			<?php if ( $money ) : ?>
 			<section class="hpv-card">
 				<header><h2>Szolgáltatások</h2><a class="button button-small" href="<?php echo esc_url( $new( 'subscription' ) ); ?>">+ Szolgáltatás</a></header>
 				<?php hpv_p_admin_table( 'subscription', $subs ); ?>
 			</section>
+			<?php endif; ?>
 
 			<section class="hpv-card">
 				<header><h2>Projektek</h2><a class="button button-small" href="<?php echo esc_url( $new( 'project' ) ); ?>">+ Projekt</a></header>
 				<?php hpv_p_admin_table( 'project', $projects, array( 'progress' => true ) ); ?>
 			</section>
 
+			<?php if ( $money ) : ?>
 			<section class="hpv-card">
 				<header><h2>Számlák</h2><a class="button button-small" href="<?php echo esc_url( $new( 'invoice' ) ); ?>">+ Számla</a></header>
 				<?php hpv_p_admin_table( 'invoice', $invoices, array( 'today' => $today ) ); ?>
 			</section>
+			<?php endif; ?>
 
+			<?php if ( hpv_p_can( 'contracts' ) ) : ?>
 			<section class="hpv-card">
 				<header><h2>Szerződések</h2><a class="button button-small" href="<?php echo esc_url( $new( 'contract' ) ); ?>">+ Szerződés</a></header>
 				<?php hpv_p_admin_table( 'contract', $contracts ); ?>
 			</section>
+			<?php endif; ?>
 		</div>
 
 		<div class="hpv-col hpv-col--side">
@@ -367,7 +394,7 @@ function hpv_p_admin_table( string $entity, array $rows, array $opts = array() )
 					}
 					break;
 				case 'money':
-					$out = esc_html( hpv_p_money( $value, $s['currency'] ) );
+					$out = esc_html( hpv_p_money( $value, hpv_p_row_currency( $entity, $row, $s['currency'] ) ) );
 					break;
 				case 'date':
 				case 'datetime':
@@ -398,7 +425,7 @@ function hpv_p_admin_table( string $entity, array $rows, array $opts = array() )
 /* ─── Listák (összes ügyfélre) ────────────────────────────── */
 
 function hpv_p_admin_list_page( string $entity ) {
-	if ( ! hpv_p_is_staff() ) {
+	if ( ! hpv_p_can_entity( $entity ) ) {
 		wp_die( 'Nincs jogosultságod.' );
 	}
 	$def    = hpv_p_entity( $entity );
@@ -459,7 +486,7 @@ function hpv_p_admin_field( string $key, array $field, $value, array $row ) {
 	if ( ! empty( $field['readonly'] ) ) {
 		$shown = (string) $value;
 		if ( 'money' === $field['type'] ) {
-			$shown = hpv_p_money( $value );
+			$shown = hpv_p_money( $value, hpv_p_row_currency( (string) ( $row['_entity'] ?? '' ), $row, 'USD' ) );
 		} elseif ( in_array( $field['type'], array( 'date', 'datetime' ), true ) ) {
 			$shown = $value ? get_date_from_gmt( (string) $value, 'Y. m. d. H:i' ) . ' (helyi idő)' : '';
 		}
@@ -548,14 +575,21 @@ function hpv_p_admin_edit( string $entity, int $id ) {
 		}
 	}
 
-	$back   = ! empty( $row['client_id'] ) ? hpv_p_admin_url( array( 'client' => $row['client_id'] ) ) : hpv_p_admin_url();
-	$locked = 'contract' === $entity && 'signed' === ( $row['status'] ?? '' );
+	$back      = ! empty( $row['client_id'] ) ? hpv_p_admin_url( array( 'client' => $row['client_id'] ) ) : hpv_p_admin_url();
+	$locked    = 'contract' === $entity && 'signed' === ( $row['status'] ?? '' );
+	$row['_entity'] = $entity;
+	$is_hu     = 'invoice' === $entity && ! empty( $row['client_id'] ) && 'HU' === hpv_p_client_country( (int) $row['client_id'] );
+	$hu_issued = $is_hu && '' !== (string) ( $row['external_id'] ?? '' );
 	?>
 	<p><a href="<?php echo esc_url( $back ); ?>">← Vissza<?php echo ! empty( $row['client_id'] ) ? ': ' . esc_html( hpv_p_client_name( (int) $row['client_id'] ) ) : ''; ?></a></p>
 	<h1><?php echo esc_html( ( $id ? '' : 'Új ' ) . ( $id ? $def['singular'] : mb_strtolower( $def['singular'] ) ) ); ?><?php echo 'invoice' === $entity && ! empty( $row['number'] ) ? ' ' . esc_html( $row['number'] ) : ''; ?></h1>
 
 	<?php if ( $locked ) : ?>
 		<?php hpv_p_admin_signed_contract( $row ); ?>
+		<?php return; ?>
+	<?php endif; ?>
+	<?php if ( $hu_issued ) : ?>
+		<?php hpv_p_admin_invoice_panel( $row ); ?>
 		<?php return; ?>
 	<?php endif; ?>
 
@@ -568,7 +602,13 @@ function hpv_p_admin_edit( string $entity, int $id ) {
 		<table class="form-table" role="presentation">
 			<?php foreach ( $def['fields'] as $key => $field ) : ?>
 				<?php
-				if ( 'invoice_item' === $entity || ( 'activity' === $entity && 'user_id' === $key ) ) {
+				if ( 'invoice_item' === $entity || ( 'activity' === $entity && 'user_id' === $key ) || ! empty( $field['hidden'] ) ) {
+					continue;
+				}
+				if ( 'invoice' === $entity && ( in_array( $key, array( 'status', 'paid_amount', 'external_id', 'sync_status', 'sync_error', 'pdf_file' ), true ) || ( $is_hu ? 'tax_rate' : 'vat_key' ) === $key ) ) {
+					continue; // lent, a fizetés és szinkron panelen / csak az egyik országban értelmes
+				}
+				if ( 'client' === $entity && 'external_customer_id' === $key && empty( $row[ $key ] ) ) {
 					continue;
 				}
 				if ( ! empty( $field['readonly'] ) && ! $id ) {
@@ -594,11 +634,10 @@ function hpv_p_admin_edit( string $entity, int $id ) {
 
 		<p class="submit hpv-submit">
 			<button class="button button-primary" name="do" value="save">Mentés</button>
-			<?php if ( 'invoice' === $entity && in_array( $row['status'] ?? 'draft', array( 'draft', 'sent' ), true ) ) : ?>
+			<?php if ( 'invoice' === $entity && $is_hu && 'draft' === ( $row['status'] ?? 'draft' ) ) : ?>
+				<button class="button" name="do" value="send" onclick="return confirm('A számlát a Számlázz.hu kiállítja, jelenti a NAV-nak és e-mailben elküldi az ügyfélnek. Utána már nem módosítható, csak sztornózható. Mehet?');">Mentés és kiállítás (Számlázz.hu)</button>
+			<?php elseif ( 'invoice' === $entity && in_array( $row['status'] ?? 'draft', array( 'draft', 'sent' ), true ) ) : ?>
 				<button class="button" name="do" value="send" onclick="return confirm('Mented és elküldöd az ügyfélnek?');"><?php echo 'sent' === ( $row['status'] ?? '' ) ? 'Mentés és újraküldés' : 'Mentés és kiküldés az ügyfélnek'; ?></button>
-			<?php endif; ?>
-			<?php if ( 'invoice' === $entity && 'sent' === ( $row['status'] ?? '' ) ) : ?>
-				<button class="button" name="do" value="paid">Fizetettnek jelölés</button>
 			<?php endif; ?>
 			<?php if ( 'contract' === $entity && in_array( $row['status'] ?? 'draft', array( 'draft', 'sent' ), true ) ) : ?>
 				<button class="button" name="do" value="send" onclick="return confirm('Mented és elküldöd aláírásra?');"><?php echo 'sent' === ( $row['status'] ?? '' ) ? 'Mentés és emlékeztető küldése' : 'Mentés és kiküldés aláírásra'; ?></button>
@@ -609,9 +648,124 @@ function hpv_p_admin_edit( string $entity, int $id ) {
 		</p>
 	</form>
 
+	<?php if ( 'invoice' === $entity && $id && 'draft' !== $row['status'] ) : ?>
+		<?php hpv_p_admin_invoice_panel( $row ); ?>
+	<?php endif; ?>
+
 	<?php if ( 'project' === $entity && $id ) : ?>
 		<?php hpv_p_admin_project_tasks( $id ); ?>
 	<?php endif; ?>
+	<?php
+}
+
+/**
+ * Pénznem egy sorhoz (számla: a sajátja; ügyfélhez tartozó: az ügyfél országa szerint).
+ */
+function hpv_p_row_currency( string $entity, array $row, string $fallback ): string {
+	if ( 'invoice' === $entity && ! empty( $row['client_id'] ) ) {
+		return hpv_p_invoice_currency( $row );
+	}
+	if ( 'invoice_item' === $entity && ! empty( $row['invoice_id'] ) ) {
+		$invoice = hpv_p_get( 'invoice', (int) $row['invoice_id'] );
+		return $invoice ? hpv_p_invoice_currency( $invoice ) : $fallback;
+	}
+	if ( ! empty( $row['client_id'] ) ) {
+		return hpv_p_client_currency( (int) $row['client_id'] );
+	}
+
+	return $fallback;
+}
+
+/**
+ * Kiküldött számla: befizetések, szinkron (QuickBooks / Számlázz.hu), PDF, befizetés rögzítése, érvénytelenítés.
+ * Kiállított magyar számlánál ez a teljes nézet (a számla már nem módosítható).
+ */
+function hpv_p_admin_invoice_panel( array $invoice ) {
+	$id       = (int) $invoice['id'];
+	$is_hu    = hpv_p_is_hu_invoice( $invoice );
+	$currency = hpv_p_invoice_currency( $invoice );
+	$payments = hpv_p_find( 'payment', array( 'invoice_id' => $id ), array( 'orderby' => 'id', 'order' => 'ASC' ) );
+	$items    = hpv_p_find( 'invoice_item', array( 'invoice_id' => $id ), array( 'orderby' => 'sort', 'order' => 'ASC' ) );
+	$post     = esc_url( admin_url( 'admin-post.php' ) );
+	$hidden   = function ( string $do ) use ( $id ) {
+		echo '<input type="hidden" name="action" value="hpv_crm_save"><input type="hidden" name="entity" value="invoice"><input type="hidden" name="id" value="' . (int) $id . '"><input type="hidden" name="do" value="' . esc_attr( $do ) . '">';
+		wp_nonce_field( 'hpv_crm_save_invoice' );
+	};
+	?>
+	<div class="hpv-invoice-panel">
+		<?php if ( hpv_p_invoice_locked( $invoice ) ) : ?>
+			<p class="hpv-muted">Kiállítva a Számlázz.hu-ban (<?php echo esc_html( hpv_p_client_name( (int) $invoice['client_id'] ) ); ?>): a számla jogilag nem módosítható. Javításhoz sztornózd, és állíts ki újat.</p>
+			<table class="widefat striped hpv-table">
+				<thead><tr><th>Tétel</th><th>Mennyiség</th><th>Egységár</th><th>Összeg</th></tr></thead>
+				<tbody>
+					<?php foreach ( $items as $item ) : ?>
+						<tr><td><?php echo esc_html( $item['description'] ); ?></td><td><?php echo esc_html( rtrim( rtrim( $item['quantity'], '0' ), '.' ) ); ?></td><td><?php echo esc_html( hpv_p_money( $item['unit_price'], $currency ) ); ?></td><td><?php echo esc_html( hpv_p_money( $item['amount'], $currency ) ); ?></td></tr>
+					<?php endforeach; ?>
+				</tbody>
+				<tfoot>
+					<tr><td colspan="3" class="hpv-right">Nettó</td><td><?php echo esc_html( hpv_p_money( $invoice['subtotal'], $currency ) ); ?></td></tr>
+					<tr><td colspan="3" class="hpv-right">ÁFA (<?php echo esc_html( hpv_p_hu_vat_key( $invoice ) ); ?>)</td><td><?php echo esc_html( hpv_p_money( $invoice['tax'], $currency ) ); ?></td></tr>
+					<tr class="hpv-total"><td colspan="3" class="hpv-right">Bruttó</td><td><?php echo esc_html( hpv_p_money( $invoice['total'], $currency ) ); ?></td></tr>
+				</tfoot>
+			</table>
+		<?php endif; ?>
+
+		<div class="hpv-grid">
+			<section class="hpv-card">
+				<header><h2>Befizetések</h2><strong><?php echo esc_html( hpv_p_money( $invoice['paid_amount'], $currency ) . ' / ' . hpv_p_money( $invoice['total'], $currency ) ); ?></strong></header>
+				<?php if ( ! $payments ) : ?>
+					<p class="hpv-muted">Még nincs befizetés.<?php echo ( ! $is_hu && hpv_stripe_enabled() ) ? ' Az ügyfél a portálon Stripe-pal fizethet; a befizetés magától megjelenik itt.' : ''; ?></p>
+				<?php else : ?>
+					<ul class="hpv-users">
+						<?php foreach ( $payments as $p ) : ?>
+							<li><span><strong><?php echo esc_html( hpv_p_money( $p['amount'], $currency ) ); ?></strong> · <?php echo esc_html( hpv_p_option_label( 'payment', 'provider', $p['provider'] ) ); ?> · <?php echo esc_html( (string) $p['paid_on'] ); ?><br><span class="hpv-muted"><?php echo esc_html( trim( $p['reference'] . ' ' . $p['note'] ) ); ?><?php echo $p['external_ref'] ? ' · könyvelve' : ( '' !== (string) $invoice['external_id'] ? ' · még nincs könyvelve' : '' ); ?></span></span></li>
+						<?php endforeach; ?>
+					</ul>
+				<?php endif; ?>
+				<?php if ( 'sent' === $invoice['status'] ) : ?>
+					<form method="post" action="<?php echo $post; // phpcs:ignore ?>" class="hpv-inline-form">
+						<?php $hidden( 'paid' ); ?>
+						<input type="number" step="0.01" min="0.01" name="amount" value="<?php echo esc_attr( hpv_p_cents_to_decimal( hpv_p_invoice_balance( $invoice ) ) ); ?>" aria-label="Összeg">
+						<input type="date" name="paid_on" value="<?php echo esc_attr( current_time( 'Y-m-d' ) ); ?>" aria-label="Dátum">
+						<input type="text" name="note" placeholder="Megjegyzés (pl. átutalás)">
+						<button class="button">Befizetés rögzítése</button>
+					</form>
+				<?php endif; ?>
+			</section>
+
+			<section class="hpv-card">
+				<header><h2><?php echo $is_hu ? 'Számlázz.hu' : 'QuickBooks'; ?></h2></header>
+				<?php if ( 'error' === $invoice['sync_status'] ) : ?>
+					<div class="notice notice-error inline"><p><?php echo esc_html( (string) $invoice['sync_error'] ); ?></p></div>
+				<?php endif; ?>
+				<?php if ( $is_hu ) : ?>
+					<p><?php echo $invoice['external_id'] ? 'Számlaszám: <strong>' . esc_html( $invoice['external_id'] ) . '</strong>' : 'Még nincs kiállítva.'; ?></p>
+					<?php if ( $invoice['pdf_file'] ) : ?><p><a class="button" href="<?php echo esc_url( hpv_p_invoice_pdf_url( $invoice ) ); ?>" target="_blank">Számla PDF</a></p><?php endif; ?>
+					<?php if ( 'sent' === $invoice['status'] ) : ?>
+						<form method="post" action="<?php echo $post; // phpcs:ignore ?>" class="hpv-inline-form">
+							<?php $hidden( 'link' ); ?>
+							<input type="url" name="payment_url" value="<?php echo esc_attr( (string) $invoice['payment_url'] ); ?>" placeholder="Teya fizetési link (https://…)" style="min-width:260px">
+							<button class="button">Link mentése</button>
+						</form>
+						<p class="description">A Teya appban készült link. A portálon „Pay now” gombként jelenik meg; a befizetést a fenti „Befizetés rögzítése” gombbal kell jelölni, amíg a Teya API nincs bekötve.</p>
+					<?php endif; ?>
+				<?php elseif ( ! hpv_qbo_connected() ) : ?>
+					<p class="hpv-muted">A QuickBooks nincs összekapcsolva (Beállítások).</p>
+				<?php else : ?>
+					<p><?php echo $invoice['external_id'] ? 'Átküldve (QuickBooks azonosító: ' . esc_html( $invoice['external_id'] ) . ').' : 'Még nincs átküldve.'; ?></p>
+				<?php endif; ?>
+				<?php if ( 'error' === $invoice['sync_status'] || ( ! $is_hu && hpv_qbo_connected() && ! $invoice['external_id'] ) ) : ?>
+					<form method="post" action="<?php echo $post; // phpcs:ignore ?>"><?php $hidden( 'sync' ); ?><button class="button">Újrapróbálás</button></form>
+				<?php endif; ?>
+				<?php if ( in_array( $invoice['status'], array( 'sent', 'paid' ), true ) ) : ?>
+					<form method="post" action="<?php echo $post; // phpcs:ignore ?>" onsubmit="return confirm('<?php echo $is_hu && $invoice['external_id'] ? 'Sztornó számlát állítasz ki a Számlázz.hu-ban. Mehet?' : 'Érvényteleníted a számlát?'; ?>');" style="margin-top:12px">
+						<?php $hidden( 'void' ); ?>
+						<button class="button-link hpv-delete"><?php echo $is_hu && $invoice['external_id'] ? 'Sztornózás' : 'Érvénytelenítés'; ?></button>
+					</form>
+				<?php endif; ?>
+			</section>
+		</div>
+	</div>
 	<?php
 }
 
@@ -629,8 +783,12 @@ function hpv_p_admin_invoice_items( int $invoice_id, array $invoice ) {
 	$services = hpv_p_find( 'service', array( 'active' => 1 ), array( 'orderby' => 'name', 'order' => 'ASC' ) );
 	?>
 	<h2>Tételek</h2>
-	<table class="widefat hpv-items" data-hpv-items>
-		<thead><tr><th>Tétel (angolul)</th><th style="width:110px">Mennyiség</th><th style="width:140px">Egységár</th><th style="width:130px">Összeg</th><th style="width:40px"></th></tr></thead>
+	<?php
+	$currency = ! empty( $invoice['client_id'] ) ? hpv_p_invoice_currency( $invoice ) : 'USD';
+	$vat      = hpv_p_settings()['hu_vat_key'];
+	?>
+	<table class="widefat hpv-items" data-hpv-items data-currency="<?php echo esc_attr( $currency ); ?>" data-default-vat="<?php echo esc_attr( $vat ); ?>">
+		<thead><tr><th>Tétel (az ügyfél nyelvén)</th><th style="width:110px">Mennyiség</th><th style="width:140px">Egységár</th><th style="width:130px">Összeg</th><th style="width:40px"></th></tr></thead>
 		<tbody>
 		<?php foreach ( array_values( $items ) as $i => $item ) : ?>
 			<tr>
@@ -702,7 +860,7 @@ function hpv_p_admin_signed_contract( array $row ) {
 
 function hpv_p_admin_save() {
 	$entity = sanitize_key( $_POST['entity'] ?? '' );
-	if ( ! hpv_p_is_staff() || ! isset( hpv_p_entities()[ $entity ] ) ) {
+	if ( ! isset( hpv_p_entities()[ $entity ] ) || ! hpv_p_can_entity( $entity ) ) {
 		wp_die( 'Nincs jogosultságod.' );
 	}
 	check_admin_referer( 'hpv_crm_save_' . $entity );
@@ -715,6 +873,19 @@ function hpv_p_admin_save() {
 
 	if ( 'contract' === $entity && $old && 'signed' === $old['status'] ) {
 		hpv_p_redirect( $edit, 'locked' );
+	}
+	if ( 'invoice' === $entity && $old && in_array( $do, array( 'paid', 'void', 'sync', 'link' ), true ) ) {
+		hpv_p_admin_invoice_action( $old, $do );
+	}
+	if ( 'invoice' === $entity && $old && hpv_p_invoice_locked( $old ) ) {
+		hpv_p_redirect( $edit, 'error', array( 'error' => 'A kiállított számla nem módosítható.' ) );
+	}
+	if ( 'invoice' === $entity ) {
+		unset( $data['status'] ); // a státuszt a kiküldés, befizetés és érvénytelenítés állítja
+		$client_id = (int) ( $data['client_id'] ?? $old['client_id'] ?? 0 );
+		if ( 'HU' === hpv_p_client_country( $client_id ) ) {
+			$data['tax_rate'] = hpv_p_vat_rate( (string) ( ( $data['vat_key'] ?? '' ) ?: hpv_p_settings()['hu_vat_key'] ) );
+		}
 	}
 
 	// Előfizetés katalógusból: ami üres, azt a szolgáltatásból töltjük ki.
@@ -760,19 +931,18 @@ function hpv_p_admin_save() {
 
 	if ( 'invoice' === $entity ) {
 		hpv_p_save_invoice_items( $id, (array) ( $_POST['items'] ?? array() ) );
-		hpv_p_assign_invoice_number( $id );
+		if ( ! hpv_p_is_hu_invoice( $row ) ) {
+			hpv_p_assign_invoice_number( $id ); // magyar számlánál a Számlázz.hu adja
+		}
 		$row = hpv_p_get( 'invoice', $id );
 
 		if ( 'send' === $do ) {
-			hpv_p_update( 'invoice', $id, array( 'status' => 'sent', 'sent_at' => current_time( 'mysql', true ) ) );
-			$row = hpv_p_get( 'invoice', $id );
-			hpv_p_event_invoice_sent( $row );
-			hpv_p_log( (int) $row['client_id'], 'system', sprintf( 'Invoice %s issued: %s.', $row['number'], hpv_p_money( $row['total'] ) ), true, get_current_user_id() );
+			$sent = hpv_bill_send( $id, get_current_user_id() );
+			if ( is_wp_error( $sent ) ) {
+				hpv_p_redirect( hpv_p_edit_url( 'invoice', $id ), 'error', array( 'error' => $sent->get_error_message() ) );
+			}
+			$row = $sent;
 			$msg = 'sent';
-		} elseif ( 'paid' === $do ) {
-			hpv_p_update( 'invoice', $id, array( 'status' => 'paid', 'paid_at' => current_time( 'mysql', true ) ) );
-			hpv_p_log( (int) $row['client_id'], 'system', sprintf( 'Payment received for invoice %s. Thank you!', $row['number'] ), true, get_current_user_id() );
-			$msg = 'paid';
 		}
 	}
 
@@ -780,13 +950,16 @@ function hpv_p_admin_save() {
 		hpv_p_update( 'contract', $id, array( 'status' => 'sent', 'sent_at' => current_time( 'mysql', true ) ) );
 		$row = hpv_p_get( 'contract', $id );
 		hpv_p_event_contract_sent( $row );
-		hpv_p_log( (int) $row['client_id'], 'system', sprintf( '"%s" is ready for your signature.', $row['title'] ), true, get_current_user_id() );
+		hpv_p_log_client( (int) $row['client_id'], '"%s" is ready for your signature.', array( $row['title'] ), get_current_user_id() );
 		$msg = 'sent';
 	}
 
 	// Vissza oda, ahonnan jött: feladat → projekt, tevékenység → ügyfél, egyéb → szerkesztő.
 	if ( 'task' === $entity ) {
 		hpv_p_redirect( hpv_p_edit_url( 'project', (int) $row['project_id'] ), $msg );
+	}
+	if ( 'invoice' === $entity ) {
+		hpv_p_redirect( hpv_p_edit_url( 'invoice', $id ), $msg ); // a kiküldés után a számla panelje (PDF, befizetés, szinkron)
 	}
 	if ( 'activity' === $entity || ( 'client' !== $entity && ! empty( $row['client_id'] ) && 'save' !== $do ) ) {
 		hpv_p_redirect( hpv_p_admin_url( array( 'client' => $row['client_id'] ) ), $msg );
@@ -800,7 +973,7 @@ function hpv_p_admin_save() {
 function hpv_p_admin_delete() {
 	$entity = sanitize_key( $_GET['entity'] ?? '' );
 	$id     = absint( $_GET['id'] ?? 0 );
-	if ( ! hpv_p_is_staff() || ! isset( hpv_p_entities()[ $entity ] ) ) {
+	if ( ! isset( hpv_p_entities()[ $entity ] ) || ! hpv_p_can_entity( $entity ) ) {
 		wp_die( 'Nincs jogosultságod.' );
 	}
 	check_admin_referer( 'hpv_crm_delete_' . $entity . '_' . $id );
@@ -811,7 +984,14 @@ function hpv_p_admin_delete() {
 	}
 
 	// Jogi / könyvelési nyom: aláírt szerződés és kiküldött számla nem törölhető, csak érvényteleníthető.
-	if ( ( 'contract' === $entity && 'signed' === $row['status'] ) || ( 'invoice' === $entity && 'draft' !== $row['status'] ) ) {
+	if ( 'invoice' === $entity && 'draft' !== $row['status'] ) {
+		$void = hpv_bill_void( $id, get_current_user_id() );
+		if ( is_wp_error( $void ) ) {
+			hpv_p_redirect( hpv_p_edit_url( 'invoice', $id ), 'error', array( 'error' => $void->get_error_message() ) );
+		}
+		hpv_p_redirect( hpv_p_admin_url( array( 'client' => $row['client_id'] ) ), 'voided' );
+	}
+	if ( 'contract' === $entity && 'signed' === $row['status'] ) {
 		hpv_p_update( $entity, $id, array( 'status' => 'void' ) );
 		hpv_p_redirect( hpv_p_admin_url( array( 'client' => $row['client_id'] ) ), 'voided' );
 	}
@@ -822,6 +1002,45 @@ function hpv_p_admin_delete() {
 		hpv_p_redirect( hpv_p_edit_url( 'project', (int) $row['project_id'] ), 'deleted' );
 	}
 	hpv_p_redirect( ! empty( $row['client_id'] ) && 'client' !== $entity ? hpv_p_admin_url( array( 'client' => $row['client_id'] ) ) : hpv_p_admin_url(), 'deleted' );
+}
+
+/**
+ * Számla panel műveletei: befizetés, érvénytelenítés/sztornó, szinkron újrapróbálása, Teya link.
+ */
+function hpv_p_admin_invoice_action( array $invoice, string $do ) {
+	$id   = (int) $invoice['id'];
+	$edit = hpv_p_edit_url( 'invoice', $id );
+	$msg  = 'saved';
+	switch ( $do ) {
+		case 'paid':
+			$date = sanitize_text_field( wp_unslash( $_POST['paid_on'] ?? '' ) );
+			$res  = hpv_bill_mark_paid(
+				$id,
+				array(
+					'provider' => 'manual',
+					'amount'   => hpv_p_to_cents( wp_unslash( $_POST['amount'] ?? '' ) ) ?: hpv_p_invoice_balance( $invoice ),
+					'paid_on'  => preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ? $date : current_time( 'Y-m-d' ),
+					'note'     => wp_unslash( $_POST['note'] ?? '' ),
+					'user_id'  => get_current_user_id(),
+				)
+			);
+			$msg  = ! is_wp_error( $res ) && 'paid' === $res['status'] ? 'paid' : 'payment';
+			break;
+		case 'void':
+			$res = hpv_bill_void( $id, get_current_user_id() );
+			$msg = 'voided_ok';
+			break;
+		case 'sync':
+			$res = hpv_bill_sync_invoice( $id );
+			$msg = 'synced';
+			break;
+		default:
+			$res = hpv_p_update( 'invoice', $id, array( 'payment_url' => esc_url_raw( wp_unslash( $_POST['payment_url'] ?? '' ) ) ) );
+	}
+	if ( is_wp_error( $res ) ) {
+		hpv_p_redirect( $edit, 'error', array( 'error' => $res->get_error_message() ) );
+	}
+	hpv_p_redirect( $edit, $msg );
 }
 
 function hpv_p_admin_invite() {
@@ -884,6 +1103,22 @@ function hpv_p_sanitize_settings( $input ): array {
 		'notify_email'    => is_email( $email ) ? $email : $defaults['notify_email'],
 		'portal_page_id'  => absint( $input['portal_page_id'] ?? 0 ),
 		'use_subdomains'  => ! empty( $input['use_subdomains'] ),
+		'hu_vat_key'      => '' !== (string) ( $input['hu_vat_key'] ?? '' ) && isset( hpv_p_entity( 'invoice' )['fields']['vat_key']['options'][ $input['hu_vat_key'] ] ) ? $input['hu_vat_key'] : '27',
+		'hu_fizmod'       => in_array( $input['hu_fizmod'] ?? '', array( 'Bankkártya', 'Átutalás', 'Készpénz' ), true ) ? $input['hu_fizmod'] : 'Bankkártya',
+		'qbo_item_name'   => sanitize_text_field( $input['qbo_item_name'] ?? '' ) ?: 'Services',
+		'report_auto'     => ! empty( $input['report_auto'] ),
+		'payment_reminders' => ! empty( $input['payment_reminders'] ),
+		'review_request'  => ! empty( $input['review_request'] ),
+		'review_delay_days' => min( 60, absint( $input['review_delay_days'] ?? 3 ) ),
+		'review_countries' => implode( ',', array_intersect( array( 'US', 'HU' ), array_map( 'trim', explode( ',', strtoupper( (string) ( $input['review_countries'] ?? 'US' ) ) ) ) ) ),
+		'reminder_days'   => implode( ',', array_slice( array_values( array_unique( array_filter( array_map( 'absint', explode( ',', (string) ( $input['reminder_days'] ?? '3,7,14' ) ) ) ) ) ), 0, 5 ) ) ?: '3,7,14',
+		'hourly_rate_usd' => hpv_p_cents_to_decimal( hpv_p_to_cents( $input['hourly_rate_usd'] ?? 0 ) ),
+		'hourly_rate_huf' => hpv_p_cents_to_decimal( hpv_p_to_cents( $input['hourly_rate_huf'] ?? 0 ) ),
+		'report_day'      => min( 28, max( 1, absint( $input['report_day'] ?? 3 ) ) ),
+		'lead_owner'      => hpv_p_is_staff( absint( $input['lead_owner'] ?? 0 ) ) ? absint( $input['lead_owner'] ) : 0,
+		'lead_sla_hours'  => min( 72, absint( $input['lead_sla_hours'] ?? 2 ) ),
+		'sales_digest'    => ! empty( $input['sales_digest'] ),
+		'recurring_mode'  => in_array( $input['recurring_mode'] ?? '', array( 'off', 'draft', 'send' ), true ) ? $input['recurring_mode'] : 'draft',
 	);
 }
 
@@ -933,6 +1168,57 @@ function hpv_p_admin_settings_page() {
 				$f( 'invoice_start', 'Első számlaszám', 'number', 'Csak akkor számít, ha még nem készült számla.' );
 				$f( 'payment_terms', 'Fizetési határidő (nap)', 'number' );
 				?>
+				<tr><th><label for="hpv-s-vat">Magyar számla: alap ÁFA</label></th><td>
+					<select id="hpv-s-vat" name="<?php echo esc_attr( $n ); ?>[hu_vat_key]">
+						<?php foreach ( hpv_p_entity( 'invoice' )['fields']['vat_key']['options'] as $k => $labels ) : ?>
+							<?php if ( '' !== $k ) : ?><option value="<?php echo esc_attr( $k ); ?>" <?php selected( $s['hu_vat_key'], $k ); ?>><?php echo esc_html( $labels[0] ); ?></option><?php endif; ?>
+						<?php endforeach; ?>
+					</select>
+					<p class="description">Alanyi adómentes vállalkozásnál: AAM. Számlánként felülírható.</p>
+				</td></tr>
+				<tr><th><label for="hpv-s-fizmod">Magyar számla: fizetési mód</label></th><td>
+					<select id="hpv-s-fizmod" name="<?php echo esc_attr( $n ); ?>[hu_fizmod]">
+						<?php foreach ( array( 'Bankkártya', 'Átutalás', 'Készpénz' ) as $m ) : ?>
+							<option <?php selected( $s['hu_fizmod'], $m ); ?>><?php echo esc_html( $m ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</td></tr>
+				<?php $f( 'qbo_item_name', 'QuickBooks tétel neve', 'text', 'Ezzel a QuickBooks termékkel/szolgáltatással kerülnek át a számlatételek (Sales → Products and services).' ); ?>
+				<tr><th><label for="hpv-s-recurring">Ismétlődő számlák</label></th><td>
+					<select id="hpv-s-recurring" name="<?php echo esc_attr( $n ); ?>[recurring_mode]">
+						<?php foreach ( array( 'draft' => 'Piszkozat készül, mi küldjük ki (javasolt)', 'send' => 'Automatikus kiküldés', 'off' => 'Kikapcsolva' ) as $k => $label ) : ?>
+							<option value="<?php echo esc_attr( $k ); ?>" <?php selected( $s['recurring_mode'], $k ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<p class="description">Az aktív előfizetésekből a „Következő számla” napján reggel 7-kor ügyfelenként egy számla készül, a csapat összefoglaló e-mailt kap.
+						<?php $last = get_option( 'hpv_recurring_last_run' ); echo $last ? esc_html( sprintf( 'Utolsó futás: %s, %d számla.', get_date_from_gmt( $last['at'], 'Y-m-d H:i' ), $last['count'] ) ) : ''; ?></p>
+				</td></tr>
+				<tr><th><label for="hpv-s-reminder_days">Fizetési emlékeztetők</label></th><td>
+					<label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[payment_reminders]" value="1" <?php checked( ! empty( $s['payment_reminders'] ) ); ?>> Emlékeztető a lejárt számlákról az ügyfélnek (az ügyfél nyelvén)</label><br>
+					a lejárat után ennyi nappal: <input type="text" id="hpv-s-reminder_days" name="<?php echo esc_attr( $n ); ?>[reminder_days]" value="<?php echo esc_attr( $s['reminder_days'] ); ?>" style="width:100px"> <span class="description">(vesszővel, pl. 3,7,14; az utolsó „végső emlékeztető”)</span>
+				</td></tr>
+				<tr><th><label for="hpv-s-review_delay_days">Google értékelés kérése</label></th><td>
+					<label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[review_request]" value="1" <?php checked( ! empty( $s['review_request'] ) ); ?>> Kész projekt után automatikusan (a Reviews bővítményen keresztül)</label><br>
+					a lezárás után <input type="number" min="0" max="60" id="hpv-s-review_delay_days" name="<?php echo esc_attr( $n ); ?>[review_delay_days]" value="<?php echo (int) $s['review_delay_days']; ?>" style="width:60px"> nappal, ezeknek az országoknak: <input type="text" name="<?php echo esc_attr( $n ); ?>[review_countries]" value="<?php echo esc_attr( $s['review_countries'] ); ?>" style="width:70px"> <span class="description">(US, HU)</span>
+					<p class="description">Külön telepítésnél a wp-config.php-ba: HPV_SITE_URL és HPV_BRIDGE_SECRET (a marketing oldalon is ugyanez a titok). Ugyanaz a titok viszi a Website Grader érdeklődőit is a CRM-be. <?php echo hpv_bridge_secret() ? '✔ titok beállítva' : '✘ nincs HPV_BRIDGE_SECRET'; ?></p>
+				</td></tr>
+				<tr><th><label for="hpv-s-lead_owner">Értékesítés</label></th><td>
+					Új érdeklődő felelőse: <select id="hpv-s-lead_owner" name="<?php echo esc_attr( $n ); ?>[lead_owner]"><option value="0">— senki (az értesítési címre megy) —</option>
+					<?php foreach ( get_users( array( 'capability' => 'hpv_manage_crm', 'orderby' => 'display_name' ) ) as $u ) : ?>
+						<option value="<?php echo (int) $u->ID; ?>" <?php selected( (int) $s['lead_owner'], $u->ID ); ?>><?php echo esc_html( $u->display_name ); ?></option>
+					<?php endforeach; ?></select><br>
+					Figyelmeztetés, ha egy új érdeklődő <input type="number" min="0" max="72" name="<?php echo esc_attr( $n ); ?>[lead_sla_hours]" value="<?php echo (int) $s['lead_sla_hours']; ?>" style="width:60px"> óránál tovább vár válaszra <span class="description">(0 = nincs)</span><br>
+					<label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[sales_digest]" value="1" <?php checked( ! empty( $s['sales_digest'] ) ); ?>> Reggeli összefoglaló a felelősöknek az esedékes következő lépésekről</label>
+				</td></tr>
+				<tr><th>Óradíj (munkaidő-számlázás)</th><td>
+					USD <input type="text" name="<?php echo esc_attr( $n ); ?>[hourly_rate_usd]" value="<?php echo esc_attr( $s['hourly_rate_usd'] ); ?>" style="width:90px">
+					&nbsp; HUF <input type="text" name="<?php echo esc_attr( $n ); ?>[hourly_rate_huf]" value="<?php echo esc_attr( $s['hourly_rate_huf'] ); ?>" style="width:110px">
+					<p class="description">Ügyfelenként felülírható az adatlapon („Óradíj”).</p>
+				</td></tr>
+				<tr><th><label for="hpv-s-report_day">Havi riportok</label></th><td>
+					<label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[report_auto]" value="1" <?php checked( ! empty( $s['report_auto'] ) ); ?>> Az előző hónap riport-piszkozata magától elkészül a havidíjas / marketinges ügyfeleknek</label><br>
+					minden hónap <input type="number" min="1" max="28" id="hpv-s-report_day" name="<?php echo esc_attr( $n ); ?>[report_day]" value="<?php echo (int) $s['report_day']; ?>" style="width:60px">. napján (kiküldés a CRM appból, átnézés után).
+				</td></tr>
 			</table>
 			<h2 class="title">Portál</h2>
 			<table class="form-table" role="presentation">
@@ -959,7 +1245,45 @@ function hpv_p_admin_settings_page() {
 			</table>
 			<?php submit_button( 'Mentés' ); ?>
 		</form>
+		<?php hpv_p_billing_admin_section(); ?>
 		<?php hpv_video_admin_section(); ?>
+		<?php hpv_conn_admin_section(); ?>
 	</div>
+	<?php
+}
+
+/* ─── Beállítások: számlázás és fizetés ───────────────────── */
+
+function hpv_p_billing_admin_section() {
+	$ok   = '<span style="color:#1a7f37">✔ rendben</span>';
+	$no   = '<span style="color:#b32d2e">✘ nincs beállítva</span>';
+	$rows = array(
+		array( 'Számlázz.hu (Magyarország)', hpv_szamlazz_enabled() ? $ok : $no, 'HPV_SZAMLAZZ_AGENT_KEY' ),
+		array( 'Teya (Magyarország)', '<span style="color:#9a6700">kézi fizetési link</span>', 'Az API bekötése a fejlesztői dokumentációban' ),
+		array( 'Stripe (USA)', hpv_stripe_enabled() ? $ok : $no, 'HPV_STRIPE_SECRET_KEY' ),
+		array( 'Stripe webhook', '' !== hpv_stripe_webhook_secret() ? $ok : $no, 'HPV_STRIPE_WEBHOOK_SECRET · cím: ' . hpv_stripe_webhook_url() ),
+		array( 'QuickBooks (USA)', hpv_qbo_connected() ? $ok : ( hpv_qbo_configured() ? '<span style="color:#9a6700">nincs összekapcsolva</span>' : $no ), 'HPV_QBO_CLIENT_ID, HPV_QBO_CLIENT_SECRET' . ( defined( 'HPV_QBO_SANDBOX' ) && HPV_QBO_SANDBOX ? ' · SANDBOX' : '' ) ),
+	);
+	?>
+	<h2 class="title">Számlázás és fizetés</h2>
+	<p>A kulcsok a <code>wp-config.php</code>-ban vannak, nem itt. Az ügyfél országa dönti el, melyik rendszer dolgozik.</p>
+	<table class="widefat striped" style="max-width:860px">
+		<tbody>
+			<?php foreach ( $rows as $r ) : ?>
+				<tr><td><?php echo esc_html( $r[0] ); ?></td><td><?php echo $r[1]; // phpcs:ignore WordPress.Security.EscapeOutput -- fix HTML ?></td><td class="hpv-muted"><code><?php echo esc_html( $r[2] ); ?></code></td></tr>
+			<?php endforeach; ?>
+		</tbody>
+	</table>
+	<?php if ( hpv_qbo_configured() ) : ?>
+		<p style="display:flex;gap:8px;align-items:center">
+			<?php $action = hpv_qbo_connected() ? 'hpv_qbo_disconnect' : 'hpv_qbo_connect'; ?>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="<?php echo esc_attr( $action ); ?>">
+				<?php wp_nonce_field( $action ); ?>
+				<button class="button<?php echo hpv_qbo_connected() ? '' : ' button-primary'; ?>"><?php echo hpv_qbo_connected() ? 'QuickBooks leválasztása' : 'QuickBooks összekapcsolása'; ?></button>
+			</form>
+			<span class="description">Az Intuit appban beállítandó Redirect URI: <code><?php echo esc_html( hpv_qbo_redirect_uri() ); ?></code></span>
+		</p>
+	<?php endif; ?>
 	<?php
 }

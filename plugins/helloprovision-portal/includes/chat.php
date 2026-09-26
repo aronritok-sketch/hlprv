@@ -282,14 +282,17 @@ function hpv_chat_notify( array $channel, int $message_id, int $author_id, strin
 				)
 			);
 		} else {
-			$sent = hpv_p_send(
-				$user->user_email,
-				sprintf( 'New message from %s', $author['name'] ),
-				hpv_p_email_html(
-					sprintf( '%s sent you a message', $author['name'] ),
-					'<p>' . nl2br( esc_html( mb_substr( $body, 0, 1000 ) ) ) . '</p>',
-					'Reply in your portal',
-					hpv_p_portal_url( array( 'view' => 'messages', 'channel' => $channel['id'] ) )
+			$sent = hpv_with_client_lang(
+				hpv_p_user_client_id( $user_id ),
+				fn() => hpv_p_send(
+					$user->user_email,
+					hpv_t( 'New message from %s', $author['name'] ),
+					hpv_p_email_html(
+						hpv_t( '%s sent you a message', $author['name'] ),
+						'<p>' . nl2br( esc_html( mb_substr( $body, 0, 1000 ) ) ) . '</p>',
+						hpv_t( 'Reply in your portal' ),
+						hpv_p_portal_url( array( 'view' => 'messages', 'channel' => $channel['id'] ) )
+					)
 				)
 			);
 		}
