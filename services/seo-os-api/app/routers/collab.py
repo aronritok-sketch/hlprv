@@ -29,6 +29,7 @@ from ..models import (
 from ..permissions import can_view_doc, has
 from ..services import collab, storage
 from ..services.activity import log
+from ..services.system import heartbeat
 from ..services.files import file_response
 from . import dashboard
 
@@ -384,6 +385,7 @@ def mark_read(body: ReadIn, db: Session = Depends(get_db), user: CurrentUser = D
 @router.get("/system/outbox", dependencies=[Depends(current_system)])
 def outbox(db: Session = Depends(get_db)):
     """A még ki nem küldött e-mail értesítések (a WordPress 5 percenként elkéri, és wp_mail()-lel küldi)."""
+    heartbeat("wp_cron", {}, db)
     rows = db.execute(
         select(Notification, User, Project.name).join(User, User.id == Notification.user_id).outerjoin(Project, Project.id == Notification.project_id)
         .where(Notification.email_status == "pending").order_by(Notification.id).limit(100)
@@ -416,6 +418,7 @@ def outbox_ack(body: AckIn, db: Session = Depends(get_db)):
 @router.post("/system/daily", dependencies=[Depends(current_system)])
 def system_daily(db: Session = Depends(get_db)):
     res = collab.daily(db)
+    heartbeat("wp_daily", res, db)
     db.commit()
     return res
 

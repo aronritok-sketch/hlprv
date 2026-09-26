@@ -21,6 +21,7 @@ require_once __DIR__ . '/includes/proxy.php';
 require_once __DIR__ . '/includes/crm.php';
 require_once __DIR__ . '/includes/notify.php';
 require_once __DIR__ . '/includes/review.php';
+require_once __DIR__ . '/includes/status.php';
 require_once __DIR__ . '/includes/app.php';
 
 if ( is_admin() ) {

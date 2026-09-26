@@ -2,7 +2,8 @@
  * Beállítások: csapat (mindenki látja, aki csapatot láthat), API kulcsok, modellek, pontozás (csak admin),
  * referenciadokumentumok és Screaming Frog ügynök (a későbbi ütemek szakaszai).
  */
-import { html, useState, useEffect, useApp, api, useLoad, toast, errorText, fmt, Icon, Spinner, Field, Input, DataTable, Avatar, can, CFG } from '../ui.js';
+import { html, useState, useEffect, useApp, api, useLoad, toast, errorText, fmt, Icon, Spinner, Field, Input, DataTable, Avatar, Tabs, setParam, can, CFG } from '../ui.js';
+import { SystemStatus } from './system.js';
 import { ReferenceDocs } from './settings-refs.js';
 import { CrawlerAgent } from './settings-crawler.js';
 
@@ -24,9 +25,9 @@ function Team() {
 }
 
 const GROUPS = [
-	['AI modellek', ['openai_api_key', 'openai_model', 'openai_embedding_model', 'anthropic_api_key', 'claude_model', 'claude_model_client']],
+	['AI modellek', ['openai_api_key', 'openai_model', 'openai_embedding_model', 'anthropic_api_key', 'claude_model', 'claude_model_client', 'claude_effort']],
 	['SEO adatforrások', ['dataforseo_login', 'dataforseo_password', 'ahrefs_api_key', 'monthly_budget_usd']],
-	['Dokumentumok', ['brand_name']],
+	['Dokumentumok', ['brand_name', 'doc_accent', 'doc_accent_2', 'doc_footer']],
 ];
 
 function ApiSettings() {
@@ -82,15 +83,29 @@ function ApiSettings() {
 	</section>`;
 }
 
+const TABS = [
+	['status', 'Rendszer állapot', 'check', 'settings.manage'],
+	['keys', 'Kulcsok és AI', 'key', 'settings.manage'],
+	['team', 'Csapat', 'tasks', 'team.view'],
+	['crawler', 'Screaming Frog', 'crawl', 'settings.manage'],
+	['refs', 'Saját minták', 'doc', 'settings.manage'],
+];
+
 export function Settings() {
-	const { me } = useApp();
+	const { me, route } = useApp();
+	const tabs = TABS.filter(([, , , cap]) => can(me, cap));
+	const current = tabs.find(([k]) => k === route.params.tab) || tabs[0];
+	const body = {
+		status: () => html`<${SystemStatus} />`,
+		keys: () => html`<${ApiSettings} />`,
+		team: () => html`<${Team} />`,
+		crawler: () => html`<${CrawlerAgent} />`,
+		refs: () => html`<${ReferenceDocs} />`,
+	}[current[0]];
 	return html`<div class="page">
-		<header class="page__head"><div><h1>Beállítások</h1></div></header>
-		<div class="stack">
-			<${Team} />
-			${can(me, 'settings.manage') ? html`<${ApiSettings} />` : ''}
-			${can(me, 'settings.manage') ? html`<${ReferenceDocs} />` : ''}
-			${can(me, 'settings.manage') ? html`<${CrawlerAgent} />` : ''}
-		</div>
+		<header class="page__head"><div><h1>${can(me, 'settings.manage') ? 'Rendszer és beállítások' : 'Beállítások'}</h1>
+			${can(me, 'settings.manage') ? html`<p class="muted">Super admin nézet: minden kulcs, beállítás és állapot egy helyen.</p>` : ''}</div></header>
+		${tabs.length > 1 ? html`<${Tabs} tabs=${tabs.map(([k, l, i]) => [k, l, i])} active=${current[0]} onChange=${(k) => setParam('tab', k === tabs[0][0] ? '' : k)} />` : ''}
+		<div class="tab-body">${body()}</div>
 	</div>`;
 }

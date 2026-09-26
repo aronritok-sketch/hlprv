@@ -66,6 +66,17 @@ def get(db: Session, key: str) -> Any:
     return default
 
 
+def source(db: Session, key: str) -> str:
+    """Honnan jön az érték: 'db' (felületen megadva), 'env' (szerver .env), 'default' vagy '' (nincs megadva)."""
+    label, secret, default, env = DEFINITIONS[key]
+    row = db.get(AppSetting, key)
+    if row is not None and row.value not in (None, ""):
+        return "db"
+    if env and getattr(get_settings(), env, ""):
+        return "env"
+    return "default" if default not in (None, "", [], {}) else ""
+
+
 def set_value(db: Session, key: str, value: Any, user_id: int | None) -> None:
     if key not in DEFINITIONS:
         raise KeyError(key)
