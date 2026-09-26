@@ -169,6 +169,91 @@ $add->set_param( 'add', array( $maria->ID ) );
 rest_do_request( $add );
 it( 'ügyfél nem vehető fel belső csoportba', null === hpv_chat_member( $group_id, $maria->ID ) );
 
+echo "Projektkezelés\n";
+wp_set_current_user( $staff_id );
+$rest = function ( string $method, string $path, array $params = array() ) {
+	$r = new WP_REST_Request( $method, '/hpv/v1/pm' . $path );
+	foreach ( $params as $k => $v ) {
+		$r->set_param( $k, $v );
+	}
+	$res = rest_do_request( $r );
+	return array( $res->get_status(), $res->get_data() );
+};
+list( $st, $boot ) = $rest( 'GET', '/bootstrap' );
+it( 'bootstrap: munkatárs, státuszok', 200 === $st && 5 === count( $boot['statuses'] ) && in_array( $staff_id, array_column( $boot['users'], 'id' ), true ) );
+
+list( , $tpl ) = $rest( 'POST', '/projects', array( 'name' => 'Website template ' . $suffix, 'is_template' => 1, 'start_date' => '2026-01-01' ) );
+list( , $t1 )  = $rest( 'POST', '/tasks', array( 'project_id' => $tpl['id'], 'title' => 'Discovery', 'start_date' => '2026-01-01', 'due_date' => '2026-01-03' ) );
+list( , $t2 )  = $rest( 'POST', '/tasks', array( 'project_id' => $tpl['id'], 'title' => 'Design', 'start_date' => '2026-01-05', 'due_date' => '2026-01-12' ) );
+$rest( 'POST', '/tasks', array( 'project_id' => $tpl['id'], 'title' => 'Moodboard', 'parent_id' => $t2['id'] ) );
+$rest( 'POST', '/tasks/' . $t2['id'] . '/checklist', array( 'title' => 'Mobile layout' ) );
+list( $st, $proj ) = $rest( 'POST', '/projects', array( 'name' => 'Gulf redesign ' . $suffix, 'client_id' => $client_a, 'template_id' => $tpl['id'], 'start_date' => '2026-10-01' ) );
+list( , $full )    = $rest( 'GET', '/projects/' . $proj['id'] );
+$by_title          = array_column( $full['tasks'], null, 'title' );
+it( 'sablonból 3 feladat (alfeladattal)', 200 === $st && 3 === count( $full['tasks'] ) );
+it( 'sablon dátumai eltolva (jan 5 → okt 5)', '2026-10-05' === $by_title['Design']['start_date'] && '2026-10-12' === $by_title['Design']['due_date'] );
+it( 'alfeladat szülője az új feladat', $by_title['Moodboard']['parent_id'] === $by_title['Design']['id'] );
+it( 'ellenőrzőlista átmásolva', 1 === $by_title['Design']['stats']['checklist_total'] );
+it( 'sablon nem látszik a portálon', ! in_array( (int) $tpl['id'], array_map( 'intval', array_column( hpv_p_portal_projects( $client_a ), 'id' ) ), true ) );
+
+$design = $by_title['Design']['id'];
+$disc   = $by_title['Discovery']['id'];
+$GLOBALS['hpv_it_mail'] = array();
+list( $st, $upd ) = $rest( 'POST', '/tasks/' . $design, array( 'assignee_id' => 1, 'priority' => 'high', 'status' => 'in_progress' ) );
+it( 'feladat frissítve (felelős, prioritás, státusz)', 200 === $st && 1 === $upd['assignee']['id'] && 'high' === $upd['priority'] );
+it( 'új felelős e-mailt kap', 1 === count( $GLOBALS['hpv_it_mail'] ) );
+
+$rest( 'POST', '/tasks/reorder', array( 'status' => 'done', 'ids' => array( $disc ) ) );
+$disc_row = hpv_p_get( 'task', $disc );
+it( 'Kanban húzás: kész oszlopba, lezárási idővel', 'done' === $disc_row['status'] && ! empty( $disc_row['completed_at'] ) );
+$rest( 'POST', '/tasks/reorder', array( 'status' => 'todo', 'ids' => array( $disc ) ) );
+it( 'visszahúzva a lezárás törlődik', empty( hpv_p_get( 'task', $disc )['completed_at'] ) );
+
+list( $st, ) = $rest( 'POST', '/tasks/' . $design . '/links', array( 'depends_on' => $disc ) );
+it( 'függőség létrehozva', 200 === $st );
+list( $st, ) = $rest( 'POST', '/tasks/' . $disc . '/links', array( 'depends_on' => $design ) );
+it( 'körkörös függőség tiltva', 400 === $st );
+
+list( $st, $timer ) = $rest( 'POST', '/tasks/' . $design . '/timer', array( 'action' => 'start' ) );
+it( 'stopper elindult', 200 === $st && $timer['task_id'] === $design );
+$running = hpv_pm_running_timer( $staff_id );
+hpv_p_update( 'time_entry', (int) $running['id'], array( 'started_at' => time() - 25 * 60 ) );
+$rest( 'POST', '/tasks/' . $disc . '/timer', array( 'action' => 'start' ) );
+it( 'új stopper indításakor az előző leáll (25 perc)', 25 === (int) hpv_p_get( 'time_entry', (int) $running['id'] )['minutes'] );
+$rest( 'POST', '/tasks/' . $disc . '/timer', array( 'action' => 'stop' ) );
+it( 'stopper leállítva', null === hpv_pm_running_timer( $staff_id ) );
+$rest( 'POST', '/tasks/' . $design . '/time', array( 'minutes' => 90, 'note' => 'Homepage' ) );
+list( , $detail ) = $rest( 'GET', '/tasks/' . $design );
+it( 'rögzített idő összesen 115 perc', 115 === $detail['stats']['minutes'] );
+it( 'részletek: alfeladat, függőség, ellenőrzőlista', 1 === count( $detail['subtasks'] ) && 1 === count( $detail['links'] ) && 1 === count( $detail['checklist'] ) );
+
+$rest( 'POST', '/tasks/' . $design . '/comments', array( 'body' => 'Looks good, ship it' ) );
+list( , $detail ) = $rest( 'GET', '/tasks/' . $design );
+it( 'hozzászólás mentve', 1 === count( $detail['comments'] ) && 'Looks good, ship it' === $detail['comments'][0]['body'] );
+
+$GLOBALS['hpv_it_mail'] = array();
+hpv_p_update( 'project', (int) $proj['id'], array( 'visible' => 1 ) );
+$rest( 'POST', '/tasks/' . $disc, array( 'status' => 'client' ) );
+it( '„Ügyfélre vár” → ügyfél értesítés és napló', 1 === count( array_filter( $GLOBALS['hpv_it_mail'], fn( $m ) => false !== strpos( $m['subject'], 'Action needed' ) ) ) );
+it( 'alfeladat nem látszik a portálon', ! in_array( 'Moodboard', array_column( hpv_p_portal_tasks( (int) $proj['id'] ), 'title' ), true ) );
+
+wp_set_current_user( 1 );
+list( , $mine ) = $rest( 'GET', '/my-tasks' );
+it( 'saját feladataim: a Design feladat', in_array( $design, array_column( $mine, 'id' ), true ) );
+list( $st, $dash ) = $rest( 'GET', '/dashboard' );
+it( 'vezérlőpult', 200 === $st && isset( $dash['mrr'], $dash['my_open'] ) );
+list( , $found ) = $rest( 'GET', '/search', array( 'q' => 'Gulf redesign' ) );
+it( 'keresés megtalálja a projektet', in_array( 'project', array_column( $found, 'type' ), true ) );
+
+wp_set_current_user( $maria->ID );
+list( $st, ) = $rest( 'GET', '/projects/' . $proj['id'] );
+it( 'ügyfél nem éri el a projektkezelő API-t', in_array( $st, array( 401, 403 ), true ) );
+wp_set_current_user( $staff_id );
+
+$rest( 'DELETE', '/tasks/' . $design );
+it( 'feladat törlése az alfeladatokat és a függőségeket is törli', ! hpv_p_find( 'task', array( 'parent_id' => $design ) ) && ! hpv_p_find( 'task_link', array( 'task_id' => $design ) ) && ! hpv_p_find( 'time_entry', array( 'task_id' => $design ) ) );
+hpv_p_delete( 'project', (int) $tpl['id'] );
+
 echo "Visszavonás, törlés\n";
 do_action( 'hpv_p_user_revoked', $client_a, $maria->ID );
 delete_user_meta( $maria->ID, 'hpv_client_id' );

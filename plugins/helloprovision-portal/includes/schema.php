@@ -117,6 +117,9 @@ function hpv_p_entities(): array {
 				'start_date'  => array( 'type' => 'date', 'label' => 'Kezdés' ),
 				'due_date'    => array( 'type' => 'date', 'label' => 'Határidő', 'list' => true ),
 				'visible'     => array( 'type' => 'bool', 'label' => 'Látja az ügyfél', 'default' => 1 ),
+				'owner_id'    => array( 'type' => 'ref', 'ref' => 'user', 'label' => 'Projektfelelős' ),
+				'color'       => array( 'type' => 'text', 'label' => 'Szín', 'default' => '#b8ff34' ),
+				'is_template' => array( 'type' => 'bool', 'label' => 'Sablon', 'default' => 0 ),
 			),
 		),
 
@@ -136,13 +139,83 @@ function hpv_p_entities(): array {
 					'options' => array(
 						'todo'        => array( 'Teendő', 'To do' ),
 						'in_progress' => array( 'Folyamatban', 'In progress' ),
+						'review'      => array( 'Belső ellenőrzés', 'In review' ),
 						'client'      => array( 'Ügyfélre vár', 'Waiting on you' ),
 						'done'        => array( 'Kész', 'Done' ),
 					),
 				),
-				'due_date'   => array( 'type' => 'date', 'label' => 'Határidő', 'list' => true ),
-				'visible'    => array( 'type' => 'bool', 'label' => 'Látja az ügyfél', 'default' => 1, 'list' => true ),
-				'sort'       => array( 'type' => 'int', 'label' => 'Sorrend', 'default' => 0 ),
+				'due_date'     => array( 'type' => 'date', 'label' => 'Határidő', 'list' => true ),
+				'visible'      => array( 'type' => 'bool', 'label' => 'Látja az ügyfél', 'default' => 1, 'list' => true ),
+				'sort'         => array( 'type' => 'int', 'label' => 'Sorrend', 'default' => 0 ),
+				'description'  => array( 'type' => 'textarea', 'label' => 'Leírás' ),
+				'assignee_id'  => array( 'type' => 'ref', 'ref' => 'user', 'label' => 'Felelős' ),
+				'priority'     => array(
+					'type'    => 'select',
+					'label'   => 'Prioritás',
+					'default' => 'normal',
+					'options' => array(
+						'low'    => array( 'Alacsony', 'Low' ),
+						'normal' => array( 'Normál', 'Normal' ),
+						'high'   => array( 'Magas', 'High' ),
+						'urgent' => array( 'Sürgős', 'Urgent' ),
+					),
+				),
+				'start_date'   => array( 'type' => 'date', 'label' => 'Kezdés' ),
+				'parent_id'    => array( 'type' => 'int', 'label' => 'Szülő feladat' ),
+				'estimate'     => array( 'type' => 'int', 'label' => 'Becsült idő (perc)' ),
+				'created_by'   => array( 'type' => 'int', 'label' => 'Létrehozta' ),
+				'completed_at' => array( 'type' => 'datetime', 'label' => 'Lezárva', 'readonly' => true ),
+			),
+		),
+
+		'task_comment' => array(
+			'table'    => 'task_comments',
+			'label'    => 'Hozzászólások',
+			'singular' => 'Hozzászólás',
+			'parent'   => 'task',
+			'fields'   => array(
+				'task_id' => array( 'type' => 'ref', 'ref' => 'task', 'label' => 'Feladat', 'required' => true ),
+				'user_id' => array( 'type' => 'ref', 'ref' => 'user', 'label' => 'Felhasználó', 'required' => true ),
+				'body'    => array( 'type' => 'textarea', 'label' => 'Szöveg', 'required' => true ),
+			),
+		),
+
+		'checklist_item' => array(
+			'table'    => 'task_checklist',
+			'label'    => 'Ellenőrzőlista',
+			'singular' => 'Pont',
+			'parent'   => 'task',
+			'fields'   => array(
+				'task_id' => array( 'type' => 'ref', 'ref' => 'task', 'label' => 'Feladat', 'required' => true ),
+				'title'   => array( 'type' => 'text', 'label' => 'Pont', 'required' => true ),
+				'done'    => array( 'type' => 'bool', 'label' => 'Kész', 'default' => 0 ),
+				'sort'    => array( 'type' => 'int', 'label' => 'Sorrend', 'default' => 0 ),
+			),
+		),
+
+		'time_entry'   => array(
+			'table'    => 'time_entries',
+			'label'    => 'Időnapló',
+			'singular' => 'Időbejegyzés',
+			'parent'   => 'task',
+			'fields'   => array(
+				'task_id'    => array( 'type' => 'ref', 'ref' => 'task', 'label' => 'Feladat', 'required' => true ),
+				'user_id'    => array( 'type' => 'ref', 'ref' => 'user', 'label' => 'Felhasználó', 'required' => true ),
+				'minutes'    => array( 'type' => 'int', 'label' => 'Perc' ),
+				'work_date'  => array( 'type' => 'date', 'label' => 'Nap' ),
+				'note'       => array( 'type' => 'text', 'label' => 'Megjegyzés' ),
+				'started_at' => array( 'type' => 'int', 'label' => 'Futó stopper indítása (unix idő)' ),
+			),
+		),
+
+		'task_link'    => array(
+			'table'    => 'task_links',
+			'label'    => 'Függőségek',
+			'singular' => 'Függőség',
+			'parent'   => 'task',
+			'fields'   => array(
+				'task_id'    => array( 'type' => 'ref', 'ref' => 'task', 'label' => 'Feladat', 'required' => true ),
+				'depends_on' => array( 'type' => 'ref', 'ref' => 'task', 'label' => 'Ettől függ', 'required' => true ),
 			),
 		),
 

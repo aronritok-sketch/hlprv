@@ -153,6 +153,7 @@ function hpv_p_admin_clients() {
 	?>
 	<h1 class="wp-heading-inline">Ügyfelek</h1>
 	<a href="<?php echo esc_url( hpv_p_edit_url( 'client' ) ); ?>" class="page-title-action">Új ügyfél</a>
+	<a href="<?php echo esc_url( hpv_p_scheme() . '://' . hpv_p_crm_host() . '/' ); ?>" class="page-title-action">Projektek és chat (új CRM) →</a>
 	<hr class="wp-header-end">
 
 	<div class="hpv-kpis">

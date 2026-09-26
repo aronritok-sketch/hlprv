@@ -203,6 +203,13 @@ function hpv_p_delete( string $entity, int $id ) {
 			hpv_p_delete( $child, (int) $row['id'] );
 		}
 	}
+	if ( 'task' === $entity ) {
+		foreach ( hpv_p_find( 'task', array( 'parent_id' => $id ), array( 'limit' => 2000 ) ) as $sub ) {
+			hpv_p_delete( 'task', (int) $sub['id'] );
+		}
+		$wpdb->delete( hpv_p_table( 'task_link' ), array( 'depends_on' => $id ) );
+	}
+
 	$wpdb->delete( hpv_p_table( $entity ), array( 'id' => $id ) );
 
 	if ( 'client' === $entity ) {
@@ -250,11 +257,11 @@ function hpv_p_portal_contracts( int $client_id ): array {
 }
 
 function hpv_p_portal_projects( int $client_id ): array {
-	return hpv_p_find( 'project', array( 'client_id' => $client_id, 'visible' => 1 ) );
+	return hpv_p_find( 'project', array( 'client_id' => $client_id, 'visible' => 1, 'is_template' => 0 ) );
 }
 
 function hpv_p_portal_tasks( int $project_id ): array {
-	return hpv_p_find( 'task', array( 'project_id' => $project_id, 'visible' => 1 ), array( 'orderby' => 'sort', 'order' => 'ASC' ) );
+	return hpv_p_find( 'task', array( 'project_id' => $project_id, 'visible' => 1, 'parent_id' => 0 ), array( 'orderby' => 'sort', 'order' => 'ASC' ) );
 }
 
 function hpv_p_portal_activity( int $client_id, int $limit = 100 ): array {

@@ -71,7 +71,7 @@ function hpv_p_route_subdomains() {
 			auth_redirect();
 		}
 		if ( hpv_p_is_staff() ) {
-			wp_safe_redirect( admin_url( 'admin.php?page=hpv-crm' ) );
+			hpv_p_render_crm_app();
 		} else {
 			wp_redirect( hpv_p_portal_url() ); // phpcs:ignore WordPress.Security.SafeRedirect -- a saját portál aldomain
 		}
@@ -123,7 +123,8 @@ add_action( 'load-index.php', 'hpv_p_staff_dashboard_redirect' );
 
 function hpv_p_staff_dashboard_redirect() {
 	if ( hpv_p_is_staff() && ( ! current_user_can( 'manage_options' ) || 'crm' === hpv_p_context() ) ) {
-		wp_safe_redirect( admin_url( 'admin.php?page=hpv-crm' ) );
+		// A CRM aldomainen az új webalkalmazás a kezdőoldal.
+		wp_safe_redirect( 'crm' === hpv_p_context() ? home_url( '/' ) : admin_url( 'admin.php?page=hpv-crm' ) );
 		exit;
 	}
 }
@@ -141,7 +142,7 @@ function hpv_p_login_redirect( $redirect_to, $requested, $user ) {
 		return hpv_p_portal_url();
 	}
 	if ( user_can( $user, 'hpv_manage_crm' ) && ( empty( $requested ) || false !== strpos( (string) $requested, 'wp-admin/' ) && false === strpos( (string) $requested, 'page=' ) ) ) {
-		return admin_url( 'admin.php?page=hpv-crm' );
+		return 'crm' === hpv_p_context() ? home_url( '/' ) : admin_url( 'admin.php?page=hpv-crm' );
 	}
 
 	return $redirect_to;

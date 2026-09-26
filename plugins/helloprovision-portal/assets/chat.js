@@ -5,11 +5,10 @@
 (function () {
 	'use strict';
 
-	var cfg = window.HPV_CHAT;
-	var root = document.getElementById('hpv-chat');
-	if (!cfg || !root) {
-		return;
-	}
+	/**
+	 * A chat felület felépítése egy elembe. Visszaad egy leállító függvényt (időzítők, eseménykezelők).
+	 */
+	function mount(root, cfg) {
 
 	var T = {
 		hu: {
@@ -498,18 +497,19 @@
 	});
 	el.input.addEventListener('input', autosize);
 
-	document.addEventListener('keydown', function (e) {
+	function onKey(e) {
 		if (e.key === 'Escape' && !el.modal.hidden) {
 			closeModal();
 		}
-	});
-
-	document.addEventListener('visibilitychange', function () {
+	}
+	function onVisible() {
 		if (!document.hidden) {
 			poll();
 			loadChannels();
 		}
-	});
+	}
+	document.addEventListener('keydown', onKey);
+	document.addEventListener('visibilitychange', onVisible);
 
 	/* ── Indulás ─────────────────────────────────────── */
 
@@ -528,4 +528,20 @@
 			loadChannels();
 		}
 	}, 15000);
+
+	return function destroy() {
+		clearInterval(timers.poll);
+		clearInterval(timers.list);
+		document.removeEventListener('keydown', onKey);
+		document.removeEventListener('visibilitychange', onVisible);
+		root.innerHTML = '';
+	};
+	}
+
+	window.HPVChatMount = mount;
+
+	var autoRoot = document.getElementById('hpv-chat');
+	if (autoRoot && window.HPV_CHAT) {
+		mount(autoRoot, window.HPV_CHAT);
+	}
 })();

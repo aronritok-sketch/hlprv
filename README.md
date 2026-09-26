@@ -129,7 +129,7 @@ Az érdeklődők a **Website Grader → Érdeklődők** menüben vannak: teljes 
 - A Google sebességmérése futásonként néhány pontot ingadozhat. Ez normális, az eszköz GYIK része is elmondja.
 - Ha a szerver Cloudflare vagy más proxy mögött van, a látogatónkénti korlát a proxy IP-címét látja. Ilyenkor a `hpv_grader_client_ip` filterrel állítható be a valódi IP.
 
-## `plugins/helloprovision-portal/` – Ügyfélportál & CRM (0.1, 1. ütem)
+## `plugins/helloprovision-portal/` – Ügyfélportál, CRM és projektkezelő (0.2)
 
 Egy WordPress bővítmény, két bejárattal:
 
@@ -140,11 +140,46 @@ Egy WordPress bővítmény, két bejárattal:
 
 Mindkét cím csak bejelentkezés után működik.
 
-**A CRM-ben (magyar felület):**
+**A CRM webalkalmazás (`crm.helloprovision.com` nyitóoldala, magyar felület):**
+
+Saját, gyors felület, nem a WordPress admin. Oldalújratöltés nélkül működik, mobilon is.
+
+- **Vezérlőpult:**
+  - saját nyitott és lejárt feladatok, a csapat heti teljesítése, a rögzített idő;
+  - havi ismétlődő bevétel, kintlévőség, aktív ügyfelek, aláírásra váró szerződések;
+  - a ma esedékes feladatok és az aktív projektek haladással.
+- **Saját feladataim:** csoportosítva: lejárt, ma, 7 napon belül, később, határidő nélkül.
+- **Projektek:**
+  - szűrés ügyfélre, státuszra, felelősre;
+  - színek;
+  - sablonok: új projekt sablonból, a feladatok dátumai a kezdőnaphoz igazodnak.
+- **Projekt nézetek:**
+  - **Tábla** (Kanban, húzással átrendezhető): Teendő → Folyamatban → Belső ellenőrzés → Ügyfélre vár → Kész;
+  - **Lista:** gyors szerkesztés soron belül, kinyitható alfeladatok;
+  - **Idővonal (Gantt):**
+    - a sáv húzással mozgatható, a két végén nyújtható;
+    - a függőségek nyilakkal látszanak;
+    - a nézet a mai napra görget.
+- **Feladat panel:**
+  - státusz, felelős, prioritás, kezdés, határidő, becslés, látható-e az ügyfélnek;
+  - leírás, alfeladatok, ellenőrzőlista, hozzászólások;
+  - függőségek (körkörös függőséget nem enged).
+- **Időmérés:**
+  - stopper egy kattintással: felhasználónként egy futhat, fent végig látszik és onnan leállítható;
+  - utólagos időrögzítés, időnapló.
+- **Értesítések:**
+  - az új felelős e-mailt kap;
+  - ha egy látható feladat „Ügyfélre vár” lesz, az ügyfél is értesítést kap.
+- **Keresés (Ctrl+K):** projektek, feladatok és ügyfelek egy helyen.
+- **Chat:** csoportok és ügyfél-csatornák, olvasatlan-számlálóval; a projekt fejlécéből egy kattintással nyílik az ügyfél csatornája.
+
+A számla-, szerződés- és szolgáltatás-szerkesztők egyelőre a klasszikus CRM-ben vannak (WordPress admin). A webalkalmazás oldalsávja oda linkel.
+
+**A klasszikus CRM-ben (WordPress admin, magyar felület):**
 - **Ügyfelek:** kulcsszámok (aktív ügyfelek, havi ismétlődő bevétel, kintlévőség, lejárt számlák, aláírásra váró szerződések), ügyfél-adatlap.
 - **Portál-meghívó:** a kapott e-mailben jelszó-beállító link van. A hozzáférés visszavonható.
 - **Szolgáltatás-katalógus és előfizetések:** havi, negyedéves, éves és egyszeri díjak.
-- **Projektek és feladatok:** feladatonként állítható, hogy látja-e az ügyfél; külön státusz az „Ügyfélre vár” feladatoknak.
+- **Projektek és feladatok:** feladatonként állítható, hogy látja-e az ügyfél; az ügyfél az alfeladatokat és a sablonokat nem látja.
 - **Számlák:**
   - tételek, adó, automatikus számlaszám;
   - fizetési link (pl. Stripe Payment Link), ez a portálon „Pay now” gombként jelenik meg;
@@ -190,12 +225,11 @@ A portál saját keretben fut, a WordPress témától függetlenül, mobilon is.
 
 ### Következő ütemek
 
-2. **Projektkezelő:**
-   - Kanban húzással, lista, idővonal (Gantt);
-   - felelősök, alfeladatok, ellenőrzőlisták, hozzászólások, időmérés, függőségek, sablonok;
-   - a CRM saját, gyors webes felületre költözik a WordPress admin helyett.
 3. **Videóhívás a chatből** (pl. Daily.co), automatikus leirattal és AI-összefoglalóval, ami az ügyfélhez és a projekthez mentődik.
-4. **Pénzügy és egyebek:** Stripe fizetés automatikus „fizetve” jelöléssel, ismétlődő számlák automatikus kiállítása, fájlmegosztás, Bitrix24 átköltöztetés.
+4. **Pénzügy és egyebek:**
+   - Stripe fizetés automatikus „fizetve” jelöléssel, ismétlődő számlák automatikus kiállítása;
+   - fájlmegosztás, Bitrix24 átköltöztetés;
+   - a számla- és szerződés-szerkesztő átköltözése a webalkalmazásba.
 
 ## Tesztek
 
@@ -206,7 +240,7 @@ php tests/grader.php
 wp eval-file tests/portal-integration.php   # valódi WordPressen, a portál bővítménnyel
 ```
 
-Az első három WordPress nélkül fut, a portál teszt valódi WordPressen és adatbázison. Az SEO teszt az élő főoldal valódi schemáját, a grader teszt a főoldal megtisztított HTML-jét használja (`tests/fixtures/`).
+Az első három WordPress nélkül fut. A portál teszt valódi WordPressen és adatbázison fut, és a projektkezelő API-t is végigpróbálja: sablonmásolás, átrendezés, függőségek, stopper, jogosultságok, törlés. Az SEO teszt az élő főoldal valódi schemáját, a grader teszt a főoldal megtisztított HTML-jét használja (`tests/fixtures/`).
 
 ## Amit a plugin nem tud javítani (admin felületen kell)
 
