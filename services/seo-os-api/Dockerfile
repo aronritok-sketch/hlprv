@@ -14,9 +14,8 @@ WORKDIR /app
 COPY pyproject.toml ./
 RUN pip install --upgrade pip && pip install .
 COPY . .
-RUN useradd -m -u 1000 seoos && mkdir -p /var/lib/seo-os/files && chown -R seoos /var/lib/seo-os
-USER seoos
+RUN useradd -m -u 1000 seoos && mkdir -p /var/lib/seo-os/files && chown -R seoos /var/lib/seo-os && chmod +x /app/start.sh
 
 EXPOSE 8100
-# Induláskor lefuttatja az adatbázis-migrációkat, majd elindítja az API-t.
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8100 --proxy-headers --workers 2"]
+# Migráció, majd API (SEO_OS_RUN_WORKER=1 esetén mellette a worker is); a start.sh korlátozott felhasználóra vált.
+CMD ["/app/start.sh"]

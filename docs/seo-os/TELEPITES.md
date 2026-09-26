@@ -11,7 +11,33 @@ A rendszer három részből áll:
 A böngésző csak a WordPresst látja; az API nem nyilvános (csak a `127.0.0.1:8100` címen figyel), minden kérés
 HMAC-SHA256 aláírással érkezik a bővítménytől.
 
-## 0. Gyors telepítés szkriptekkel
+## 0/A. Telepítés terminál nélkül (tárhely FileZillával + Render)
+
+Ha a WordPress tárhelyén nincs terminál (SSH) és Docker, a háttérrendszer (API, worker, adatbázis) egy felhős
+szolgáltatáson fut, amit böngészőből lehet beállítani; a WordPress (felület) marad a saját tárhelyen.
+
+1. **Tárhely-ellenőrzés:** `services/deploy/hpv-check.php` feltöltése FileZillával a seo aldomain mappájába, majd
+   megnyitás böngészőben (`https://seo.helloprovision.com/hpv-check.php`). Megmutatja a PHP-t, a WordPresst, a mappa-
+   linkeket, az írási jogokat és a kimenő kapcsolatokat. 2 óra után magától letiltja magát; használat után töröld.
+2. **Render:** render.com → regisztráció GitHubbal → *New → Blueprint* → ez a repó. A `render.yaml` alapján létrejön az
+   adatbázis és az `seo-os-api` szolgáltatás (a háttérfeladat-worker ugyanebben fut, `SEO_OS_RUN_WORKER=1`). A
+   csomagokat (plan) itt ellenőrizd: az API-nak legalább 1 GB memória ajánlott. Az első telepítés után a
+   `https://…onrender.com/health` címen `{"ok":true}` a válasz.
+3. **Titkok:** Render → `seo-os-api` → *Environment*: a `SEO_OS_HMAC_SECRET` a wp-config.php-ba kell, a
+   `SEO_OS_AGENT_TOKEN` a Screaming Frog ügynökhöz.
+4. **WordPress (FileZillával):** a `plugins/helloprovision-seo-os` (és ha még nincs, a `helloprovision-portal`) mappa a
+   `wp-content/plugins` alá; a `wp-config.php`-ba:
+   ```php
+   define( 'HPV_SEO_OS_SECRET', '…a Render SEO_OS_HMAC_SECRET értéke…' );
+   define( 'HPV_SEO_OS_API_URL', 'https://seo-os-api.onrender.com' ); // a Render által adott cím
+   define( 'DISABLE_WP_CRON', true );
+   ```
+   Majd a WordPress adminban a bővítmények bekapcsolása.
+5. **Cron terminál nélkül:** a tárhely vezérlőpultjának cron-beállításában, vagy ingyenes külső szolgáltatással
+   (pl. cron-job.org) 5 percenként: `https://seo.helloprovision.com/wp-cron.php?doing_wp_cron`.
+6. **Ellenőrzés:** `seo.helloprovision.com` → Beállítások → Rendszer állapot – az ellenőrzőlista mutatja, mi van hátra.
+
+## 0/B. Gyors telepítés szkriptekkel (saját szerver, SSH-val)
 
 1. A repó `services` mappáját töltsd fel a szerverre `/opt/seo-os` néven (FileZilla).
 2. Felmérés (csak olvas, jelszót nem ír ki): `sudo bash /opt/seo-os/deploy/diagnose.sh` – az eredmény a

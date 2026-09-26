@@ -34,7 +34,7 @@ services:
   worker:
     build: ./seo-os-api
     restart: unless-stopped
-    command: ["python", "-m", "app.jobs.worker"]
+    command: ["/app/start.sh", "worker"]
     env_file: .env
     environment:
       SEO_OS_DATABASE_URL: postgresql+psycopg://seo:${POSTGRES_PASSWORD}@db/seo_os

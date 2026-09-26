@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,6 +23,15 @@ class Settings(BaseSettings):
     dataforseo_login: str = ""
     dataforseo_password: str = ""
     ahrefs_api_key: str = ""
+
+    @field_validator("database_url")
+    @classmethod
+    def _driver(cls, v: str) -> str:
+        """A felhőszolgáltatók „postgres://…” / „postgresql://…” címet adnak; az SQLAlchemy-nek a psycopg meghajtó kell."""
+        for prefix in ("postgres://", "postgresql://"):
+            if v.startswith(prefix):
+                return "postgresql+psycopg://" + v[len(prefix):]
+        return v
 
     # Tesztekhez: a nyelvi modellek helyett determinisztikus helyettesítő.
     llm_fake: bool = False

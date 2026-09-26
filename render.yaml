@@ -1,0 +1,39 @@
+# HelloProVision SEO OS – felhős telepítés terminál nélkül (Render „Blueprint”).
+# Render → New → Blueprint → válaszd ezt a repót; a Render ebből létrehozza az adatbázist és az API szolgáltatást.
+# A WordPress (felület) marad a saját tárhelyen; a wp-config.php-ban a HPV_SEO_OS_API_URL erre a szolgáltatásra mutat.
+#
+# A csomagneveket (plan) a Blueprint létrehozásakor a Render felületén ellenőrizd: az API-nak legalább 1 GB memória
+# ajánlott (az elemzés és a PDF-készítés csúcsban ~0,5 GB-ot használ, a háttérfeladat-worker ugyanebben fut).
+services:
+  - type: web
+    name: seo-os-api
+    runtime: docker
+    region: frankfurt
+    plan: standard
+    dockerContext: ./services/seo-os-api
+    dockerfilePath: ./services/seo-os-api/Dockerfile
+    healthCheckPath: /health
+    disk:
+      name: seo-os-files
+      mountPath: /var/lib/seo-os
+      sizeGB: 5
+    envVars:
+      - key: SEO_OS_DATABASE_URL
+        fromDatabase:
+          name: seo-os-db
+          property: connectionString
+      - key: SEO_OS_HMAC_SECRET
+        generateValue: true
+      - key: SEO_OS_AGENT_TOKEN
+        generateValue: true
+      - key: SEO_OS_RUN_WORKER
+        value: "1"
+      - key: SEO_OS_STORAGE_DIR
+        value: /var/lib/seo-os/files
+
+databases:
+  - name: seo-os-db
+    region: frankfurt
+    plan: basic-256mb
+    databaseName: seo_os
+    user: seo

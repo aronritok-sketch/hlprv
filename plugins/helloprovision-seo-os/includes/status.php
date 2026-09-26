@@ -45,12 +45,12 @@ function hpv_seo_wp_status() {
 	};
 	$add( 'wp_secret', 'Közös titok beállítva (wp-config.php)', strlen( $secret ) >= 32 && $secret_const, $secret_const ? 'HPV_SEO_OS_SECRET konstans' : ( $secret ? 'az admin beállításban (a wp-config.php biztonságosabb)' : 'nincs' ),
 		"define( 'HPV_SEO_OS_SECRET', '…' ); a wp-config.php-ba – ugyanaz, mint a szerver SEO_OS_HMAC_SECRET értéke.", $secret ? 'warn' : 'error' );
-	$add( 'wp_api', 'Az API elérhető a WordPress szerverről', $api_ok, hpv_seo_api_url() . ( $api_ok ? " ({$api_ms} ms)" : '' ), "Ellenőrizd a HPV_SEO_OS_API_URL-t és hogy fut-e az API (docker compose ps)." );
+	$add( 'wp_api', 'Az API elérhető a WordPress szerverről', $api_ok, hpv_seo_api_url() . ( $api_ok ? " ({$api_ms} ms)" : '' ), "Ellenőrizd a HPV_SEO_OS_API_URL-t és hogy fut-e az API (Render: a szolgáltatás állapota és naplója; saját szerver: docker compose ps)." );
 	$add( 'wp_ssl', 'HTTPS az SEO OS címen', is_ssl() || ( defined( 'HPV_FORCE_HTTPS' ) && HPV_FORCE_HTTPS ), $request_host, 'SSL tanúsítvány a seo aldomainre (pl. Let\'s Encrypt).', 'warn' );
 	$add( 'wp_host', 'A felület a beállított aldomainen fut', hpv_seo_host_matches( $request_host, $host ), $host, "A seo aldomain kerüljön a wp-config.php host-listájába (WP_HOME), vagy define( 'HPV_SEO_HOST', '…' ).", 'warn' );
 	$add( 'wp_smtp', 'Levélküldés SMTP-n (WP Mail SMTP)', $smtp, '', 'Telepítsd / állítsd be a WP Mail SMTP bővítményt, különben a levelek spambe mehetnek.', 'warn' );
 	$add( 'wp_portal', 'CRM / ügyfélportál bővítmény aktív', $portal, '', 'A CRM feladatokhoz és az ügyfél-jóváhagyás portál-értesítéseihez a helloprovision-portal bővítmény kell.', 'warn' );
-	$add( 'wp_cron_real', 'Valódi cron (nem látogatásfüggő WP-Cron)', $cron_disabled, $cron_disabled ? 'DISABLE_WP_CRON' : 'WP-Cron csak látogatáskor fut', "define( 'DISABLE_WP_CRON', true ); + szerver cron: */5 * * * * curl -s https://{$host}/wp-cron.php", 'warn' );
+	$add( 'wp_cron_real', 'Valódi cron (nem látogatásfüggő WP-Cron)', $cron_disabled, $cron_disabled ? 'DISABLE_WP_CRON' : 'WP-Cron csak látogatáskor fut', "define( 'DISABLE_WP_CRON', true ); + 5 percenkénti hívás: https://{$host}/wp-cron.php?doing_wp_cron (a tárhely cron-beállításában, vagy ingyenes külső szolgáltatással, pl. cron-job.org)", 'warn' );
 	$add( 'wp_team', 'Van SEO OS szerepkörrel rendelkező munkatárs az adminon kívül', count( $roles ) > 1, wp_json_encode( $roles ), 'Beállítások → Csapat: szerepkörök kiosztása.', 'warn' );
 
 	$api = $api_ok ? hpv_seo_api_json( 'GET', 'admin/status' ) : new WP_Error( 'hpv_seo_api', 'Az API nem érhető el.' );
