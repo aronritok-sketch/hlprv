@@ -881,6 +881,7 @@ function hpv_p_sanitize_settings( $input ): array {
 		'payment_terms'   => min( 120, absint( $input['payment_terms'] ?? 15 ) ),
 		'notify_email'    => is_email( $email ) ? $email : $defaults['notify_email'],
 		'portal_page_id'  => absint( $input['portal_page_id'] ?? 0 ),
+		'use_subdomains'  => ! empty( $input['use_subdomains'] ),
 	);
 }
 
@@ -932,6 +933,11 @@ function hpv_p_admin_settings_page() {
 			</table>
 			<h2 class="title">Portál</h2>
 			<table class="form-table" role="presentation">
+				<tr><th>Aldomainek</th><td>
+					<label><input type="checkbox" name="<?php echo esc_attr( $n ); ?>[use_subdomains]" value="1" <?php checked( ! empty( $s['use_subdomains'] ) ); ?>>
+						Aldomainek használata (<code><?php echo esc_html( hpv_p_crm_host() ); ?></code>, <code><?php echo esc_html( hpv_p_portal_host() ); ?></code>)</label>
+					<p class="description">Élesben kapcsold be: így az e-mailekben lévő linkek akkor is a portál aldomainre mutatnak, ha a levél háttérfolyamatból (cron, WP-CLI) megy ki.</p>
+				</td></tr>
 				<tr><th><label for="hpv-s-page">Portál oldal</label></th><td>
 					<?php
 					wp_dropdown_pages(
@@ -944,7 +950,7 @@ function hpv_p_admin_settings_page() {
 						)
 					);
 					?>
-					<p class="description">Az oldal tartalma: <code>[hpv_portal]</code></p>
+					<p class="description">Csak aldomainek nélkül (fejlesztéskor) kell. Az oldal tartalma: <code>[hpv_portal]</code></p>
 				</td></tr>
 				<?php $f( 'notify_email', 'Értesítések címe', 'email', 'Ügyfélüzenetek és aláírások értesítője.' ); ?>
 			</table>
