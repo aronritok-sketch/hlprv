@@ -39,6 +39,7 @@ const HPV_LEAD_SOURCES = array(
 	'manual'   => 'Kézi felvitel',
 	'bitrix'   => 'Bitrix24',
 	'proposal' => 'Ajánlat ablak',
+	'mail'     => 'E-mail',
 );
 
 function hpv_lead_source_label( string $source ): string {
