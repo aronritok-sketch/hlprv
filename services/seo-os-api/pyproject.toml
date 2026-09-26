@@ -19,6 +19,7 @@ dependencies = [
     "scikit-learn>=1.4",
     "openai>=1.40",
     "anthropic>=0.40",
+    "pypdf>=4",
 ]
 
 [project.optional-dependencies]

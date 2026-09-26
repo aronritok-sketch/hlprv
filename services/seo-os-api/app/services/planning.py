@@ -34,7 +34,6 @@ from ..models import (
     Wireframe,
 )
 from . import heuristics, llm, prompts
-from . import settings as app_settings
 from . import wireframe_templates as wt
 from .activity import log
 from .projects import add_months

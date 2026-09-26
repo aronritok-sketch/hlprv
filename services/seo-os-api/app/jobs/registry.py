@@ -6,6 +6,7 @@ MODULES = [
     "app.services.research",
     "app.services.analysis",
     "app.services.planning",
+    "app.services.documents",
 ]
 
 

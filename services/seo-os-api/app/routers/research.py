@@ -3,7 +3,7 @@
 from typing import Any, Optional
 from urllib.parse import unquote
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
@@ -333,7 +333,7 @@ class StyleGuideIn(BaseModel):
 
 @router.put("/projects/{project_id}/style-guide")
 def put_style_guide(project_id: int, body: StyleGuideIn, db: Session = Depends(get_db), user: CurrentUser = Depends(need("strategy.status"))):
-    project = get_project(db, project_id)
+    get_project(db, project_id)
     sg = db.get(StyleGuide, project_id) or StyleGuide(project_id=project_id)
     db.add(sg)
     keys = {k for k, _, _ in STYLE_QUESTIONS}

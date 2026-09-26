@@ -22,7 +22,7 @@ def root() -> Path:
 
 def safe_name(name: str) -> str:
     name = name.replace("\\", "/").split("/")[-1].strip() or "file"
-    return re.sub(r"[^\w.\- ()áéíóöőúüűÁÉÍÓÖŐÚÜŰ]", "_", name)[:200]
+    return re.sub(r"[^\w.\- ()–áéíóöőúüűÁÉÍÓÖŐÚÜŰ]", "_", name)[:200]
 
 
 def save(db: Session, data: bytes, filename: str, kind: str, project_id: int | None, user_id: int | None, mime: str = "") -> StoredFile:

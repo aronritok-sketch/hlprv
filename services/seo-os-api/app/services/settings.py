@@ -13,8 +13,9 @@ DEFINITIONS: dict[str, tuple[str, bool, Any, str | None]] = {
     "openai_model": ("OpenAI modell (elemzés)", False, "gpt-4.1-mini", None),
     "openai_embedding_model": ("OpenAI embedding modell", False, "text-embedding-3-small", None),
     "anthropic_api_key": ("Anthropic (Claude) API kulcs", True, "", "anthropic_api_key"),
-    "claude_model": ("Claude modell – belső briefek", False, "claude-sonnet-5", None),
-    "claude_model_client": ("Claude modell – ügyféldokumentumok", False, "claude-opus-5-5", None),
+    "claude_model": ("Claude modell – belső briefek", False, "claude-opus-5", None),
+    "claude_model_client": ("Claude modell – ügyféldokumentumok", False, "claude-opus-5", None),
+    "claude_effort": ("Claude effort (low / medium / high / xhigh / max)", False, "high", None),
     "dataforseo_login": ("DataForSEO login", False, "", "dataforseo_login"),
     "dataforseo_password": ("DataForSEO jelszó", True, "", "dataforseo_password"),
     "ahrefs_api_key": ("Ahrefs API kulcs", True, "", "ahrefs_api_key"),
@@ -28,6 +29,9 @@ DEFINITIONS: dict[str, tuple[str, bool, Any, str | None]] = {
     ),
     "priority_thresholds": ("Prioritási határok (P1, P2)", False, {"p1": 0.62, "p2": 0.42}, None),
     "brand_name": ("Márkanév a dokumentumokon", False, "HelloProVision", None),
+    "doc_accent": ("Dokumentum kiemelőszín", False, "#A4DA4C", None),
+    "doc_accent_2": ("Dokumentum második kiemelőszín", False, "#F26B5B", None),
+    "doc_footer": ("Dokumentum lábléc", False, "HelloProVision · helloprovision.com", None),
 }
 
 

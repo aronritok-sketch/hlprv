@@ -64,7 +64,7 @@ export function Dashboard() {
 
 				${data.my_tasks ? html`<${Card} title="Saját feladataim" icon="tasks" count=${data.my_tasks.length} action=${html`<a class="link" href="#/work">Mind</a>`}>
 					${data.my_tasks.length ? html`<ul class="list">${data.my_tasks.slice(0, 6).map((t) => html`<li key=${t.id}>
-						<a href=${'#/projects/' + t.project_id + '?tab=documents'}><span class=${'role-dot role-dot--' + t.role}></span><strong>${t.title}</strong><span class="muted">${t.project}</span></a>
+						<a href=${'#/projects/' + t.project_id + '?tab=documents&sub=tasks'}><span class=${'role-dot role-dot--' + t.role}></span><strong>${t.title}</strong><span class="muted">${t.project}</span></a>
 					</li>`)}</ul>` : html`<p class="muted pad">Nincs nyitott feladatod.</p>`}
 				</${Card}>` : ''}
 

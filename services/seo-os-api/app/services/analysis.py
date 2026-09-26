@@ -10,12 +10,11 @@ Folyamat egy elemzésnél:
 
 import json
 from collections import Counter, defaultdict
-from typing import Any, Optional
+from typing import Optional
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
-from ..db import utcnow
 from ..jobs.runner import JobError, Progress, handler
 from ..models import BusinessProfile, Cluster, Job, Keyword, KeywordAnalysis, Page, PageKeyword, Project
 from . import heuristics, llm, prompts, scoring, site
