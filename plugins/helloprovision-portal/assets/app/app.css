@@ -642,3 +642,21 @@ button.convert:hover { border-color: var(--ink); }
 	.files-client { width: 100%; min-width: 0; }
 }
 .files-table__name a.link { color: var(--ink); font-weight: 600; }
+
+/* Import */
+.import-card { display: grid; gap: 12px; margin-bottom: 16px; }
+.import-card h2 { margin: 0; font-size: 17px; }
+.import-card p { margin: 0; }
+.import-card code { padding: 2px 6px; border-radius: 6px; background: #f1f0eb; font-size: 12px; word-break: break-all; }
+.import-steps { margin: 0; padding-left: 20px; }
+.import-connect { display: flex; flex-wrap: wrap; gap: 10px; }
+.import-connect input { flex: 1 1 320px; min-width: 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; }
+.import-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px 16px; }
+.import-pick .opt { color: var(--ink); }
+.import-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.import-table td:first-child { white-space: nowrap; }
+.import-row--wait { color: var(--muted); }
+.import-row--now td:first-child { font-weight: 600; }
+.spin-dot { display: inline-block; width: 10px; height: 10px; border: 2px solid var(--ink); border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -1px; }
+.import-warn summary { cursor: pointer; color: var(--muted); }
+.import-warn ul { margin: 8px 0 0; padding-left: 20px; font-size: 13px; }

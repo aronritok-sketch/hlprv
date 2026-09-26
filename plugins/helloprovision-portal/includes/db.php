@@ -216,7 +216,7 @@ function hpv_p_delete( string $entity, int $id ) {
 	if ( 'project' === $entity ) {
 		// A projekt fájljai megmaradnak az ügyfél általános fájljai között.
 		foreach ( hpv_p_find( 'file', array( 'project_id' => $id ), array( 'limit' => 2000 ) ) as $f ) {
-			hpv_p_update( 'file', (int) $f['id'], array( 'project_id' => null ) );
+			hpv_p_update( 'file', (int) $f['id'], array( 'project_id' => 0 ) );
 		}
 	}
 

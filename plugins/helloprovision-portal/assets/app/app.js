@@ -14,6 +14,7 @@ import { Contracts, ContractPage } from './views/contracts.js';
 import { Proposals, ProposalPage } from './views/proposals.js';
 import { Templates } from './views/templates.js';
 import { Files } from './views/files.js';
+import { ImportPage } from './views/import.js';
 
 /* ── Chat (a meglévő chat komponens beágyazva) ───── */
 
@@ -176,6 +177,7 @@ function Sidebar({ path }) {
 			<nav class="nav nav--secondary">
 				${caps.contracts || caps.proposals ? html`<a href="#/templates" class=${isActive('/templates') ? 'is-active' : ''}><${Icon} name="template" /><span>Minták</span></a>` : null}
 				${boot.me.is_admin ? html`<a href="#/team" class=${isActive('/team') ? 'is-active' : ''}><${Icon} name="users" /><span>Csapat és jogok</span></a>` : null}
+				${boot.me.is_admin ? html`<a href="#/import" class=${isActive('/import') ? 'is-active' : ''}><${Icon} name="down" /><span>Import (Bitrix24)</span></a>` : null}
 				${legacy.map((n) => html`<a key=${n.label} href=${n.href}><${Icon} name=${n.icon} /><span>${n.label}</span><${Icon} name="ext" size="13" /></a>`)}
 			</nav>
 			<div class="side__user">
@@ -240,6 +242,7 @@ function App() {
 	else if (path === '/clients') page = html`<${Clients} />`;
 	else if (path === '/files') page = html`<${Files} key=${'files' + (params.client || '')} params=${params} />`;
 	else if (path === '/team') page = html`<${Team} />`;
+	else if (path === '/import') page = html`<${ImportPage} />`;
 	else if (path === '/proposals') page = html`<${Proposals} params=${params} />`;
 	else if ((m = path.match(/^\/proposals\/(\d+)$/))) page = html`<${ProposalPage} key=${'prop' + m[1]} id=${Number(m[1])} />`;
 	else if (path === '/contracts') page = html`<${Contracts} params=${params} />`;

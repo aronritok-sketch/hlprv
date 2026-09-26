@@ -106,7 +106,7 @@ function hpv_files_store( array $upload, array $meta ) {
 		'file',
 		array(
 			'client_id'   => $client_id,
-			'project_id'  => $project_id ?: null,
+			'project_id'  => $project_id,
 			'name'        => mb_substr( $name, 0, 190 ),
 			'storage_key' => $rel,
 			'mime'        => (string) $check['type'],
@@ -338,7 +338,7 @@ function hpv_files_rest_update( WP_REST_Request $req ) {
 		if ( $pid && ( ! $p || (int) $p['client_id'] !== (int) $file['client_id'] ) ) {
 			return new WP_Error( 'project', 'A projekt nem ehhez az ügyfélhez tartozik.', array( 'status' => 400 ) );
 		}
-		$data['project_id'] = $pid ?: null;
+		$data['project_id'] = $pid;
 	}
 	$became_visible = false;
 	if ( null !== $req['visible'] ) {
