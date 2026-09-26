@@ -414,6 +414,29 @@ textarea.input { resize: vertical; min-height: 60px; }
 .doc-card { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
 .doc-card__head { display: flex; justify-content: space-between; gap: 8px; }
 .doc-card__actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+/* Technikai audit */
+.audit-topic.is-muted { opacity: .55; }
+.audit-topic__head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; cursor: pointer; flex-wrap: wrap; }
+.audit-topic__head h3 { margin: 0; font-size: 15px; }
+.audit-topic__head .input { width: auto; }
+.audit-topic__body { border-top: 1px solid var(--line); }
+.finding-list { list-style: none; margin: 0; padding: 0 0 6px; border-top: 1px solid var(--line); }
+.finding-list li { display: flex; align-items: center; gap: 10px; padding: 8px 16px; }
+.finding-list li:hover { background: var(--card-2); }
+.finding-list__label { flex: 1; min-width: 0; }
+.finding-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); flex: none; }
+.finding-dot--in_progress { background: var(--warn); }
+.finding-dot--fixed { background: var(--ok); }
+.finding-dot--wontfix { background: var(--muted); }
+.divider-label { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; }
+.divider-label::before, .divider-label::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
+.recognized { list-style: none; margin: 0; padding: 0; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
+.runs summary { cursor: pointer; }
+.size-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 14px 16px; }
+.size-board h4 { margin: 0 0 8px; }
+.size-board__item { display: block; font-size: 13px; padding: 4px 0; color: var(--ink); }
+.size-board__item:hover { color: var(--accent); }
+.size-board__item .count, .audit-topic .count { font-size: 11px; background: var(--card-2); border-radius: 99px; padding: 0 6px; }
 /* Dokumentumok */
 .doc-types { list-style: none; margin: 0; padding: 0; }
 .doc-type { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
