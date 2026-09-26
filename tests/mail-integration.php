@@ -34,6 +34,12 @@ add_filter(
 		$path = substr( $url, strlen( hpv_seo_api_url() ) );
 		$GLOBALS['api'][] = array( 'path' => $path, 'method' => $args['method'] ?? 'GET', 'role' => $args['headers']['X-HPV-Role'] ?? '', 'user' => $args['headers']['X-HPV-User'] ?? '', 'body' => json_decode( (string) ( $args['body'] ?? '' ), true ) );
 		$json = fn( $d, $code = 200 ) => array( 'response' => array( 'code' => $code ), 'headers' => array( 'content-type' => 'application/json' ), 'body' => wp_json_encode( $d ) );
+		if ( '/mail/send' === $path ) {
+			return $json( array( 'id' => 900, 'folder' => 'sent', 'crm_client_id' => $GLOBALS['send_client'] ?? null ), 201 );
+		}
+		if ( preg_match( '#^/mail/messages/88$#', $path ) ) {
+			return $json( array( 'id' => 88, 'folder' => 'inbox', 'subject' => 'Pool website quote', 'from' => array( 'name' => 'Rachel Moore', 'email' => $GLOBALS['lead_email'] ), 'date' => '2026-09-26T14:00:00Z', 'body_text' => "Hello,\n\nWe build pools in Fort Myers and need more leads.\n\nThird paragraph.", 'crm_client_id' => null ) );
+		}
 		if ( preg_match( '#^/mail/messages/(\d+)$#', $path ) ) {
 			return $json( array( 'id' => 77, 'subject' => 'Re: Photos for the Naples page', 'from' => array( 'name' => 'Mike Carter', 'email' => 'mike@imperial.test' ), 'date' => '2026-09-26T14:00:00Z', 'body_text' => 'Hi, here are the photos.', 'crm_client_id' => null ) );
 		}
@@ -102,6 +108,36 @@ $GLOBALS['api'] = array();
 hpv_p_update( 'client', $client, array( 'email' => "new_$suffix@imperial.test" ) );
 $call = end( $GLOBALS['api'] );
 it( 'ügyfél módosításakor azonnal megy (csak az az ügyfél)', $call && '/system/mail-contacts' === $call['path'] && false === $call['body']['full'] && 1 === count( $call['body']['contacts'] ) );
+
+echo "Értékesítési tölcsér\n";
+if ( function_exists( 'hpv_sales_set_stage' ) && function_exists( 'hpv_leads_ingest' ) ) {
+	wp_set_current_user( $staff );
+	$GLOBALS['lead_email'] = "rachel_$suffix@pools.test";
+	$req = new WP_REST_Request( 'POST', '/hpv/v1/mail-lead' );
+	$req->set_body_params( array( 'message_id' => 88 ) );
+	$res  = rest_do_request( $req );
+	$lead = $res->is_error() ? null : hpv_p_get( 'client', (int) $res->get_data()['client_id'] );
+	it( 'ismeretlen feladóból érdeklődő a tölcsér elején', $lead && 'lead' === $lead['status'] && 'new' === $lead['lead_stage'] && $res->get_data()['created'] );
+	it( 'a jegyzetben a tárgy és a valódi első bekezdés', $lead && (bool) array_filter( hpv_p_find( 'activity', array( 'client_id' => (int) $lead['id'] ) ), fn( $a ) => false !== strpos( $a['body'], 'Pool website quote' ) && false !== strpos( $a['body'], 'We build pools' ) && false === strpos( $a['body'], 'Third paragraph' ) ) );
+	$link = array_values( array_filter( $GLOBALS['api'], fn( $c ) => '/mail/messages/88/link' === $c['path'] ) );
+	it( 'a levél az új érdeklődőhöz kötődik', $lead && $link && (int) $link[0]['body']['crm_client_id'] === (int) $lead['id'] );
+	$again = rest_do_request( $req );
+	it( 'ugyanaz a cím másodszor nem lesz új ügyfél', ! $again->is_error() && (int) $again->get_data()['client_id'] === (int) $lead['id'] && ! $again->get_data()['created'] );
+
+	$GLOBALS['send_client'] = (int) $lead['id'];
+	$send = new WP_REST_Request( 'POST', '/hpv/v1/mail/send' );
+	$send->set_header( 'content-type', 'application/json' );
+	$send->set_body( wp_json_encode( array( 'account_id' => 1, 'to' => array( array( 'email' => $GLOBALS['lead_email'] ) ), 'subject' => 'Re: Pool website quote', 'body_html' => 'Hi Rachel' ) ) );
+	$sres  = rest_do_request( $send );
+	$after = hpv_p_get( 'client', (int) $lead['id'] );
+	it( 'válasz az új érdeklődőnek: „Felvettük a kapcsolatot”, első válasz rögzítve', 201 === $sres->get_status() && 'contacted' === $after['lead_stage'] && ! empty( $after['first_contact_at'] ) );
+	$GLOBALS['send_client'] = $client; // aktív ügyfél: nem nyúlunk a tölcsérhez
+	rest_do_request( $send );
+	it( 'aktív ügyfélnél a tölcsér változatlan', '' === (string) hpv_p_get( 'client', $client )['lead_stage'] );
+	hpv_p_delete( 'client', (int) $lead['id'] );
+} else {
+	echo "  (a portál 0.8 értékesítési függvényei nincsenek betöltve, kimarad)\n";
+}
 
 wp_delete_user( $staff );
 echo $GLOBALS['hpv_it_fail'] ? "\n{$GLOBALS['hpv_it_fail']} hiba\n" : "\nMinden teszt sikeres\n";

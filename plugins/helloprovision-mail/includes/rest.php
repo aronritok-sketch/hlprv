@@ -15,7 +15,16 @@ function hpv_mail_routes(): void {
 		array(
 			'methods'             => array( 'GET', 'POST', 'PUT', 'PATCH', 'DELETE' ),
 			'permission_callback' => 'hpv_mail_can',
-			'callback'            => fn( WP_REST_Request $r ) => hpv_seo_forward( $r, 'mail/' . $r['path'], hpv_mail_as() ),
+			'callback'            => 'hpv_mail_rest_forward',
+		)
+	);
+	register_rest_route(
+		'hpv/v1',
+		'/mail-lead',
+		array(
+			'methods'             => 'POST',
+			'permission_callback' => fn() => hpv_mail_can() && hpv_p_is_staff(),
+			'callback'            => 'hpv_mail_rest_lead',
 		)
 	);
 	register_rest_route(
@@ -34,6 +43,76 @@ function hpv_mail_routes(): void {
 			'methods'             => 'POST',
 			'permission_callback' => fn() => hpv_mail_can() && current_user_can( 'manage_options' ),
 			'callback'            => fn() => rest_ensure_response( hpv_mail_push_contacts( true ) ),
+		)
+	);
+}
+
+function hpv_mail_rest_forward( WP_REST_Request $r ) {
+	$path = (string) $r['path'];
+	$res  = hpv_seo_forward( $r, 'mail/' . $path, hpv_mail_as() );
+	// Kimenő levél egy új érdeklődőnek: a tölcsérben „Felvettük a kapcsolatot” (rögzíti az első válasz idejét).
+	if ( 'send' === $path && $res instanceof WP_REST_Response && $res->get_status() < 300 ) {
+		$data = $res->get_data();
+		if ( ! empty( $data['crm_client_id'] ) ) {
+			hpv_mail_mark_contacted( (int) $data['crm_client_id'] );
+		}
+	}
+
+	return $res;
+}
+
+function hpv_mail_mark_contacted( int $client_id ): bool {
+	$client = hpv_p_get( 'client', $client_id );
+	if ( ! $client || 'lead' !== ( $client['status'] ?? '' ) || 'new' !== ( $client['lead_stage'] ?? '' ) || ! function_exists( 'hpv_sales_set_stage' ) ) {
+		return false;
+	}
+
+	return ! is_wp_error( hpv_sales_set_stage( $client_id, 'contacted', '', get_current_user_id() ) );
+}
+
+/**
+ * Ismeretlen feladó levele → érdeklődő a tölcsér elején (a portál hpv_leads_ingest-je: e-mail alapján nem duplikál,
+ * a csapat értesítést kap). Magától nem történik meg (spam), csak a „Felvétel érdeklődőként” gombra.
+ */
+function hpv_mail_rest_lead( WP_REST_Request $request ) {
+	if ( ! function_exists( 'hpv_leads_ingest' ) ) {
+		return new WP_Error( 'leads', 'Az érdeklődő-felvételhez a CRM 0.8+ kell.', array( 'status' => 400 ) );
+	}
+	$message_id = absint( $request->get_param( 'message_id' ) );
+	$msg        = hpv_seo_api_json( 'GET', 'mail/messages/' . $message_id, null, hpv_mail_as() );
+	if ( is_wp_error( $msg ) ) {
+		return $msg;
+	}
+	if ( ! empty( $msg['crm_client_id'] ) ) {
+		return new WP_Error( 'linked', 'Ez a levél már egy ügyfélhez tartozik.', array( 'status' => 409 ) );
+	}
+	$paragraphs = preg_split( '/\n\s*\n/', trim( (string) ( $msg['body_text'] ?? '' ) ) );
+	$first      = trim( (string) ( $paragraphs[0] ?? '' ) );
+	if ( count( $paragraphs ) > 1 && mb_strlen( $first ) < 40 ) { // megszólítás („Hello,”) után a valódi első bekezdés
+		$first .= "\n\n" . trim( (string) $paragraphs[1] );
+	}
+	$res = hpv_leads_ingest(
+		array(
+			'source'  => 'mail',
+			'form'    => 'E-mail',
+			'name'    => (string) ( $msg['from']['name'] ?? '' ),
+			'email'   => (string) ( $msg['from']['email'] ?? '' ),
+			'message' => trim( (string) ( $msg['subject'] ?? '' ) . "\n\n" . mb_substr( $first, 0, 1500 ) ),
+		)
+	);
+	if ( is_wp_error( $res ) ) {
+		$res->add_data( array( 'status' => 400 ) );
+		return $res;
+	}
+	hpv_seo_api_json( 'POST', 'mail/messages/' . $message_id . '/link', array( 'crm_client_id' => (int) $res['client_id'], 'remember' => true ), hpv_mail_as() );
+	$client = hpv_p_get( 'client', (int) $res['client_id'] );
+
+	return rest_ensure_response(
+		array(
+			'client_id' => (int) $res['client_id'],
+			'created'   => (bool) $res['created'],
+			'name'      => $client ? $client['name'] : '',
+			'status'    => $client ? $client['status'] : 'lead',
 		)
 	);
 }
